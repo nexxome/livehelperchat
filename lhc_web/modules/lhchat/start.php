@@ -5,6 +5,8 @@ header('Last-Modified: ' . gmdate('D, d M Y H:i:s', time() + 60 * 60 * 8) . ' GM
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
+header('X-Frame-Options: SAMEORIGIN');
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 
 $tpl = erLhcoreClassTemplate::getInstance( 'lhchat/start.tpl.php');
 
