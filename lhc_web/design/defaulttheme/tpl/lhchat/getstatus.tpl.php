@@ -709,7 +709,7 @@ var lh_inst  = {
 
     storePersistenCookie : function() {
     	try {
-            var cookieParams = {expires:16070400};
+            var cookieParams = {expires:2592000};
 
             if ((this.isWildcardCookie() === null && 0 == <?php echo (int)$noWildcardCookie;?>) || (this.isWildcardCookie() === true)) {
                 cookieParams.domain = <?php ($trackDomain != '' ? print "'.{$trackDomain}'" : print "this.getCookieDomain()");?>;
