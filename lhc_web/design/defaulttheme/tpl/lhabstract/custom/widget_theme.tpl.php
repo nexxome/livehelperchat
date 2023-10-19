@@ -1,5 +1,5 @@
 <?php if ($object->id != null) : ?>
-<a href="<?php echo erLhcoreClassDesign::baseurl('theme/export')?>/<?php echo $object->id?>" class="float-right btn btn-success btn-md"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Download theme')?></a>
+<a href="<?php echo erLhcoreClassDesign::baseurl('theme/export')?>/<?php echo $object->id?>" class="float-end btn btn-success btn-md"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Download theme')?></a>
 <?php endif;?>
 
 <div class="row">
@@ -17,15 +17,17 @@
 		<div role="tabpanel">
         	<!-- Nav tabs -->
         	<ul class="nav nav-tabs" role="tablist">
-        		<li role="presentation" class="nav-item"><a class="active nav-link" href="#statuswidget" aria-controls="statuswidget" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Status widget style');?></a></li>
-        		<li role="presentation" class="nav-item"><a class="nav-link" href="#widgetcontainer" aria-controls="widgetcontainer" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Widget container');?></a></li>
-        		<li role="presentation" class="nav-item"><a class="nav-link" href="#messagesstyle" aria-controls="messagesstyle" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Messages style');?></a></li>
-        		<li role="presentation" class="nav-item"><a class="nav-link" href="#needhelp" aria-controls="needhelp" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Need help widget');?></a></li>
-        		<li role="presentation" class="nav-item"><a class="nav-link" href="#widgettexts" aria-controls="widgettexts" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Chat widget');?></a></li>
-        		<li role="presentation" class="nav-item"><a class="nav-link" href="#customcontent" aria-controls="customcontent" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom content');?></a></li>
-        		<li role="presentation" class="nav-item"><a class="nav-link" href="#customcss" aria-controls="customcss" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom CSS');?></a></li>
-        		<li role="presentation" class="nav-item"><a class="nav-link" href="#custombot" aria-controls="custombot" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom bot style');?></a></li>
-        		<li role="presentation" class="nav-item"><a class="nav-link" href="#customnotification" aria-controls="customnotification" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Notification');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="active nav-link" href="#statuswidget" aria-controls="statuswidget" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Status widget style');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#widgetcontainer" aria-controls="widgetcontainer" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Widget container');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#messagesstyle" aria-controls="messagesstyle" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Messages style');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#needhelp" aria-controls="needhelp" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Need help widget');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#widgettexts" aria-controls="widgettexts" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Chat widget');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#customcontent" aria-controls="customcontent" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom content');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#customcss" aria-controls="customcss" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom CSS');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#custombot" aria-controls="custombot" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom bot style');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#customnotification" aria-controls="customnotification" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Notification');?></a></li>
+        		<li role="presentation" class="nav-item"><a class="nav-link" href="#reactions" aria-controls="reactions" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Reactions');?></a></li>
+                <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/custom_tab_multiinclude.tpl.php'));?>
         	</ul>
         
         	<!-- Tab panes -->
@@ -42,12 +44,35 @@
                             <div class="col-6">
                                 <div class="form-group">
                                     <label>
-                                        <a class="live-help-tooltip" data-placement="top" title="" data-toggle="tooltip" data-original-title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','If you enter alias make sure you pass this string as argument for a theme. Otherwise argument will be ignored.');?>"><i class="material-icons">&#xE887;</i></a><?php echo $fields['alias']['trans'];?>
+                                        <a class="live-help-tooltip" data-placement="top" title="" data-bs-toggle="tooltip" data-original-title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','If you enter alias make sure you pass this string as argument for a theme. Otherwise argument will be ignored.');?>"><i class="material-icons">&#xE887;</i></a><?php echo $fields['alias']['trans'];?>
                                     </label>
                                     <?php echo erLhcoreClassAbstract::renderInput('alias', $fields['alias'], $object)?>
                                 </div>
                             </div>
                         </div>
+
+                    <div class="form-group">
+                        <label><?php echo $fields['theme_expires']['trans'];?></label>
+                        <select class="form-control form-control-sm" name="AbstractInput_theme_expires">
+                            <option value=""><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Choose duration');?></option>
+                            <option value="15" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 15) : ?>selected="selected"<?php endif;?> >15 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','seconds');?></option>
+                            <option value="30" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 30) : ?>selected="selected"<?php endif;?> >30 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','seconds');?></option>
+                            <option value="60" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 60) : ?>selected="selected"<?php endif;?> >1 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','minute');?></option>
+                            <option value="300" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 300) : ?>selected="selected"<?php endif;?> >5 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','minutes');?></option>
+                            <option value="600" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 600) : ?>selected="selected"<?php endif;?> >10 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','minutes');?></option>
+                            <option value="1800" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 1800) : ?>selected="selected"<?php endif;?> >30 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','minutes');?></option>
+                            <option value="3600" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 3600) : ?>selected="selected"<?php endif;?> >1 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','hour');?></option>
+                            <option value="7200" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 7200) : ?>selected="selected"<?php endif;?> >2 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','hours');?></option>
+                            <option value="14400" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 14400) : ?>selected="selected"<?php endif;?> >4 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','hours');?></option>
+                            <option value="28800" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 28800) : ?>selected="selected"<?php endif;?> >8 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','hours');?></option>
+                            <option value="57600" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 57600) : ?>selected="selected"<?php endif;?> >16 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','hours');?></option>
+                            <option value="86400" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 86400) : ?>selected="selected"<?php endif;?> >1 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','day');?></option>
+                            <option value="<?php echo 86400 * 2?>" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 86400 * 2) : ?>selected="selected"<?php endif;?> >2 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','days');?></option>
+                            <option value="<?php echo 86400 * 3?>" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 86400 * 3) : ?>selected="selected"<?php endif;?> >3 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','days');?></option>
+                            <option value="<?php echo 86400 * 4?>" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 86400 * 4) : ?>selected="selected"<?php endif;?> >4 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','days');?></option>
+                            <option value="<?php echo 86400 * 5?>" <?php if (isset($object->{$fields['theme_expires']['main_attr']}['theme_expires']) && $object->{$fields['theme_expires']['main_attr']}['theme_expires'] == 86400 * 5) : ?>selected="selected"<?php endif;?> >5 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','days');?></option>
+                        </select>
+                    </div>
 
                         <div class="form-group">
 						<label><?php echo erLhcoreClassAbstract::renderInput('modern_look', $fields['modern_look'], $object)?><?php echo $fields['modern_look']['trans'];?>*</label>
@@ -174,7 +199,7 @@
                             <div class="msgBlock" style="" id="messagesBlock">       
                                 <div class="message-row response" id="msg-10459" data-op-id="0">
                                     <div class="msg-date">10:14:39</div>
-                                    <span style="color:#{{bactract_bg_color_buble_visitor_title_color}}" class="usr-tit vis-tit" role="button"><i class="material-icons chat-operators mi-fs15 mr-0">face</i>
+                                    <span style="color:#{{bactract_bg_color_buble_visitor_title_color}}" class="usr-tit vis-tit" role="button"><i class="material-icons chat-operators mi-fs15 me-0">face</i>
                                         <span ng-hide="abstract_checked_bubble_style_profile">Visitor</span>
                                     </span>
                                     <div class="msg-body" style="background-color: #{{bactract_bg_color_buble_visitor_background}};color:#{{bactract_bg_color_buble_visitor_text_color}}">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</div>
@@ -182,10 +207,10 @@
             		            <div class="message-row message-admin operator-changes" id="msg-10463" data-op-id="1">
             		                <div class="msg-date">10:18:22</div>
                                     <span style="color:#{{bactract_bg_color_buble_operator_title_color}}" class="usr-tit op-tit" >
-                                        <i ng-hide="abstract_checked_bubble_style_profile" class="material-icons chat-operators mi-fs15 mr-0">account_box</i>
+                                        <i ng-hide="abstract_checked_bubble_style_profile" class="material-icons chat-operators mi-fs15 me-0">account_box</i>
                                         <span ng-hide="abstract_checked_bubble_style_profile" class="op-nick-title">Operator</span>
 
-                                        <i ng-show="abstract_checked_bubble_style_profile" class="chat-operators mi-fs15 mr-0">
+                                        <i ng-show="abstract_checked_bubble_style_profile" class="chat-operators mi-fs15 me-0">
                                             <img class="profile-msg-pic" src="<?php echo erLhcoreClassDesign::design('images/general/logo.png');?>" alt="">
                                         </i>
                                     </span>
@@ -197,10 +222,10 @@
                                 <div class="message-row message-admin operator-changes" id="msg-10463" data-op-id="1">
             		                <div class="msg-date">10:18:22</div>
                                     <span style="color:#{{bactract_bg_color_buble_operator_title_color}}" class="usr-tit op-tit" >
-                                        <i ng-hide="abstract_checked_bubble_style_profile" class="material-icons chat-operators mi-fs15 mr-0">account_box</i>
+                                        <i ng-hide="abstract_checked_bubble_style_profile" class="material-icons chat-operators mi-fs15 me-0">account_box</i>
                                         <span ng-hide="abstract_checked_bubble_style_profile" class="op-nick-title">Operator</span>
 
-                                        <i ng-show="abstract_checked_bubble_style_profile" class="chat-operators mi-fs15 mr-0">
+                                        <i ng-show="abstract_checked_bubble_style_profile" class="chat-operators mi-fs15 me-0">
                                             <img class="profile-msg-pic" src="<?php echo erLhcoreClassDesign::design('images/general/logo.png');?>" alt="">
                                         </i>
                                     </span>
@@ -325,8 +350,30 @@
                         <h5><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Other')?></h5>
 
         		        <div class="form-group">
-        		            <label><?php echo erLhcoreClassAbstract::renderInput('hide_ts', $fields['hide_ts'], $object)?> <?php echo $fields['hide_ts']['trans'];?></label>
+                            <label><?php echo $fields['hide_ts']['trans'];?></label>
+                            <?php echo erLhcoreClassAbstract::renderInput('hide_ts', $fields['hide_ts'], $object)?>
     				    </div>
+
+        		        <div class="form-group">
+                            <label><?php echo $fields['hide_op_ts']['trans'];?></label>
+                            <?php echo erLhcoreClassAbstract::renderInput('hide_op_ts', $fields['hide_op_ts'], $object)?>
+    				    </div>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label><?php echo $fields['msg_time_format_day']['trans'];?></label>
+                                    <?php echo erLhcoreClassAbstract::renderInput('msg_time_format_day', $fields['msg_time_format_day'], $object)?>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label><?php echo $fields['msg_time_format_time']['trans'];?></label>
+                                    <?php echo erLhcoreClassAbstract::renderInput('msg_time_format_time', $fields['msg_time_format_time'], $object)?>
+                                </div>
+                            </div>
+                        </div>
+
 
         		        <div class="form-group">
         		            <label><?php echo erLhcoreClassAbstract::renderInput('disable_edit_prev', $fields['disable_edit_prev'], $object)?> <?php echo $fields['disable_edit_prev']['trans'];?></label>
@@ -359,6 +406,9 @@
                         <div class="form-group">
                             <label><?php echo $fields['icons_order']['trans'];?></label>
                             <?php echo erLhcoreClassAbstract::renderInput('icons_order', $fields['icons_order'], $object)?>
+                            <div class="text-muted fs12">E.g</div>
+                            <div class="text-muted fs12">* dropdown_print,dropdown_min,dropdown_popup,dropdown_fullheight,dropdown_close</div>
+                            <div class="text-muted fs12">* left_close,right_min,dropdown_popup,left_fullheight,dropdown_close</div>
                         </div>
 
 						<div class="form-group">											
@@ -533,6 +583,14 @@
 
 						<div class="form-group">
 						    <label><?php echo erLhcoreClassAbstract::renderInput('font_size', $fields['font_size'], $object)?> <?php echo $fields['font_size']['trans'];?></label>
+        		        </div>
+
+						<div class="form-group">
+						    <label><?php echo erLhcoreClassAbstract::renderInput('use_system_tz', $fields['use_system_tz'], $object)?> <?php echo $fields['use_system_tz']['trans'];?></label>
+        		        </div>
+
+						<div class="form-group">
+						    <label><?php echo erLhcoreClassAbstract::renderInput('print_btn_msg', $fields['print_btn_msg'], $object)?> <?php echo $fields['print_btn_msg']['trans'];?></label>
         		        </div>
 
                         <div class="form-group">
@@ -787,6 +845,12 @@
                     <?php $translatableItem = array('identifier' => 'end_chat_text'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
+                    <?php $translatableItem = array('identifier' => 'fheight_text_class'); ?>
+                    <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
+
+                    <?php $translatableItem = array('identifier' => 'fheight_text_col'); ?>
+                    <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
+
                     <?php $translatableItem = array('identifier' => 'support_joined'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
@@ -806,6 +870,9 @@
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
                     <?php $translatableItem = array('identifier' => 'thank_feedback'); ?>
+                    <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
+
+                    <?php $translatableItem = array('identifier' => 'blocked_visitor'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
                     <?php $translatableItem = array('identifier' => 'custom_start_button'); ?>
@@ -854,6 +921,78 @@
 
         		</div>
 
+                <div role="tabpanel" class="tab-pane pt-2" id="reactions">
+
+                    <div class="form-group">
+                        <label><?php echo erLhcoreClassAbstract::renderInput('enable_react_for_vi', $fields['enable_react_for_vi'], $object)?> <?php echo $fields['enable_react_for_vi']['trans'];?></label>
+                    </div>
+
+                    <div class="form-group">
+                        <label><?php echo erLhcoreClassAbstract::renderInput('always_visible_reactions', $fields['always_visible_reactions'], $object)?> <?php echo $fields['always_visible_reactions']['trans'];?></label>
+                    </div>
+
+                    <div class="form-group">
+                        <label><?php echo erLhcoreClassAbstract::renderInput('one_reaction_per_msg', $fields['one_reaction_per_msg'], $object)?> <?php echo $fields['one_reaction_per_msg']['trans'];?></label>
+                    </div>
+
+                    <div class="form-group">
+                        <label><?php echo erLhcoreClassAbstract::renderInput('reactions_always_visible_under', $fields['reactions_always_visible_under'], $object)?> <?php echo $fields['reactions_always_visible_under']['trans'];?></label>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label><?php echo $fields['custom_tb_reactions']['trans'];?></label>
+                                <?php echo erLhcoreClassAbstract::renderInput('custom_tb_reactions', $fields['custom_tb_reactions'], $object)?>
+                                <div>
+                                    <small>
+                                        E.g 1. <br/><i>thumb_up|1|thumb|Thumbs up=thumb_down|0|thumb|Thumbs down</i><br/>
+                                        E.g 2. <br/><i>😍=😙=😁=thumb_up|1|thumb|Thumbs up</i>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <?php
+                                $bbcodeParams['hide_modal'] = true;
+                                $bbcodeParams['tab_prefix'] = '-ct';
+                                $bbcodeParams['editor_id'] = 'textarea[name=AbstractInput_custom_tb_reactions]';
+                            ?>
+                            <?php include(erLhcoreClassDesign::designtpl('lhchat/bbcodeinsert.tpl.php'));?>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-6">
+                                <label><?php echo $fields['custom_mw_reactions']['trans'];?></label>
+                                <?php echo erLhcoreClassAbstract::renderInput('custom_mw_reactions', $fields['custom_mw_reactions'], $object)?>
+                                <div>
+                                    <small>
+                                        E.g 1. <br/><i>thumb_up|1|thumb|Thumbs up=thumb_down|0|thumb|Thumbs down</i><br/>
+                                        E.g 2. <br/><i>😍=😙=😁=thumb_up|1|thumb|Thumbs up</i>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <?php
+                                    $bbcodeParams['hide_modal'] = true;
+                                    $bbcodeParams['tab_prefix'] = '-mw';
+                                    $bbcodeParams['editor_id'] = 'textarea[name=AbstractInput_custom_mw_reactions]';
+                                ?>
+                                <?php include(erLhcoreClassDesign::designtpl('lhchat/bbcodeinsert.tpl.php'));?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php
+                        // If checked always visible toolbar it will be at the bottom as is now
+                        // If not checked always visible it will be at the right side of the message
+                        // If modal window content is filled additional icon will be shown
+                    ?>
+
+
+                </div>
+
                 <div role="tabpanel" class="tab-pane" id="customcontent">
 
                     <?php $translatableItem = array('identifier' => 'custom_html'); ?>
@@ -869,6 +1008,9 @@
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
                     <?php $translatableItem = array('identifier' => 'custom_html_header'); ?>
+                    <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
+
+                    <?php $translatableItem = array('identifier' => 'custom_html_footer'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
                     <?php $translatableItem = array('identifier' => 'custom_html_header_body'); ?>
@@ -889,6 +1031,9 @@
                     <?php $translatableItem = array('identifier' => 'custom_html_status'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
+                    <?php $translatableItem = array('identifier' => 'after_chat_status'); ?>
+                    <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
+
                     <?php $translatableItem = array('identifier' => 'inject_html'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
@@ -902,6 +1047,8 @@
                     </div>
 
                     <h5><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Choose manually bot ant trigger')?></h5>
+
+                    <p><i><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','For it to work, trigger has to have checked')?></i>&nbsp;<span class="badge bg-info"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Can be passed as argument')?></span></p>
 
                     <div class="row">
                         <div class="col-6">
@@ -999,6 +1146,7 @@
 
                 </div>
 
+                <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/custom_tab_content_multiinclude.tpl.php'));?>
 
         	</div>
         </div>
@@ -1030,7 +1178,7 @@
 			<hr>
 		</div>
 		<div class="col-md-12">
-			<div id="lhc_need_help_container"><a id="lhc_need_help_close" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/getstatus','Close')?>" onclick="return lh_inst.lhc_need_help_hide();" href="#">&#xd7;</a><div id="lhc_need_help_image"><img width="60" height="60" src="<?php if ($object->need_help_image_url != '') : ?><?php echo $object->need_help_image_url?><?php else : ?><?php echo erLhcoreClassDesign::design('images/general/operator.png');?><?php endif;?>"></div><div onclick="return lh_inst.lhc_need_help_click();" id="lhc_need_help_main_title">{{ngModelAbstractInput_need_help_header || <?php echo json_encode(htmlspecialchars_decode(erTranslationClassLhTranslation::getInstance()->getTranslation('chat/getstatus','Need help?'),ENT_QUOTES))?>}}</div><span id="lhc_need_help_sub_title">{{ngModelAbstractInput_need_help_text || '<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/getstatus','Our staff are always ready to help')?>'}}</span></div>
+			<div id="lhc_need_help_container"><a id="lhc_need_help_close" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/getstatus','Close')?>" onclick="return lh_inst.lhc_need_help_hide();" href="#">&#xd7;</a><div id="lhc_need_help_image"><img width="60" height="60" src="<?php if ($object->need_help_image_url != '') : ?><?php echo $object->need_help_image_url?><?php else : ?><?php echo erLhcoreClassDesign::design('images/general/operator.png');?><?php endif;?>"></div><div onclick="return lh_inst.lhc_need_help_click();" id="lhc_need_help_main_title">{{ngModelAbstractInput_need_help_header || <?php echo json_encode(htmlspecialchars_decode(erTranslationClassLhTranslation::getInstance()->getTranslation('chat/getstatus','Need help?'),ENT_QUOTES))?>}}</div><span id="lhc_need_help_sub_title">{{ngModelAbstractInput_need_help_text || '<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/getstatus','Our staff are always ready to help!')?>'}}</span></div>
 			<hr>
 		</div>
         <div class="col-md-12">
@@ -1105,21 +1253,19 @@
 		});
 
         $('select[name="AbstractInput_bot_id"]').change(function(){
-            $.get(WWW_DIR_JAVASCRIPT + 'genericbot/triggersbybot/' + $(this).val() + '/0/(preview)/1', { }, function(data) {
-
+            $.get(WWW_DIR_JAVASCRIPT + 'genericbot/triggersbybot/' + $(this).val() + '/0/(preview)/1/(asarg)/1', { }, function(data) {
                 if (data != '') {
                     $('#trigger-list-id').html(data);
                     renderPreview($('select[name="AbstractInput_trigger_id"]'));
                 } else {
                     $('#trigger-list-id').html('<input type="hidden" value="0" name="AbstractInput_trigger_id" />');
                 }
-
             }).fail(function() {
 
             });
         });
 
-        $.get(WWW_DIR_JAVASCRIPT + 'genericbot/triggersbybot/' + $('select[name="AbstractInput_bot_id"]').val() + '/<?php echo (isset($object->bot_configuration_array['trigger_id'])) ? $object->bot_configuration_array['trigger_id'] : 0 ?>/(preview)/1', { }, function(data) {
+        $.get(WWW_DIR_JAVASCRIPT + 'genericbot/triggersbybot/' + $('select[name="AbstractInput_bot_id"]').val() + '/<?php echo (isset($object->bot_configuration_array['trigger_id'])) ? $object->bot_configuration_array['trigger_id'] : 0 ?>/(preview)/1/(asarg)/1', { }, function(data) {
             if (data != '') {
                 $('#trigger-list-id').html(data);
                 renderPreview($('select[name="AbstractInput_trigger_id"]'));
@@ -1141,8 +1287,8 @@
             editor.getSession().setValue(<?php echo json_encode('<div class="container-fluid overflow-auto fade-in p-3 pb-4 {dev_type}" >
 <div class="shadow rounded bg-white nh-background">
     <div class="p-2" id="start-chat-btn" style="cursor: pointer">
-        <button type="button" id="close-need-help-btn" class="close position-absolute" style="right:30px;top:25px;" aria-label="Close">
-          <span class="px-1" aria-hidden="true">&times;</span>
+        <button type="button" id="close-need-help-btn" class="btn-close position-absolute" style="right:30px;top:25px;" aria-label="Close">
+          
         </button>
         <div class="d-flex">
           <div class="p-1"><img style="min-width: 50px;" alt="Customer service" class="img-fluid rounded-circle" src="{{need_help_image_url}}"/></div>

@@ -1,4 +1,4 @@
-import { endChat, initChatUI, pageUnload, storeSubscriber, initProactive, checkChatStatus, fetchMessages, addMessage, updateTriggerClicked, updateMessage } from "../actions/chatActions"
+import { endChat, initChatUI, pageUnload, storeSubscriber, initProactive, checkChatStatus, fetchMessages, addMessage, updateTriggerClicked, updateMessage, hideInvitation } from "../actions/chatActions"
 import { helperFunctions } from "../lib/helperFunctions";
 import i18n from "../i18n";
 
@@ -76,7 +76,17 @@ export default function (dispatch, getState) {
     }
 
     const events = [
-        {id : 'closedWidget', cb : (data) => {dispatch({type: 'closedWidget', data: data})}},
+        {id : 'closedWidget', cb : (data) => {
+
+            if (data && data.mode && data.mode === 'control') {
+                const state = getState();
+                if (state.chatwidget.getIn(['proactive','has']) == true) {
+                    dispatch(hideInvitation());
+                }
+            }
+
+            dispatch({type: 'closedWidget', data: data})
+        }},
         {id : 'endedChat', cb : (data) => {
             dispatch({type: 'endedChat', data: data});
             if (window.lhcChat['mode'] == 'popup') {
@@ -123,7 +133,12 @@ export default function (dispatch, getState) {
         {id : 'onlineStatus',cb : (data) => {dispatch({type: 'onlineStatus', data: data})}},
         {id : 'toggleSound',cb : (data) => {dispatch({type: 'toggleSound', data: data})}},
         {id : 'widgetStatus',cb : (data) => {dispatch({type: 'widgetStatus', data: data})}},
-        {id : 'jsVars',cb : (data) => {dispatch({type: 'jsVars', data: data})}},
+        {id : 'jsVars',cb : (data, data2) => {
+            dispatch({type: 'jsVars', data: data});
+            if (typeof data2 !== 'undefined') {
+                dispatch({type: 'jsVarsPrefill', data: data2});
+            }
+        }},
         {id : 'ext_modules',cb : (data) => {
                 extensions = data;
         }},
@@ -165,7 +180,14 @@ export default function (dispatch, getState) {
                         helperFunctions.sendMessageParent('unread_message_title',[{'status':true}]);
                     }
                 }
-        }}
+        }},
+        {
+            id : 'change_language', cb : (data) => {
+                window.lhcChat['base_url'] =  window.lhcChat['base_url_direct'] + (data != '' ? data.replace('/','') + '/' : '');
+                data != '' && i18n.changeLanguage(data);
+                helperFunctions.sendMessageParent('change_language',[{'lng':data}]);
+            }
+        }
     ];
 
     // Event listeners
@@ -186,7 +208,7 @@ export default function (dispatch, getState) {
             // We allow to send events only from chat installation or page where script is embeded.
             if (originDomain !== document.domain && (typeof window.lhcChat !== 'undefined' && (typeof window.lhcChat['domain_lhc'] === 'undefined' || window.lhcChat['domain_lhc'] !== originDomain))) {
                 // Third party domains can send only these two events
-                if (action != 'lhc_chat_closed_explicit' && action != 'lhc_survey_completed' && action != 'lhc_end_cookies') {
+                if (action != 'lhc_chat_closed_explicit' && action != 'lhc_survey_completed' && action != 'lhc_end_cookies' && (action != 'lhc_event' || (action == 'lhc_event' && !window.initializeLHC))) {
                     return;
                 }
             }
@@ -271,10 +293,13 @@ export default function (dispatch, getState) {
 
             window.lhcChat = {};
             window.lhcChat['base_url'] = paramsInit['base_url'] + (paramsInit['lang'] && paramsInit['lang'] != '' ? paramsInit['lang'].replace('/','') + '/' : '');
+            window.lhcChat['base_url_direct'] = paramsInit['base_url']; // We will use it for language change workflow
             window.lhcChat['staticJS'] = paramsInit['staticJS'];
             window.lhcChat['mode'] = paramsInit['mode'];
             window.lhcChat['is_focused'] = true;
             window.lhcChat['domain_lhc'] = paramsInit['domain_lhc'] || null;
+            window.lhcChat['theme'] = paramsInit['theme'] || null;
+            window.lhcChat['theme_v'] = paramsInit['theme_v'] || null;
 
             __webpack_public_path__ = window.lhcChat['staticJS']['chunk_js'] + "/";
 
@@ -282,7 +307,7 @@ export default function (dispatch, getState) {
 
             i18n.init({
                 backend: {
-                    loadPath: paramsInit['base_url']+'{{lng}}/widgetrestapi/lang/{{ns}}?v=5'+(""+date.getFullYear() + date.getMonth() + date.getDate())
+                    loadPath: paramsInit['base_url']+'{{lng}}/widgetrestapi/lang/{{ns}}?v=10'+(""+date.getFullYear() + date.getMonth() + date.getDate())
                 },
                 lng: ((paramsInit['lang'] && paramsInit['lang'] != '') ?  paramsInit['lang'].replace('/','') : 'eng'),
                 fallbackLng: 'eng',
@@ -326,6 +351,15 @@ export default function (dispatch, getState) {
                     setTimeout(() => {
                         dispatch(initProactive(value))
                     }, readyReceived === true ? 0 : 700);
+                } else if (key === 'lhc_event') {
+                    Object.keys(value).forEach(keyEvent => {
+                        let argsEvent = value[keyEvent];
+                        if (Array.isArray(argsEvent)) {
+                            argsEvent.push(dispatch);
+                            argsEvent.push(getState);
+                        }
+                        helperFunctions.emitEvent(keyEvent,[argsEvent]);
+                    });
                 } else {
                     dispatch({
                         type: key,
@@ -374,6 +408,8 @@ export default function (dispatch, getState) {
                 'hash' : state.chatwidget.getIn(['chatData','hash']),
                 'theme' :  state.chatwidget.get('theme')
             }));
+
+            dispatch({type: 'attr_rem', attr : ['chat_ui','survey_id']});
         }
     }
 

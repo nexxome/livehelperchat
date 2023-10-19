@@ -14,6 +14,11 @@ $ViewList['fill'] = array(
     'uparams' => array('chatid','ua','switchform','operator','theme','vid','sound','hash','hash_resume','mode','offline','leaveamessage','department','priority','chatprefill','survey','eclose')
 );
 
+$ViewList['fillinline'] = array(
+    'params' => array(),
+    'uparams' => array()
+);
+
 $ViewList['backtochat'] = array(
     'params' => array('chat_id','hash','survey'),
     'uparams' => array()
@@ -43,9 +48,19 @@ $ViewList['collected'] = array(
     'question_options_3',
     'question_options_4',
     'question_options_5',
+    'department_ids',
+    'department_group_ids',
+    'user_ids',
+    'group_ids',
+    'csvlist'
     ),
     'functions' => array( 'manage_survey' ),
-    'multiple_arguments' => array('max_stars_1','max_stars_2','max_stars_3','max_stars_4','max_stars_5')
+    'multiple_arguments' => array('max_stars_1','max_stars_2','max_stars_3','max_stars_4','max_stars_5',
+        'department_ids',
+        'department_group_ids',
+        'user_ids',
+        'group_ids',
+    )
 );
 
 $ViewList['collecteditem'] = array(

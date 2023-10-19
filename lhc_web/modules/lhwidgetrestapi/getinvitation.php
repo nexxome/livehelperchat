@@ -1,5 +1,6 @@
 <?php
 
+
 erLhcoreClassRestAPIHandler::setHeaders();
 
 if (!empty($_GET) && $_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -20,7 +21,7 @@ if (!($onlineUser instanceof erLhcoreClassModelChatOnlineUser) || $onlineUser->v
 }
 
 if (is_numeric($payload['invitation']) && $payload['invitation'] > 0) {
-    erLhAbstractModelProactiveChatInvitation::setInvitation($onlineUser, (int)$payload['invitation']);
+    $invitationData = erLhAbstractModelProactiveChatInvitation::setInvitation($onlineUser, (int)$payload['invitation']);
 }
 
 // Make conversion if any exists
@@ -93,7 +94,7 @@ if (isset($payload['theme']) && ($themeId = erLhcoreClassChat::extractTheme($pay
 // Bot message as full widget body
 if ($outputResponse['invitation_id'] > 0) {
 
-    $invitation = erLhAbstractModelProactiveChatInvitation::fetch($outputResponse['invitation_id']);
+    $invitation = $invitationData['variation'];
 
     if ($invitation instanceof erLhAbstractModelProactiveChatInvitation && isset($invitation->design_data_array['append_bot']) && $invitation->design_data_array['append_bot'] == 1 && $invitation->bot_id > 0 && $invitation->trigger_id > 0) {
 
@@ -123,7 +124,9 @@ if ($outputResponse['invitation_id'] > 0) {
         $chat->gbot_id = $bot->id;
         $chat->additional_data_array = $onlineUser->online_attr_array;
         $chat->chat_variables_array = $onlineUser->chat_variables_array;
-
+        if ($onlineUser->dep_id > 0) {
+            $chat->dep_id = $onlineUser->dep_id;
+        }
         $tpl->set('chat',$chat);
         $tpl->set('react',true);
         $tpl->set('no_wrap_intro',true);
@@ -145,6 +148,17 @@ if ($outputResponse['invitation_id'] > 0) {
             $outputResponse['close_above_msg'] = true;
         }
 
+        if (isset($invitation->design_data_array['hide_on_open']) && $invitation->design_data_array['hide_on_open'] == true) {
+            $outputResponse['hide_on_open'] = true;
+        }
+
+        if (isset($invitation->design_data_array['custom_on_click']) && $invitation->design_data_array['custom_on_click'] != '') {
+            $outputResponse['on_click'] = [
+                'src' => erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurldirect('widgetrestapi/proactiveonclick') .'/' . $invitation->id . '?ts='. md5($invitation->design_data_array['custom_on_click']),
+                'id' => md5($invitation->design_data_array['custom_on_click'])
+            ];
+        }
+
         if (isset($invitation->design_data_array['full_on_invitation']) && $invitation->design_data_array['full_on_invitation'] == true) {
             $outputResponse['full_widget'] = true;
         }
@@ -156,7 +170,11 @@ if ($outputResponse['invitation_id'] > 0) {
         if (isset($invitation->design_data_array['hide_op_name']) && $invitation->design_data_array['hide_op_name'] == true) {
             $outputResponse['hide_op_name'] = true;
         }
-        
+
+        if (isset($invitation->design_data_array['hide_op_img']) && $invitation->design_data_array['hide_op_img'] == true && isset($outputResponse['photo'])) {
+            unset($outputResponse['photo']);
+        }
+
         if (isset($invitation->design_data_array['message_width']) && is_numeric($invitation->design_data_array['message_width']) && $invitation->design_data_array['message_width'] > 0) {
             $outputResponse['message_width'] = (int)$invitation->design_data_array['message_width'];
         }
@@ -177,6 +195,26 @@ if ($outputResponse['invitation_id'] > 0) {
             $outputResponse['play_sound'] = true;
         } else {
             $outputResponse['play_sound'] = false;
+        }
+
+        // Replace images
+        if (strpos($outputResponse['message'],'{proactive_img_') !== false) {
+            $replaceStyleArray = [];
+            for ($i = 1; $i < 5; $i++) {
+                $replaceStyleArray['{proactive_img_' . $i . '}'] = erLhcoreClassSystem::getHost() . $invitation->{'design_data_img_' . $i . '_url'};
+            }
+            $outputResponse['message'] = str_replace(array_keys($replaceStyleArray), array_values($replaceStyleArray), $outputResponse['message']);
+        }
+
+        if (isset($invitation->design_data_array['mobile_style']) && $invitation->design_data_array['mobile_style'] != '') {
+            $replaceStyleArray = array();
+            for ($i = 1; $i < 5; $i++) {
+                $replaceStyleArray['{proactive_img_' . $i . '}'] = erLhcoreClassSystem::getHost() . $invitation->{'design_data_img_' . $i . '_url'};
+            }
+            $contentCSS = str_replace(array_keys($replaceStyleArray), array_values($replaceStyleArray), $invitation->design_data_array['mobile_style']);
+            $contentCSS = str_replace(array("\n", "\r"), '', $contentCSS);
+            $outputResponse['site_css'] = $contentCSS;
+            $outputResponse['site_css_id'] = md5($contentCSS);
         }
 
         $outputResponse['invitation_name'] = $invitation->name;
@@ -242,6 +280,9 @@ if (
 
     $onlineUser->updateThis(['update' => ['operator_message']]);
 }
+
+
+
 
 if (!isset($outputResponse['invitation_name'])) {
     $outputResponse['invitation_name'] = 'Manual';

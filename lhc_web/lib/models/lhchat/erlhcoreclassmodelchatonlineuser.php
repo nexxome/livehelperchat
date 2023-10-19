@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhcoreClassModelChatOnlineUser
 {
     use erLhcoreClassDBTrait;
@@ -234,6 +234,12 @@ class erLhcoreClassModelChatOnlineUser
                 if ($this->operator_user_id > 0) {
                     try {
                         $this->operator_user = erLhcoreClassModelUser::fetch($this->operator_user_id);
+                        // Operator is disabled, update attributes
+                        if ($this->operator_user instanceof erLhcoreClassModelUser && $this->operator_user->disabled == 1) {
+                            $this->operator_user = false;
+                            $this->operator_user_id = 0;
+                            $this->updateThis(['update' => ['operator_user_id']]);
+                        }
                     } catch (Exception $e) {
 
                     }
@@ -292,7 +298,11 @@ class erLhcoreClassModelChatOnlineUser
             case 'visitor_tz_time':
                 $this->visitor_tz_time = '-';
                 if ($this->visitor_tz != '') {
-                    $date = new DateTime('NOW', new DateTimeZone($this->visitor_tz));
+                    try {
+                        $date = new DateTime('NOW', new DateTimeZone($this->visitor_tz));
+                    } catch (Exception $e) {
+                        $date = new DateTime('NOW', new DateTimeZone('UTC'));
+                    }
                     $this->visitor_tz_time = $date->format(erLhcoreClassModule::$dateHourFormat);
                 }
                 return $this->visitor_tz_time;
@@ -380,9 +390,8 @@ class erLhcoreClassModelChatOnlineUser
         }
     }
 
-    public static function executeRequest($url)
+    public static function executeRequest($url, $headers = [])
     {
-
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -390,7 +399,11 @@ class erLhcoreClassModelChatOnlineUser
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'curl/7.29.0');
         @curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Some hostings produces wargning...
+        if (!empty($headers)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        }
         $content = curl_exec($ch);
 
         return $content;
@@ -490,7 +503,7 @@ class erLhcoreClassModelChatOnlineUser
                     $normalizedObject->country_name = $responseData->country_name;
                     $normalizedObject->lat = substr($responseData->latitude,0,10);
                     $normalizedObject->lon = substr($responseData->longitude,0,10);
-                    $normalizedObject->city = $responseData->city . ($responseData->region_name != '' ? ', ' . $responseData->region_name : '');
+                    $normalizedObject->city = $responseData->city . ($responseData->region_name != '' ? ' || ' . $responseData->region_name : '');
 
                     return $normalizedObject;
                 }
@@ -510,7 +523,7 @@ class erLhcoreClassModelChatOnlineUser
                         $normalizedObject->country_name = $responseData->countryName;
                         $normalizedObject->lat = substr($responseData->latitude,0,10);
                         $normalizedObject->lon = substr($responseData->longitude,0,10);
-                        $normalizedObject->city = $responseData->cityName . ($responseData->regionName != '' ? ', ' . $responseData->regionName : '');
+                        $normalizedObject->city = $responseData->cityName . ($responseData->regionName != '' ? ' || ' . $responseData->regionName : '');
                         return $normalizedObject;
                     }
                 }
@@ -532,7 +545,7 @@ class erLhcoreClassModelChatOnlineUser
                     $normalizedObject->country_name = $responseData->countryName;
                     $normalizedObject->lat = substr($responseData->latitude,0,10);
                     $normalizedObject->lon = substr($responseData->longitude,0,10);
-                    $normalizedObject->city = $responseData->city . ($responseData->region != '' ? ', ' . $responseData->region : '');
+                    $normalizedObject->city = $responseData->city . ($responseData->region != '' ? ' || ' . $responseData->region : '');
 
                     return $normalizedObject;
                 }
@@ -555,7 +568,7 @@ class erLhcoreClassModelChatOnlineUser
                         $normalizedObject->country_name = $responseData['country'];
                         $normalizedObject->lat = substr($responseData['lat'],0,10);
                         $normalizedObject->lon = substr($responseData['lon'],0,10);
-                        $normalizedObject->city = $responseData['city'] . ($responseData['region'] != '' ? ', ' . $responseData['region'] : '') . ($responseData['org'] != '' ? ' || ' . $responseData['org'] : '');
+                        $normalizedObject->city = $responseData['city'] . ($responseData['region'] != '' ? ' || ' . $responseData['region'] : '') . ($responseData['org'] != '' ? ' || ' . $responseData['org'] : '');
 
                         return $normalizedObject;
                     }
@@ -577,7 +590,7 @@ class erLhcoreClassModelChatOnlineUser
                         $normalizedObject->country_name = $responseData['country'];
                         $normalizedObject->lat = substr($responseData['latitude'],0,10);
                         $normalizedObject->lon = substr($responseData['longitude'],0,10);
-                        $normalizedObject->city = $responseData['city'] . ($responseData['region'] != '' ? ', ' . $responseData['region'] : '') . (isset($responseData['connection']['autonomous_system_organization']) && $responseData['connection']['autonomous_system_organization'] != '' ? ' || abstract' . $responseData['connection']['autonomous_system_organization'] : '');
+                        $normalizedObject->city = $responseData['city'] . ($responseData['region'] != '' ? ' || ' . $responseData['region'] : '') . (isset($responseData['connection']['autonomous_system_organization']) && $responseData['connection']['autonomous_system_organization'] != '' ? ' || ' . $responseData['connection']['autonomous_system_organization'] : '');
                         return $normalizedObject;
                     }
                 }
@@ -632,10 +645,17 @@ class erLhcoreClassModelChatOnlineUser
 
         $hideIp = erLhcoreClassModelChatConfig::fetch('do_no_track_ip');
         if ($hideIp->value == 1) {
-            $parts = explode('.',$instance->ip);
-            if (isset($parts[0]) && $parts[1]) {
-                $instance->ip = $parts[0] . '.' . $parts[1] . '.xxx.xxx';
-            }
+            $instance->ip = preg_replace(
+                [
+                    '/(\.\d+){2}$/',
+                    '/(:[\da-f]*){2,4}$/'
+                ],
+                [
+                    '.XXX.XXX',
+                    ':XXXX:XXXX:XXXX:XXXX'
+                ],
+                $instance->ip
+            );
         }
     }
 
@@ -713,6 +733,7 @@ class erLhcoreClassModelChatOnlineUser
                         $item->message_seen = 0;
                         $item->message_seen_ts = 0;
                         $item->operator_message = '';
+                        $item->operator_user_id = 0;
                     }
 
                     // Visit duration less than 30m. Same as google analytics
@@ -764,7 +785,7 @@ class erLhcoreClassModelChatOnlineUser
                 } else {
                     $item = new erLhcoreClassModelChatOnlineUser();
                     $item->ip = isset($paramsHandle['ip']) ? $paramsHandle['ip'] : erLhcoreClassIPDetect::getIP();
-                    $item->vid = $paramsHandle['vid'];
+                    $item->vid = mb_substr($paramsHandle['vid'],0,50);
                     $item->identifier = (isset($paramsHandle['identifier']) && !empty($paramsHandle['identifier'])) ? $paramsHandle['identifier'] : '';
                     $item->referrer = isset($_GET['r']) ? rawurldecode($_GET['r']) : '';
                     $item->total_visits = 1;
@@ -917,7 +938,10 @@ class erLhcoreClassModelChatOnlineUser
             // Update variables only if it's not JS to check for operator message
             if (!isset($paramsHandle['check_message_operator']) || (isset($paramsHandle['pages_count']) && $paramsHandle['pages_count'] == true)) {
                 $item->user_agent = isset($_POST['ua']) ? $_POST['ua'] : (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '');
-                $item->current_page = isset($_POST['l']) ? $_POST['l'] : (isset($_GET['l']) ? rawurldecode($_GET['l']) : self::getReferer());
+                $location = isset($_POST['l']) ? $_POST['l'] : (isset($_GET['l']) ? rawurldecode($_GET['l']) : ($item->current_page == '' ? self::getReferer() : null));
+                if ($location !== null) {
+                    $item->current_page = $location;
+                }
                 $item->page_title = isset($_POST['dt']) ? $_POST['dt'] : (isset($_GET['dt']) ? substr((string)rawurldecode($_GET['dt']),0,250) : '');
                 $item->last_visit = time();
                 $item->store_chat = true;
@@ -929,10 +953,23 @@ class erLhcoreClassModelChatOnlineUser
                 }
             }
 
+            if (isset($paramsHandle['tag']) && $paramsHandle['tag'] != '') {
+                $paramsHandle['tag'] = implode(',',array_unique(explode(',',$paramsHandle['tag'])));
+                // Special tags format can force always to be shown
+                if (strpos($paramsHandle['tag'],'__reset') !== false) {
+                    $paramsHandle['tag'] = str_replace('__reset','',$paramsHandle['tag']);
+                    if ($item->operator_message != '' || $item->message_seen == 1) {
+                        $item->operator_message = '';
+                        $item->message_seen = 0;
+                        $item->updateThis(['update' => ['message_seen','operator_message']]);
+                    }
+                }
+            }
+
             if ((!isset($paramsHandle['wopen']) || $paramsHandle['wopen'] == 0) && $item->operator_message == '' && isset($paramsHandle['pro_active_invite']) && $paramsHandle['pro_active_invite'] == 1 && isset($paramsHandle['pro_active_limitation']) && ($paramsHandle['pro_active_limitation'] == -1 || erLhcoreClassChat::getPendingChatsCountPublic($item->dep_id > 0 ? $item->dep_id : false) <= $paramsHandle['pro_active_limitation'])) {
                 $errors = array();
-                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('onlineuser.before_proactive_triggered', array('ou' => & $item, 'errors' => & $errors));
 
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('onlineuser.before_proactive_triggered', array('ou' => & $item, 'errors' => & $errors));
                 if (empty($errors)) {
                     //Process pro active chat invitation if this visitor matches any rules
                     if ($item->id == null) { $item->saveThis(); }

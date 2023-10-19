@@ -1,3 +1,309 @@
+4.29v
+
+1. New chat attribute `First response time (agent)` attribute `frt`.
+2. New chat attribute `Max response time (agent)`attribute `mart`.
+3. New chat attribute `Average response time (agent)` attribute `aart`.
+4. All new attributes is represented in chat statistic/search/chat right column.
+5. Agents can have personal theme by having `'lhabstract','use'` and `'lhtheme','personaltheme'` permissions.
+6. To update present chats with new attributes values you can run `php cron.php -s site_admin -c cron/util/update_times -p <chat_id_to_update_from>`
+
+execute doc/update_db/update_300.sql for update
+
+4.28v
+
+1. Widget theme now allows to set message time visibility options for operator and visitor. [Above message or below messages]
+2. Now there is option to have a custom HTML below page widget `Custom html after widget content`
+3. Full height option support in the widget.
+4. Various other small changes...
+
+execute doc/update_db/update_299.sql for update
+
+4.27v
+
+1. Avoid flicker once chat is started for a new widget.
+2. Option to show clicked button name instantly in messages area. `Widget container -> Print button as a message as soon visitor clicks a button.`
+3. Incoming webhook `chat_external_id` field is now 100 chars instead of 50
+4. We will show visitor message as soon he clicks send.
+5. 8.2 php support, if you notice some errors let me know.
+6. Voice messages max length option from files configuration was ignored.
+7. Chrome 116v workaround for chrome bug.  Changes I did https://github.com/LiveHelperChat/livehelperchat/commit/b3649c5e936d4be08d1e004d8537ed47cd029aba chrome bug report. https://bugs.chromium.org/p/chromium/issues/detail?id=1473754 it should be fixed in 117v chrome release.
+8. Audit configuration window has a system information details
+9. Autoresponder cronjob cache issues fixes.
+10. Option to use visitor TZ or system TZ always for messages rendering if they have time based messages. Can be activated in widget themes.
+11. Geo detection test window.
+12. More variables for Rest API
+
+execute doc/update_db/update_298.sql for update
+
+4.26v
+
+1. Message delivery status indication.
+2. Old chats will show messages as undelivered. Or you can execute query from update file.
+3. This time it's recommended to run queries from `update_298.sql` to avoid database locks. Make sure you know what you are doing.
+
+execute doc/update_db/update_298.sql for update
+
+4.25v
+
+1. Participant concept in chat's statistic.
+2. Brand concept in chat handling workflows.
+
+execute doc/update_db/update_297.sql for update
+
+4.24v
+
+1. In rare cases, if processing incoming webhook took a long time and a second request was sent one after another two chats were created. Transaction locking were added.
+2. Option to log non-parsed messages and log all requests. Useful for debugging while debug output is disabled. E.g in production env.
+
+execute doc/update_db/update_296.sql for update
+
+4.23v
+
+1. Option to hide sensitive information from operators if they don't have permission to access 'lhchat','see_sensitive_information'
+
+execute doc/update_db/update_295.sql for update
+
+4.22v
+
+1. Department assignment now have new UI.
+2. Department assignment operator can have custom nick per department.
+
+execute doc/update_db/update_294.sql for update
+
+4.21v
+
+1. Chat list now can show custom columns also.
+2. Various other changes
+
+execute doc/update_db/update_293.sql for update
+
+4.20v
+
+1. Options to have expire-able canned message with auto delete.
+2. Option to have one time period canned message without expire date.
+
+execute doc/update_db/update_292.sql for update
+
+4.19v
+
+1. Inline survey support. You can send inline survey from bot.
+1.1 Limitations: `stars` at the moment are not supported. Will be added in feature releases.
+2. Auto responder active period options.
+
+execute doc/update_db/update_291.sql for update
+
+4.18v
+
+1. Auto responder can be assigned to multiple departments at once.
+2. Replaceable variables can have active period per replace.
+3. Respect operator permission for calls module before showing call icon in the widget.
+4. Fast typing fixes for canned messages.
+5. Dark mode fixes after migration to bootstrap 5.
+6. Widgets will show how long it took to fetch specific widget information.
+
+execute doc/update_db/update_290.sql for update
+
+4.17v
+
+1. Advanced chat auto assignment options.
+2. Separate permissions for operators to crate a views.
+3. Slow request logging to back office.
+4. Modal window improvements for department online operators statistic.
+5. Further migration related to bootstrap 5 migration.
+6. And various other changes/fixes.
+
+execute doc/update_db/update_289.sql for update
+
+4.16v
+
+1. Theme attribute will be saved directly in the chat table. So we can use search from now.
+2. You now can pass more than one theme at once. Theme will be chosen randomly from passed one. You can fixate period from widget theme itself how long same theme would be applied. If one theme is passed it will be always used.
+3. Fixed bug once permission `'lhchat', 'allowtransfertoanyuser'` was removed, operator still saw operators from other departments.
+4. `'lhdepartment', 'see_all'` permission now can have limitation like 	{"group":[1,2,3,9,10],"department":[45,46]}
+5. `'lhchat','allowtransfertoanyuser'` permission now can have limitation like 	{"group":[1,2,3,9,10]}
+
+execute doc/update_db/update_288.sql for update
+
+4.15v
+
+1. Incoming webhooks now can be represented in the chat list with an icon.
+
+execute doc/update_db/update_287.sql for update
+
+4.14v
+
+* Proactive invitation now have user initiated conversions https://doc.livehelperchat.com/docs/proactive#conversion
+
+execute doc/update_db/update_286.sql for update
+
+4.13v
+
+* Proactive invitations can have child invitation which works as A/B testing workflow.
+    * Once you define a parent invitation. Present invitation is considered as child invitation.
+    * Only main display attributes are taken as variation.
+    * Parent invitation statistic window will show child invitation performance.
+* Bot pause trigger. https://github.com/LiveHelperChat/livehelperchat/pull/1797
+* Proactive invitation have two new options
+    * Hide content on click - clicking it will close invitation without triggering widget open. E.g you have some sale running and want to share some code with users.
+    * Custom on click event - in combination with above option can work as independent and just execute javascript on click.
+* Users/Groups/Roles list/edit windows UX improvements. Sorts by module etc.
+* Modifying department group will update it stats also now.
+* Export CSV for survey option.
+
+execute doc/update_db/update_285.sql for update
+
+4.12v
+
+* Start chat form settings can be assigned to more than one department.
+* Custom start chat settings can switch department from dropdown option.
+* Left dashboard menu will show alert icons also. https://github.com/LiveHelperChat/livehelperchat/pull/1796
+* Loading previous messages will pay attention to departments operator has access to. https://forum.livehelperchat.com/viewtopic.php?id=4139
+
+execute doc/update_db/update_284.sql for update
+
+4.11v
+
+Statistic saved reports can be send daily/weekly/monthly
+
+execute doc/update_db/update_283.sql for update
+
+4.10v
+
+1. Reports various fixes.
+2. Now you can save report for future reference.
+
+execute doc/update_db/update_282.sql for update
+
+4.09v
+
+1. Optional reactions to bot messages. https://doc.livehelperchat.com/docs/bot/bot-text#reaction-options
+2. Replaceable variables activity period.
+
+execute doc/update_db/update_281.sql for update
+
+4.08v
+
+1. Bot messages can be automatically translated using Translation services.
+2. Passed additional chat variables will prefill nick, email, phone.
+3. Visitor now can switch his language in the widget.
+4. Alert message will be shown if department groups permission is misconfiguration. Operator can edit them, but can't read.
+5. Option to clone replaceable variable.
+6. Now as admin I can edit more fields of the operator.
+7. Files upload UX fixes. Messages not always was fetched after files upload.
+
+execute doc/update_db/update_280.sql for update
+
+4.07v
+
+1. Additional chat columns can be sorted [Pending chats, Active chats] widgets supports
+
+execute doc/update_db/update_279.sql for update
+
+4.06v
+
+Now there is an option to assign operator to department/department group and at the same time exclude him from auto assignment workflow.
+
+E.g You have operators who works only with VIP department, but when they don't have much to do they want to accept chats manually from lower level departments. With that option you can do that.
+
+* VIP Department chats will be auto assignment.
+* But lower level chats they would need to take manually.
+
+execute doc/update_db/update_278.sql for update
+
+4.05v
+
+1. You can have custom keyboard shortcuts for bot commands.
+2. Commands now have --silent and --update_status options. Read about them on documentation.
+3. Using above new features you can have a custom chat close shortcut add subject etc... Unlimited options.
+
+execute doc/update_db/update_277.sql for update
+
+4.04v
+
+1. We will be able to read variable passed like this. In additional chat variables `Old way passed variable name` just enter `username`. This will improve compatibility with older embed codes.
+```
+LHCChatOptions =
+  {
+      "attr_prefill": [
+          {
+              "name": "username",
+              "value": "remdex"
+          }
+      ]
+  }
+```
+2. `{args.` will be supported in canned messages and canned messages replace variables. E.g `{args.chat.chat_variables_array.player.firstName}`
+3. Various small bugfixes.
+
+execute doc/update_db/update_276.sql for update
+
+4.03v
+
+1. Option to save bot response as template or quickly copy from another trigger.
+2. Option to save trigger events as template.
+3. If widget theme was used and theme has an image it should override bot logo.
+
+execute doc/update_db/update_275.sql for update
+
+4.02v
+
+1. Visitors can download now chat as txt file. Can be turned off in the chat configuration.
+2. Bot quick reply buttons now have option to set custom css class and icon content. Usefull while developing custom theme and using custom font.
+3. Survey widget state will have an operator profile shown.
+4. Various small changes for the widget modal windows. Paddings, button styles.
+5. Mobile app was not transferring chat to another operator.
+6. More CSS classes for widget elements to override them with custom CSS.
+
+execute doc/update_db/update_274.sql for update
+
+4.01v
+
+1. Option to skip event listener.
+2. Custom event for Rest API call for external logging.
+
+execute doc/update_db/update_273.sql for update
+
+4.00v
+
+1. Option to cache Rest API request. Usefull if Rest API behaves just as intent, sentiment analysis because responses are always the same.
+
+execute doc/update_db/update_272.sql for update
+
+3.99v
+
+1. Message aggregation for sentiment analysis per message implementation.
+2. Small security fix
+3. Possibility in statistic group by operator
+
+execute doc/update_db/update_271.sql for update
+
+3.98v
+
+1. Option to share your views with other operators.
+2. Scroll was at incorrect place in case message area was hidden.
+3. Various other changes including security ones.
+
+execute doc/update_db/update_270.sql for update
+
+3.97v
+
+1. Search by phone.
+2. Security fixes. Update highly recommended.
+3. Improvements to dashboard request frequency.
+4. Edge case widget hide/show scenario fixes. Was not possible to close proactive invitation if status widget was acting as close button.
+5. Operator will be in text grey (online operators widget) if he can't write to any department assigned.
+6. Visitor hold option. You can pause auto responder for the `visitor not replying` if you know that visitor will take time looking for an info.
+7. Delete action should wait until request is done.
+8. Mobile app supports live online/offline status monitoring.
+9. Dashboard left column will be always visible in any other page of LHC. Possible to hide/show it.
+10. Admin chat interface will render presented buttons for the visitors.
+11. Audit log list will have a quick view option as modal window.
+12. Audit log will store all messages as JSON if not a string passed.
+13. Online operator counter in the online operators widget. Will show exact number of operator whois online and has write permission.
+14. More complex `secrethash` value generation during install. I would suggest for existing installation just write it quite long complex string with various special characters.
+
+execute doc/update_db/update_269.sql for update
+
 3.96v
 
 1. Proactive chat invitation now supports multiple departments assignment

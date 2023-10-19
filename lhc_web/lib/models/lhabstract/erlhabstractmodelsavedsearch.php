@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhAbstractModelSavedSearch {
 
     use erLhcoreClassDBTrait;
@@ -27,7 +27,10 @@ class erLhAbstractModelSavedSearch {
             'updated_at' => $this->updated_at,
             'requested_at' => $this->requested_at,
             'total_records' => $this->total_records,
-            'passive' => $this->passive
+            'passive' => $this->passive,
+            'description' => $this->description,
+            'sharer_user_id' => $this->sharer_user_id,
+            'status' => $this->status,
         );
 
         return $stateArray;
@@ -54,6 +57,33 @@ class erLhAbstractModelSavedSearch {
                     $this->params_array = array();
                 }
 
+                $scope = '';
+                if (isset($this->params_array['filter']['filterin']['lh_chat.dep_id'])) {
+                    unset($this->params_array['filter']['filterin']['lh_chat.dep_id']);
+                    $scope = 'chat';
+                }
+
+                if (isset($this->params_array['filter']['filterin']['lh_chat.user_id'])) {
+                    unset($this->params_array['filter']['filterin']['lh_chat.user_id']);
+                    $scope = 'chat';
+                }
+
+                if ($scope != '') {
+                    $params = [
+                        'input' => (object)$this->params_array['input_form']
+                    ];
+                }
+
+                if ($scope == 'chat') {
+                    erLhcoreClassChatStatistic::formatUserFilter($params);
+                }
+
+                if ($scope != '') {
+                    if (isset($params['filter'])) {
+                        $this->params_array['filter'] = array_merge_recursive($this->params_array['filter'], $params['filter']);
+                    }
+                }
+
                 return $this->params_array;
 
             case 'user':
@@ -70,6 +100,9 @@ class erLhAbstractModelSavedSearch {
         }
     }
 
+    const ACTIVE = 0;
+    const INVITE = 1;
+
     public $id = null;
     public $name = '';
     public $params = '';
@@ -80,5 +113,8 @@ class erLhAbstractModelSavedSearch {
     public $requested_at = 0;
     public $updated_at = 0;
     public $total_records = 0;
-    public $passive = 0;
+    public $passive = 1;
+    public $description = '';
+    public $sharer_user_id = 0;
+    public $status = self::ACTIVE;
 }

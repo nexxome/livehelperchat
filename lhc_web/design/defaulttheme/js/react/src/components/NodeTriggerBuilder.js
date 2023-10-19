@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from "react-redux";
-import { updateTriggerName, updateTriggerType, addResponse, updateTriggerContent, saveTrigger, initBot, loadUseCases, fetchNodeGroupTriggerAction} from "../actions/nodeGroupTriggerActions"
+import { updateTriggerName, updateTriggerType, addResponse, updateTriggerContent, saveTrigger, initBot, loadUseCases, fetchNodeGroupTriggerAction, saveTemplate} from "../actions/nodeGroupTriggerActions"
 import NodeTriggerActionText from './builder/NodeTriggerActionText';
 import NodeTriggerActionList from './builder/NodeTriggerActionList';
 import NodeTriggerActionGeneric from './builder/NodeTriggerActionGeneric';
@@ -9,6 +9,7 @@ import NodeTriggerActionButtons from './builder/NodeTriggerActionButtons';
 import NodeTriggerActionCommand from './builder/NodeTriggerActionCommand';
 import NodeTriggerActionPredefined from './builder/NodeTriggerActionPredefined';
 import NodeTriggerActionTyping from './builder/NodeTriggerActionTyping';
+import NodeTriggerActionPause from './builder/NodeTriggerActionPause';
 import NodeTriggerActionProgress from './builder/NodeTriggerActionProgress';
 import NodeTriggerActionVideo from './builder/NodeTriggerActionVideo';
 import NodeTriggerActionAttribute from './builder/NodeTriggerActionAttribute';
@@ -21,11 +22,14 @@ import NodeTriggerActionEventType from './builder/NodeTriggerActionEventType';
 import NodeTriggerActionRepeatRestrict from './builder/NodeTriggerActionRepeatRestrict';
 import NodeTriggerActionExecuteJS from './builder/NodeTriggerActionExecuteJS';
 import NodeTriggerActionRestAPI from './builder/NodeTriggerActionRestAPI';
+import NodeTriggerActionIframe from './builder/NodeTriggerActionIframe';
 import NodeTriggerActionTbody from './builder/NodeTriggerActionTbody';
 import NodeTriggerActionTextConditional from './builder/NodeTriggerActionTextConditional';
 import NodeTriggerActionAlertIcon from './builder/NodeTriggerActionAlertIcon';
 import NodeTriggerActionMail from './builder/NodeTriggerActionMail';
 import NodeTriggerActionLogAction from './builder/NodeTriggerActionLogAction';
+import NodeTriggerActionSurvey from './builder/NodeTriggerActionSurvey';
+import NodeTriggerListTemplate from './builder/NodeTriggerListTemplate';
 
 @connect((store) => {
     return {
@@ -37,7 +41,7 @@ class NodeTriggerBuilder extends Component {
 
     constructor(props) {
         super(props);
-        this.state = {dataChanged : false, value : '', viewCode : false, viewUseCases : false, compressCode : false};
+        this.state = {dataChanged : false, value : '', viewCode : false, viewUseCases : false, compressCode : false, sourceCopied: false, templateName : ''};
         this.handleChange = this.handleChange.bind(this);
         this.handleTypeChange = this.handleTypeChange.bind(this);
         this.handleContentChange = this.handleContentChange.bind(this);
@@ -153,13 +157,46 @@ class NodeTriggerBuilder extends Component {
         this.props.dispatch(fetchNodeGroupTriggerAction(obj.get('id')))
     }
 
+    copyToClipboard(e) {
+        var txtdom = document.getElementById('json-body-trigger');
+        txtdom.select();
+        document.execCommand("copy");
+        if (window.getSelection) {
+            window.getSelection().removeAllRanges();
+        } else if (document.selection) {
+            document.selection.empty();
+        }
+        this.setState({sourceCopied : true});
+    }
+
+    saveTemplate(e) {
+        this.props.dispatch(saveTemplate({
+            "actions" : this.props.currenttrigger.getIn(['currenttrigger','actions']).toJS(),
+            "name" : this.state.templateName
+        }));
+    }
+
+    loadFromText(e) {
+        var value = document.getElementById('json-body-trigger-input').value;
+        if (value != '') {
+            try {
+                var object = JSON.parse(value);
+                this.props.dispatch({type: "LOAD_TEMPLATE_FULFILLED", payload: {result: object}});
+            } catch (error) {
+                alert(error);
+            }
+        } else {
+            alert('Please enter trigger body!');
+        }
+    }
+
     render() {
 
         var actions = [];
         if (this.props.currenttrigger.get('currenttrigger').has('actions')) {
             var totalTriggers = this.props.currenttrigger.get('currenttrigger').get('actions').size;
             actions = this.props.currenttrigger.get('currenttrigger').get('actions').map((action, index) => {
-                let key = index+'-'+this.props.currenttrigger.get('currenttrigger').get('id')+'-'+action.get('_id');
+                let key = index+'-'+this.props.currenttrigger.get('currenttrigger').get('id')+'-'+action.get('_id') + '-' + this.state.templateName;
                 if (action.get('type') == 'text') {
                     return <NodeTriggerActionText upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} moveDownSubelement={this.moveDownSubelement} moveUpSubelement={this.moveUpSubelement} addSubelement={this.addSubelement} deleteSubelement={this.deleteSubelement} key={key} id={index} removeAction={this.removeAction} removeQuickReply={this.removeQuickReply} addQuickReply={this.addQuickReply} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} />
                 } else if (action.get('type') == 'list') {
@@ -176,6 +213,8 @@ class NodeTriggerBuilder extends Component {
                     return <NodeTriggerActionPredefined upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} />
                 } else if (action.get('type') == 'typing') {
                     return <NodeTriggerActionTyping upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} />
+                } else if (action.get('type') == 'pauseBot') {
+                    return <NodeTriggerActionPause upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} />
                 } else if (action.get('type') == 'progress') {
                     return <NodeTriggerActionProgress upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} />
                 } else if (action.get('type') == 'video') {
@@ -206,10 +245,14 @@ class NodeTriggerBuilder extends Component {
                     return <NodeTriggerActionTextConditional upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} deleteSubelement={this.deleteSubelement} addSubelement={this.addSubelement} />
                 } else if (action.get('type') == 'alert_icon') {
                     return <NodeTriggerActionAlertIcon upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} deleteSubelement={this.deleteSubelement} addSubelement={this.addSubelement} />
+                } else if (action.get('type') == 'survey') {
+                    return <NodeTriggerActionSurvey upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} deleteSubelement={this.deleteSubelement} addSubelement={this.addSubelement} />
                 } else if (action.get('type') == 'mail') {
                     return <NodeTriggerActionMail upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} deleteSubelement={this.deleteSubelement} addSubelement={this.addSubelement} />
                 } else if (action.get('type') == 'laction') {
                     return <NodeTriggerActionLogAction upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} deleteSubelement={this.deleteSubelement} addSubelement={this.addSubelement} />
+                } else if (action.get('type') == 'iframe') {
+                    return <NodeTriggerActionIframe upField={this.upField} downField={this.downField} isFirst={index == 0} isLast={index + 1 == totalTriggers} key={key} id={index} onChangeContent={this.handleContentChange} onChangeType={this.handleTypeChange} action={action} removeAction={this.removeAction} deleteSubelement={this.deleteSubelement} addSubelement={this.addSubelement} />
                 }
             });
         }
@@ -225,7 +268,7 @@ class NodeTriggerBuilder extends Component {
         {
             return (
                     <div>
-                        <input className="form-control gbot-group-name" value={this.props.currenttrigger.getIn(['currenttrigger','name'])} onChange={this.handleChange} />
+                        <input className="form-control gbot-group-name" key={this.props.currenttrigger.get('currenttrigger').get('id')} defaultValue={this.props.currenttrigger.getIn(['currenttrigger','name'])} onChange={this.handleChange} />
                     <hr/>
                     {actions}
                     <div className="form-group">
@@ -238,10 +281,40 @@ class NodeTriggerBuilder extends Component {
 
                         {this.state.viewCode == true ? (
                             <div className="form-group">
-                                <div className="float-right"><label><input type="checkbox" value="on" onChange={(e) => this.setState({compressCode : !this.state.compressCode})} defaultChecked={this.state.compressCode} />Compressed version</label></div>
+                                <div className="float-end"><label><input type="checkbox" value="on" onChange={(e) => this.setState({compressCode : !this.state.compressCode})} defaultChecked={this.state.compressCode} /> Compressed version</label></div>
                                 <label>JSON body you can use for REST API</label>
-                                <textarea readOnly="readOnly" rows="10" className="form-control fs11" value={JSON.stringify(this.props.currenttrigger.getIn(['currenttrigger','actions']).toJSON(), null, (this.state.compressCode == false ? 4 : 0))}></textarea>
+
+                                <div className="row">
+                                    <div className="col-4">
+                                        <div className="mb-2">
+                                            <div className="btn-group btn-group-sm" role="group" aria-label="Basic example">
+                                                <button type="button" className="btn btn-secondary" onClick={(e) => this.copyToClipboard(e)}>{this.state.sourceCopied == true ? 'Copied!, Copy again.' : 'Copy to clipboard'}</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="col-4">
+                                        <div className="input-group input-group-sm mb-3">
+                                            <input type="text" className="form-control" placeholder="Template name" title="If you set same name as existing template we will update it" value={this.state.templateName} onChange={(e) => this.setState({'templateName' : e.target.value})} aria-label="Template name" aria-describedby="basic-addon2" />
+                                            <button type="button" disabled={this.state.templateName == ''} className="btn btn-secondary" onClick={(e) => this.saveTemplate(e)}>Save as template</button>
+                                        </div>
+                                    </div>
+                                    <div className="col-4">
+                                        <NodeTriggerListTemplate setTemplateName={(e) => this.setState({'templateName' : e})} />
+                                    </div>
+                                </div>
+
+                                <textarea readOnly="readOnly" id="json-body-trigger" rows="10" className="form-control fs11" value={JSON.stringify(this.props.currenttrigger.getIn(['currenttrigger','actions']).toJSON(), null, (this.state.compressCode == false ? 4 : 0))}></textarea>
                                 <p><small><i>&quot;_id&quot; can be ignored</i></small></p>
+
+                                <div className="row">
+                                    <div className="col-9">
+                                        <textarea id="json-body-trigger-input" rows="10" className="form-control fs11" defaultValue="" placeholder="Paste manually trigger body"></textarea>
+                                    </div>
+                                    <div className="col-3">
+                                        <button className="btn btn-sm btn-secondary" onClick={(e) => this.loadFromText()}>Load</button>
+                                    </div>
+                                </div>
+
                             </div>
                         ) : ''}
 

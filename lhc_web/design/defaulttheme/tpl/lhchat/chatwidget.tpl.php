@@ -12,7 +12,7 @@
 <?php else : ?>
 
 <?php if (!isset($start_data_fields['show_operator_profile']) || $start_data_fields['show_operator_profile'] == false) : ?>
-<div class="pl10 max-width-180 float-right absolute-language-top-right">
+<div class="pl10 max-width-180 float-end absolute-language-top-right">
 	<?php $rightLanguage = true;?>
 	<?php include(erLhcoreClassDesign::designtpl('pagelayouts/parts/switch_language.tpl.php'));?>
 </div>
@@ -40,8 +40,10 @@
 <?php include_once(erLhcoreClassDesign::designtpl('lhchat/part/operator_profile_start_chat.tpl.php'));?>
 <?php endif;?>
 
-<?php if (isset($errors)) : ?>
-		<?php include(erLhcoreClassDesign::designtpl('lhkernel/validation_error.tpl.php'));?>
+<?php if (isset($errors['blocked_user'])) : ?>
+    <?php include(erLhcoreClassDesign::designtpl('lhkernel/blocked_user_startchat.tpl.php'));?>
+<?php elseif (isset($errors)) : ?>
+    <?php include(erLhcoreClassDesign::designtpl('lhkernel/validation_error.tpl.php'));?>
 <?php endif; ?>
 
 <?php include(erLhcoreClassDesign::designtpl('lhchat/chatwidget/chatwidget_pre_form_multiinclude.tpl.php'));?>
@@ -236,7 +238,7 @@ jQuery('#id_Question').bind('keydown', 'return', function (evt){
 
 	<?php if (isset($start_data_fields['show_operator_profile']) && $start_data_fields['show_operator_profile'] == true) : ?>
 	
-		<div class="pl10 position-relative float-right">
+		<div class="pl10 position-relative float-end">
 		<?php $rightLanguage = true;?>
 		<?php include(erLhcoreClassDesign::designtpl('pagelayouts/parts/switch_language.tpl.php'));?>
 		</div>

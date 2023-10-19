@@ -13,22 +13,22 @@ var revealM = {
 				} else {
 					prependTo = $('#widget-layout');
 				};
-				prependTo.prepend('<div id="'+modelSelector+'" style="padding-right:0px !important;" class="modal bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true"></div>');
+				prependTo.prepend('<div id="'+modelSelector+'" class="modal bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true"></div>');
 			};
 		},
 
         hideCallback : false,
 
+        modalInstance : null,
+
+        previousHideListener : null,
+    
+        previousShowListener : null,
+
 		revealModal : function(params) {
 
-			if ($('body').hasClass('modal-open')) {
-				if (revealM.hideCallback === false) {
-                    $('#myModal').modal('dispose');
-                } else {
-                    $('#myModal').modal('hide');
-                }
-			} else {
-				$('#myModal').modal('dispose');
+			if (revealM.modalInstance) {
+                revealM.modalInstance.hide();
 			}
 
             if (typeof params['hidecallback'] !== 'undefined') {
@@ -45,61 +45,84 @@ var revealM = {
 
 				if (typeof params['loadmethod'] !== 'undefined' && params['loadmethod'] == 'post')
 				{
-					jQuery.post(params['url'], params['datapost'], function(data){
-							if (typeof params['showcallback'] !== 'undefined') {
-								$('#myModal').on('shown.bs.modal',params['showcallback']);
-							}
-
-							if (typeof params['hidecallback'] !== 'undefined') {
-								$('#myModal').on('hide.bs.modal',params['hidecallback']);
-							}
-
-							$('#myModal').html(data).modal(mparams);
+					jQuery.post(params['url'], params['datapost'], function(data) {
+                        if (data != "") {
+                            $('#myModal').html(data);
+                            revealM.modalInstance = new bootstrap.Modal('#myModal', mparams);
+                            revealM.setShowHideCallbacks(params);
+                            revealM.modalInstance.show();
                             revealM.setCenteredDraggable();
-					});
+                        } else if (typeof params['on_empty'] !== 'undefined') {
+                            params['on_empty']();
+                        } else {
+                            alert('Empty content was returned!');
+                        }
+					}).fail(function(jqXHR, textStatus, errorThrown) {
+                        alert('There was an error processing your request: ' + '[' + jqXHR.status + '] [' + jqXHR.statusText + '] [' + jqXHR.responseText + '] ' + errorThrown);
+                    })
 				} else {
 					jQuery.get(params['url'], function(data){
-
-							if (typeof params['showcallback'] !== 'undefined') {
-								$('#myModal').on('shown.bs.modal',params['showcallback']);
-							}
-
-							if (typeof params['hidecallback'] !== 'undefined') {
-								$('#myModal').on('hide.bs.modal',params['hidecallback']);
-							}
-
-							$('#myModal').html(data).modal(mparams);
-
+                        if (data != "") {
+                            $('#myModal').html(data);//.modal(mparams).show();
+                            revealM.modalInstance = new bootstrap.Modal('#myModal', mparams);
+                            revealM.setShowHideCallbacks(params);
+                            revealM.modalInstance.show();
                             revealM.setCenteredDraggable();
-					});
+                        } else if (typeof params['on_mepty'] !== 'undefined') {
+                            params['on_mepty']();
+                        } else {
+                            alert('Empty content was returned!');
+                        }
+					}).fail(function(jqXHR, textStatus, errorThrown) {
+                        alert('There was an error processing your request: ' + '[' + jqXHR.status + '] [' + jqXHR.statusText + '] [' + jqXHR.responseText + '] ' + errorThrown);
+                    });
 				}
 			} else {
 				var header = '';
 				var prependeBody = '';
 				if (typeof params['hideheader'] === 'undefined') {
-					header = '<div class="modal-header"><h4 class="modal-title" id="myModalLabel"><span class="material-icons">info</span>'+(typeof params['title'] === 'undefined' ? '' : params['title'])+'</h4><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>';
+					header = '<div class="modal-header"><h4 class="modal-title" id="myModalLabel"><span class="material-icons">info</span>'+(typeof params['title'] === 'undefined' ? '' : params['title'])+'</h4><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>';
 				} else {
-					prependeBody = (typeof params['title'] === 'undefined' ? '' : '<b>'+params['title']+'</b>') + '<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+					prependeBody = (typeof params['title'] === 'undefined' ? '' : '<b>'+params['title']+'</b>') + '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>';
 				}
 				var additionalModalBody = typeof params['modalbodyclass'] === 'undefined' ? '' : ' '+params['modalbodyclass'];
 
-                if (typeof params['showcallback'] !== 'undefined') {
-                    $('#myModal').on('shown.bs.modal',params['showcallback']);
-                }
+				$('#myModal').html('<div class="modal-dialog modal-dialog-scrollable modal-xl"><div class="modal-content">'+header+'<div class="modal-body'+additionalModalBody+'">'+prependeBody+'<iframe src="'+params['url']+'" frameborder="0" style="width:100%" height="'+params['height']+'" /></div></div></div>');
+                revealM.modalInstance = new bootstrap.Modal('#myModal', mparams);
+                revealM.setShowHideCallbacks(params);
+                revealM.modalInstance.show();
 
-                if (typeof params['hidecallback'] !== 'undefined') {
-                    $('#myModal').on('hide.bs.modal',params['hidecallback']);
-                }
-                
-				$('#myModal').html('<div class="modal-dialog modal-dialog-scrollable modal-xl"><div class="modal-content">'+header+'<div class="modal-body'+additionalModalBody+'">'+prependeBody+'<iframe src="'+params['url']+'" frameborder="0" style="width:100%" height="'+params['height']+'" /></div></div></div>').modal(mparams);
-
-				revealM.setCenteredDraggable();
+                revealM.setCenteredDraggable();
 				
 			}
 		},
 
+        setShowHideCallbacks : function(params) {
+            // Remove old listeners
+            if (revealM.previousHideListener && document.getElementById('myModal')) {
+                document.getElementById('myModal').removeEventListener('hide.bs.modal', revealM.previousHideListener);
+                revealM.previousHideListener = null;
+            }
+
+            if (revealM.previousShowListener && document.getElementById('myModal')) {
+                document.getElementById('myModal').removeEventListener('show.bs.modal', revealM.previousShowListener);
+                revealM.previousShowListener = null;
+            }
+
+            // Attach new listeners
+            if (typeof params['showcallback'] !== 'undefined' && document.getElementById('myModal')) {
+                document.getElementById('myModal').addEventListener('show.bs.modal', params['showcallback']);
+                revealM.previousShowListener = params['showcallback'];
+            }
+
+            if (typeof params['hidecallback'] !== 'undefined' && document.getElementById('myModal')) {
+                revealM.previousHideListener = params['hidecallback'];
+                document.getElementById('myModal').addEventListener('hide.bs.modal', params['hidecallback']);
+            }
+        },
+
         setCenteredDraggable : function(){
-            if ($('#admin-body').length > 0) {
+            if ($('#admin-body').length > 0 && !$('html').attr('data-mobile')) {
                 var modalContent = $('#myModal .modal-dialog');
 
                 var prevPos = revealM.rememberPositions();
@@ -110,7 +133,8 @@ var revealM = {
                 }
 
                 modalContent.draggabilly({
-                    handle: ".modal-header"
+                    handle: ".modal-header",
+                    containment: '#admin-body'
                 }).css({
                     top: parseInt(prevPos[0]),
                     left: parseInt(prevPos[1])

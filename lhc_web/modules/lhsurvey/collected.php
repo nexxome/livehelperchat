@@ -12,6 +12,8 @@ if (isset($_GET['doSearch'])) {
     $filterParams['is_search'] = false;
 }
 
+erLhcoreClassChatStatistic::formatUserFilter($filterParams,'lh_abstract_survey_item');
+
 $append = erLhcoreClassSearchHandler::getURLAppendFromInput($filterParams['input_form']);
 $filterParams['filter']['filter']['survey_id'] = $survey->id;
 
@@ -29,6 +31,11 @@ if ($filterParams['input_form']->group_results == true) {
 
 if ($Params['user_parameters_unordered']['xls'] == 1) {
     erLhcoreClassSurveyExporter::exportXLS(erLhAbstractModelSurveyItem::getList(array_merge($filterSearch,array('offset' => 0, 'limit' => 100000))));
+	exit;
+}
+
+if ($Params['user_parameters_unordered']['csvlist'] == 1) {
+    erLhcoreClassSurveyExporter::exportCSV(array_merge($filterSearch,array('offset' => 0, 'limit' => 100000)), $survey);
 	exit;
 }
 
@@ -79,8 +86,9 @@ if ($pages->items_total > 0) {
 $tpl->set('items',$items);
 $tpl->set('pages',$pages);
 $tpl->set('survey',$survey);
-$tpl->set('tab','');
+$tpl->set('tab',isset($_GET['tab']) && $_GET['tab'] == 'chart' ? 'chart' : '');
 $tpl->set('survey_filter',$filterSearch);
+$tpl->set('append_filter',erLhcoreClassDesign::baseurl('survey/collected') . '/' . $survey->id . $append);
 
 $filterParams['input_form']->form_action = erLhcoreClassDesign::baseurl('survey/collected') . '/' . $survey->id;
 

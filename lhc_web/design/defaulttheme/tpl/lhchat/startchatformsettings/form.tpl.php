@@ -5,19 +5,43 @@
     <input type="text" class="form-control form-control-sm" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Name');?>" name="name" value="<?php echo htmlspecialchars($start_chat_item->name);?>" />
 </div>
 
-<div class="form-group">
-<label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Department');?></label>		
-<?php 
-$params = array (
-		'input_name'     => 'DepartmentID',			
-		'display_name'   => 'name',
-        'css_class'      => 'form-control form-control-sm',
-		'selected_id'    => $start_chat_item->department_id,
-		'list_function'  => 'erLhcoreClassModelDepartament::getList',
-		'list_function_params'  => array('limit' => false,'sort' => '`name` ASC')
-);
-echo erLhcoreClassRenderHelper::renderCombobox( $params ); ?>
+<div class="row">
+    <div class="col-6">
+        <div class="form-group">
+            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Department');?></label>
+            <?php
+            $params = array (
+                'input_name'     => 'DepartmentID',
+                'display_name'   => 'name',
+                'css_class'      => 'form-control form-control-sm',
+                'selected_id'    => $start_chat_item->department_id,
+                'list_function'  => 'erLhcoreClassModelDepartament::getList',
+                'list_function_params'  => array('limit' => false,'sort' => '`name` ASC')
+            );
+            echo erLhcoreClassRenderHelper::renderCombobox( $params ); ?>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="form-group">
+            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Apply this configuration also to these departments');?></label>
+            <?php echo erLhcoreClassRenderHelper::renderMultiDropdown( array (
+                'input_name'     => 'dep_ids[]',
+                'optional_field' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Choose department'),
+                'selected_id'    => $start_chat_item->dep_ids_array,
+                'ajax'           => 'deps',
+                'css_class'      => 'form-control',
+                'display_name'   => 'name',
+                'list_function_params' => ['sort' => '`name` ASC', 'limit' => 50],
+                'list_function'  => 'erLhcoreClassModelDepartament::getList'
+            )); ?>
+        </div>
+    </div>
 </div>
+<script>
+    $(function() {
+        $('.btn-block-department').makeDropdown();
+    });
+</script>
 <?php endif; ?>
 
 <div class="row">
@@ -41,13 +65,13 @@ echo erLhcoreClassRenderHelper::renderCombobox( $params ); ?>
 <div role="tabpanel">
 	<!-- Nav tabs -->
 	<ul class="nav nav-tabs" role="tablist">
-		<li role="presentation" class="active nav-item"><a class="nav-link active" href="#panel1" aria-controls="panel1" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Online form settings');?></a></li>
-		<li role="presentation" class="nav-item"><a href="#panel2" class="nav-link" aria-controls="panel12" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Offline form settings');?></a></li>
-		<li role="presentation" class="nav-item"><a href="#panel3" class="nav-link" aria-controls="panel13" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Additional form settings');?></a></li>
-		<li role="presentation" class="nav-item"><a href="#customfields" class="nav-link" aria-controls="customfields" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Custom fields');?></a></li>
-		<li role="presentation" class="nav-item"><a href="#urlfields" class="nav-link" aria-controls="urlfields" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','URL Arguments');?></a></li>
-		<li role="presentation" class="nav-item"><a href="#prechat" class="nav-link" aria-controls="prechat" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Pre chat');?></a></li>
-		<li role="presentation" class="nav-item"><a href="#prechatconditions" class="nav-link" aria-controls="prechatconditions" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Pre chat conditions');?></a></li>
+		<li role="presentation" class="active nav-item"><a class="nav-link active" href="#panel1" aria-controls="panel1" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Online form settings');?></a></li>
+		<li role="presentation" class="nav-item"><a href="#panel2" class="nav-link" aria-controls="panel12" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Offline form settings');?></a></li>
+		<li role="presentation" class="nav-item"><a href="#panel3" class="nav-link" aria-controls="panel13" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Additional form settings');?></a></li>
+		<li role="presentation" class="nav-item"><a href="#customfields" class="nav-link" aria-controls="customfields" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Custom fields');?></a></li>
+		<li role="presentation" class="nav-item"><a href="#urlfields" class="nav-link" aria-controls="urlfields" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','URL Arguments');?></a></li>
+		<li role="presentation" class="nav-item"><a href="#prechat" class="nav-link" aria-controls="prechat" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Pre chat');?></a></li>
+		<li role="presentation" class="nav-item"><a href="#prechatconditions" class="nav-link" aria-controls="prechatconditions" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Pre chat conditions');?></a></li>
 	</ul>
 
 	<!-- Tab panes -->

@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhAbstractModelEmailTemplate {
 
     use erLhcoreClassDBTrait;
@@ -72,12 +72,8 @@ class erLhAbstractModelEmailTemplate {
         if ($this->use_chat_locale == 1) {
             if ($locale != '') {
                 $chatLocale = $locale;
-            } else if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-                $parts = explode(';',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
-                $languages = explode(',',$parts[0]);
-                if (isset($languages[0])) {
-                    $chatLocale = $languages[0];
-                }
+            } else {
+                $chatLocale = erLhcoreClassChatValidator::getVisitorLocale();
             }
         }
 
@@ -129,6 +125,11 @@ class erLhAbstractModelEmailTemplate {
     public function dependFooterJs()
     {
         return '<script type="text/javascript" src="'.erLhcoreClassDesign::designJS('js/angular.lhc.theme.js').'"></script>';
+    }
+
+    public function dependJs()
+    {
+        return '<script type="text/javascript" src="'.erLhcoreClassDesign::designJS('js/ace/ace.js').'"></script>';
     }
 
 	public function __get($var)

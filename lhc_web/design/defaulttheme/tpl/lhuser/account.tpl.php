@@ -1,3 +1,4 @@
+<div>
 <h1 ng-non-bindable><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Logged user');?> - <?php echo htmlspecialchars($user->name_support)?></h1>
 
 <?php if (isset($errors)) : ?>
@@ -13,33 +14,37 @@
 		<?php include(erLhcoreClassDesign::designtpl('lhkernel/alert_success.tpl.php'));?>
 <?php endif; ?>
 
+<?php if (isset($account_updated_departaments) && $account_updated_departaments == 'failed') : $errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Account update failed! Please try again!'); ?>
+    <?php include(erLhcoreClassDesign::designtpl('lhkernel/validation_error.tpl.php'));?>
+<?php endif; ?>
+
 <ul class="nav nav-tabs mb-3" role="tablist">
-	<li role="presentation" class="nav-item"><a href="#account" class="nav-link<?php if ($tab == '') : ?> active<?php endif;?>" aria-controls="account" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Account data');?></a></li>
+	<li role="presentation" class="nav-item"><a href="#account" class="nav-link<?php if ($tab == '') : ?> active<?php endif;?>" aria-controls="account" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Account data');?></a></li>
 	
 	<?php if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','see_assigned_departments') || erLhcoreClassUser::instance()->hasAccessTo('lhuser','see_assigned_departments_groups')) : ?>
-	<li role="presentation" class="nav-item"><a class="nav-link<?php if ($tab == 'tab_departments') : ?> active<?php endif;?>" href="#departments" aria-controls="departments" role="tab" data-toggle="tab" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Assigned departments');?></a></li>
+	<li role="presentation" class="nav-item"><a class="nav-link<?php if ($tab == 'tab_departments') : ?> active<?php endif;?>" href="#departments" aria-controls="departments" role="tab" data-bs-toggle="tab" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Assigned departments');?></a></li>
 	<?php endif;?>
 	
 	<?php if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_visibility_list')) : ?>
-	<li role="presentation" class="nav-item"><a class="nav-link<?php if ($tab == 'tab_settings') : ?> active<?php endif;?>" href="#lists" aria-controls="lists" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Visible lists');?></a></li>
+	<li role="presentation" class="nav-item"><a class="nav-link<?php if ($tab == 'tab_settings') : ?> active<?php endif;?>" href="#lists" aria-controls="lists" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Visible lists');?></a></li>
 	<?php endif; ?>
 	
 	<?php include(erLhcoreClassDesign::designtpl('lhuser/menu_tabs/personal_canned_messages_tab.tpl.php'));?>
 
 	<?php include(erLhcoreClassDesign::designtpl('lhuser/menu_tabs/personal_auto_responder_tab.tpl.php'));?>
 
-	<?php if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','allowtochoosependingmode')) : ?>
-	<li role="presentation" class="nav-item"><a href="#pending" class="nav-link<?php if ($tab == 'tab_pending') : ?> active<?php endif;?>" aria-controls="pending" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Chats');?></a></li>
-	<?php endif;?>
-	
 	<?php if (erLhcoreClassUser::instance()->hasAccessTo('lhspeech','changedefaultlanguage')) : ?>
-	<li role="presentation" class="nav-item"><a class="nav-link<?php if ($tab == 'tab_speech') : ?> active<?php endif;?>" href="#speech" aria-controls="speech" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Speech');?></a></li>
+	<li role="presentation" class="nav-item"><a class="nav-link<?php if ($tab == 'tab_speech') : ?> active<?php endif;?>" href="#speech" aria-controls="speech" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Speech');?></a></li>
 	<?php endif;?>	
 
 	<?php if (erLhcoreClassUser::instance()->hasAccessTo('lhpermission','see_permissions')) : ?>
-	<li role="presentation" class="nav-item"><a class="nav-link<?php if ($tab == 'tab_permission') : ?> active<?php endif;?>" href="#permission" aria-controls="permission" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Permissions');?></a></li>
+	<li role="presentation" class="nav-item"><a class="nav-link<?php if ($tab == 'tab_permission') : ?> active<?php endif;?>" href="#permission" aria-controls="permission" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Permissions');?></a></li>
 	<?php endif;?>
-	
+
+    <?php if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','allowtochoosependingmode')) : ?>
+        <li role="presentation" class="nav-item"><a href="#pending" class="nav-link<?php if ($tab == 'tab_pending') : ?> active<?php endif;?>" aria-controls="pending" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Chats');?></a></li>
+    <?php endif;?>
+
 	<?php include(erLhcoreClassDesign::designtpl('lhuser/menu_tabs/notifications_tab.tpl.php'));?>
 	
 	<?php include(erLhcoreClassDesign::designtpl('lhuser/menu_tabs/custom_multiinclude_tab.tpl.php'));?>
@@ -60,10 +65,10 @@
 		<?php include(erLhcoreClassDesign::designtpl('lhkernel/csfr_token.tpl.php'));?>
 
         <div class="form-group">
-            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Username');?></label> <input <?php if (!erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_core_attributes')) : ?>disabled<?php endif?> type="text" ng-non-bindable class="form-control" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Your username');?>" name="Username" value="<?php echo htmlspecialchars($user->username);?>" />
+            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Username');?>*</label> <input <?php if (!erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_core_attributes')) : ?>disabled<?php endif?> type="text" ng-non-bindable class="form-control" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Your username');?>" name="Username" value="<?php echo htmlspecialchars($user->username);?>" />
         </div>
 
-        <?php if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_core_attributes')) : ?>
+        <?php if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_password')) : ?>
         <div class="form-group">
             <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Password');?></label> <input autocomplete="new-password" ng-non-bindable type="password" class="form-control" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Enter a new password');?>" name="Password" value="<?php echo htmlspecialchars(isset($user->password_temp_1) ? $user->password_temp_1 : '');?>" />
         </div>
@@ -73,7 +78,7 @@
          <?php endif; ?>
 
         <div class="form-group">
-            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Email');?></label>
+            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Email');?>*</label>
             <input type="text" ng-non-bindable class="form-control" <?php if (!erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_core_attributes')) : ?>disabled<?php endif?> value="<?php echo $user->email;?>" name="Email" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Your email address');?>" id="email" class="required email valid">
         </div>
 
@@ -83,7 +88,7 @@
         </div>
 
         <div class="form-group">
-            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Name');?></label> <input <?php if (!erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_name_surname')) : ?>disabled<?php endif?> ng-non-bindable type="text" class="form-control" name="Name" value="<?php echo htmlspecialchars($user->name);?>" />
+            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Name');?>*</label> <input <?php if (!erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_name_surname')) : ?>disabled<?php endif?> ng-non-bindable type="text" class="form-control" name="Name" value="<?php echo htmlspecialchars($user->name);?>" />
         </div>
         <div class="form-group">
             <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Surname');?></label> <input <?php if (!erLhcoreClassUser::instance()->hasAccessTo('lhuser','change_name_surname')) : ?>disabled<?php endif?> ng-non-bindable type="text" class="form-control" name="Surname" value="<?php echo htmlspecialchars($user->surname);?>" />
@@ -159,26 +164,34 @@
     	<?php 
     	   $userDepartaments = erLhcoreClassUserDep::getUserDepartamentsIndividual();
     	   $userDepartamentsRead = erLhcoreClassUserDep::getUserDepartamentsIndividual(false, true);
+           $userDepartamentsAutoExc = erLhcoreClassUserDep::getUserDepartamentsExcAutoassignIds();
+           $userDepartamentsParams = erLhcoreClassUserDep::getUserIndividualParams();
+
     	   $userDepartamentsGroup = erLhcoreClassModelDepartamentGroupUser::getUserGroupsIds($user->id);
     	   $userDepartamentsGroupRead = erLhcoreClassModelDepartamentGroupUser::getUserGroupsIds($user->id, true);
+    	   $userDepartamentsGroupAutoExc = erLhcoreClassModelDepartamentGroupUser::getUserGroupsExcAutoassignIds($user->id);
+           $userDepartamentsGroupParams = erLhcoreClassModelDepartamentGroupUser::getUserGroupsParams($user->id);
+
            $departmentEditParams = [
                    'self_edit' => true,
                    'all_departments' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','self_all_departments'),
                    'individual' => [
                            'read_all' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','see_assigned_departments'),
                            'edit_all' => $editdepartaments,
+                           'all_dep'  => $userDepartamentsParams,
                            'edit_personal' => false,
                            'see_personal' => false,
                    ],
                    'groups' => [
                            'read_all' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','see_assigned_departments_groups'),
                            'edit_all' => $editdepartaments,
+                           'all_group' => $userDepartamentsGroupParams,
                            'edit_personal' => false,
                            'see_personal' => false,
                    ]
            ];
 
-            if ($departmentEditParams['individual']['edit_all'] == false) {
+           if ($departmentEditParams['individual']['edit_all'] == false) {
                 $departmentEditParams['individual']['id'] = array_merge(
                     erLhcoreClassUserDep::getUserDepartamentsIndividual(
                         $user->id
@@ -206,7 +219,6 @@
 
     	<form action="<?php echo erLhcoreClassDesign::baseurl('user/account')?>#departments" method="post" enctype="multipart/form-data">
             <?php include(erLhcoreClassDesign::designtpl('lhuser/account/departments_assignment.tpl.php'));?>
-            <input type="submit" class="btn btn-secondary" name="UpdateDepartaments_account" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Update');?>" />
 		</form>
 
 	</div>
@@ -266,6 +278,23 @@
             </div>
 
             <div class="form-group">
+                <fieldset class="border p-2">
+                    <legend class="w-auto fs16 mb-0"><label class="fs16 m-0 p-0"><input type="checkbox" name="remove_closed_chats" value="1" <?php erLhcoreClassModelUserSetting::getSetting('remove_closed_chats',0) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Remove my closed chats from opened chat list on page refresh');?></label></legend>
+                    <br/>
+                    <label>
+                        <input type="checkbox" name="remove_closed_chats_remote" value="1" <?php erLhcoreClassModelUserSetting::getSetting('remove_closed_chats_remote',0) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Include not only my chats');?>
+                        <span class="d-block"><small><i><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Other operators chats also will be closed on page refresh');?></i></small></span>
+                    </label>
+
+                    <div class="form-group mb-0">
+                        <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','How much time has to be passed after chat close before chat is removed. Time in minutes.');?></label>
+                        <input name="remove_close_timeout" value="<?php echo (int)erLhcoreClassModelUserSetting::getSetting('remove_close_timeout',5)?>" class="form-control form-control-sm" type="number" max="60" min="1" >
+                    </div>
+
+                </fieldset>
+            </div>
+
+            <div class="form-group">
                 <label><input type="checkbox" name="exclude_autoasign" value="1" <?php $user->exclude_autoasign == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Exclude me from auto assign workflow');?></label>
             </div>
 
@@ -275,6 +304,13 @@
 
             <div class="form-group">
                 <label><input type="checkbox" name="auto_uppercase" value="1" <?php erLhcoreClassModelUserSetting::getSetting('auto_uppercase',1) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Auto uppercase sentences');?></label>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Default number of rows for chat text area');?>
+                </label>
+                <input class="form-control form-control-sm" type="number" name="chat_text_rows" value="<?php echo (int)erLhcoreClassModelUserSetting::getSetting('chat_text_rows',2) ?>" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Number of rows');?>">
             </div>
 
             <div class="form-group">
@@ -323,4 +359,5 @@
 	
 	<?php include(erLhcoreClassDesign::designtpl('lhuser/menu_tabs_content/custom_multiinclude_tab.tpl.php'));?>
 	
+</div>
 </div>

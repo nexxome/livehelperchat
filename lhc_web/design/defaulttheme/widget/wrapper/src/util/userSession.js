@@ -4,6 +4,7 @@ export class userSession {
     constructor() {
         this.vid = null;
         this.hnh = null;
+        this.withCredentials = false;
 
         this.attributes = {};
         this.ref = null;
@@ -71,9 +72,9 @@ export class userSession {
 
         // Try to monitor variable if it's lhc_var
         try {
+
             if (this.attributes.lhc_var !== null)
             {
-
                 var validator = {
                     set: (obj, prop, value) => {
                         // The default behavior to store the value
@@ -98,11 +99,41 @@ export class userSession {
 
                 // Update vars initially
                 this.updateJSVars(this.attributes.lhc_var);
+
+            } else if (typeof LHCChatOptions !== 'undefined' && typeof LHCChatOptions.attr_prefill !== 'undefined') {
+
+                var lhc_var_prefill = {};
+
+                LHCChatOptions.attr_prefill.forEach( (item) => {
+                    if (item.name && item.value) {
+                        lhc_var_prefill['prefill_'+item.name] = item.value;
+                    }
+                });
+
+                var xhr = new XMLHttpRequest();
+                xhr.open( "POST", this.attributes.LHC_API.args.lhc_base_url + '/chat/updatejsvars' + this.getAppendVariables(), true);
+                xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhr.send( "data=" + encodeURIComponent( this.JSON.stringify(lhc_var_prefill) ) );
             }
+
        } catch(err) {
             console.log(err);
        };
+    }
 
+    getPrefillVars() {
+        let varsReturn = [];
+        if (this.jsVars.length > 0) {
+            var varsSet = this.getVars();
+            for (var jsVarData in this.jsVars) {
+                if (this.jsVars[jsVarData].type && varsSet[this.jsVars[jsVarData].id]) {
+                    var item = {};
+                    item[this.jsVars[jsVarData].type] = varsSet[this.jsVars[jsVarData].id];
+                    varsReturn.push(item);
+                }
+            }
+        }
+        return varsReturn;
     }
 
     getVars() {
@@ -112,6 +143,11 @@ export class userSession {
 
             for (var index in this.jsVars) {
                 try {
+
+                    if (this.jsVars[index].cookie) {
+                        this.withCredentials = true;
+                        continue;
+                    }
 
                     if (this.jsVars[index].var.indexOf('lhc_var.') !== -1) {
                         currentVar = this.attributes.lhc_var[this.jsVars[index].var.replace('lhc_var.','')] || null;
@@ -146,6 +182,23 @@ export class userSession {
         return append;
     }
 
+    updateChatStatus(params) {
+        let varsJSON = {};
+        varsJSON['lhc_vars'] = this.getVars();
+
+        if (params) {
+            varsJSON['user_vars'] = params;
+        }
+
+        var xhr = new XMLHttpRequest();
+        xhr.open( "POST", this.attributes.LHC_API.args.lhc_base_url + 'chat/updatejsvars/(userinit)/true' + this.getAppendVariables(), true);
+        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        if (this.withCredentials == true) {
+            xhr.withCredentials = true;
+        }
+        xhr.send( "data=" + encodeURIComponent( this.JSON.stringify(varsJSON) ) + "&host=" + window.location.origin );
+    }
+
     updateJSVars(vars, cb) {
 
         let varsJSON = this.getVars(vars);
@@ -153,10 +206,13 @@ export class userSession {
         var xhr = new XMLHttpRequest();
         xhr.open( "POST", this.attributes.LHC_API.args.lhc_base_url + '/chat/updatejsvars' + this.getAppendVariables(), true);
         xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        xhr.send( "data=" + encodeURIComponent( this.JSON.stringify(varsJSON) ) );
+        if (this.withCredentials == true) {
+            xhr.withCredentials = true;
+        }
+        xhr.send( "data=" + encodeURIComponent( this.JSON.stringify(varsJSON) )+"&host=" + window.location.origin );
 
         if (typeof cb !== 'undefined' && this.hash === null && this.id === null) {
-            cb(varsJSON);
+            cb(varsJSON, this.getPrefillVars());
         }
     }
 

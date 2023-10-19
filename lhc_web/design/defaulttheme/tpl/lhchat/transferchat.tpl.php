@@ -4,15 +4,15 @@
 
 <div role="tabpanel">
 	<ul class="nav nav-tabs" role="tablist">
-		<li role="presentation" class="nav-item"><a class="active nav-link" href="#transferusermodal" aria-controls="transferusermodal" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Transfer to a user');?></a></li>
-		<li role="presentation" class="nav-item"><a class="nav-link" href="#transferdepmodal" aria-controls="transferdepmodal" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Transfer to a department');?></a></li>
+		<li role="presentation" class="nav-item"><a class="active nav-link" href="#transferusermodal" aria-controls="transferusermodal" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Transfer to a user');?></a></li>
+		<li role="presentation" class="nav-item"><a class="nav-link" href="#transferdepmodal" aria-controls="transferdepmodal" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Transfer to a department');?></a></li>
 
         <?php if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','changeowner')) : ?>
-            <li role="presentation" class="nav-item"><a class="nav-link" href="#changeowner" aria-controls="changeowner" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Change owner');?></a></li>
+            <li role="presentation" class="nav-item"><a class="nav-link" href="#changeowner" aria-controls="changeowner" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Change owner');?></a></li>
         <?php endif; ?>
 
         <?php if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','changedepartment')) : ?>
-            <li role="presentation" class="nav-item"><a class="nav-link" href="#changedepartment" aria-controls="changedepartment" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Change department');?></a></li>
+            <li role="presentation" class="nav-item"><a class="nav-link" href="#changedepartment" aria-controls="changedepartment" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Change department');?></a></li>
         <?php endif; ?>
 
 	</ul>
@@ -24,11 +24,11 @@
       		<p><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Transfer a chat to one of your departments users');?></p>
 
             <div class="checkbox">
-                <label><input type="checkbox" onchange="updateTransferUser()" checked="checked" id="logged_and_online"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Only logged and online operators');?></label>
+                <label><input type="checkbox" onchange="updateTransferUser()" checked="checked" id="logged_and_online"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Only logged and online operators');?></label>
             </div>
 
             <div class="checkbox">
-                <label><input type="checkbox" onchange="updateTransferUser()" id="logged_and_same"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Only operators from same departments');?></label>
+                <label><input type="checkbox" onchange="updateTransferUser()" id="logged_and_same"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Only operators from same departments');?></label>
             </div>
 
             <div class="mx550" id="transfer-chat-listuserrefilter">
@@ -51,15 +51,15 @@
         		</div>
         		<div class="col-6">
         		    <div class="checkbox">
-        		      <label><input type="checkbox" onchange="updateTransferDepartments()" checked="checked" id="dep_transfer_only_explicit"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Only departments which are online and explicitly assigned operator are online');?></label>
+        		      <label><input type="checkbox" onchange="updateTransferDepartments()" checked="checked" id="dep_transfer_only_explicit"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Only departments which are online and explicitly assigned operator are online');?></label>
         		    </div>
         		    
         		    <div class="checkbox">
-        		      <label><input type="checkbox" onchange="updateTransferDepartments()" id="dep_transfer_exclude_hidden"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Exclude hidden departments');?></label>
+        		      <label><input type="checkbox" onchange="updateTransferDepartments()" id="dep_transfer_exclude_hidden"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Exclude hidden departments');?></label>
         		    </div>
         		    
         		    <div class="checkbox">
-        		      <label><input type="checkbox" onchange="updateTransferDepartments()" id="dep_transfer_exclude_disabled"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Exclude disabled departments');?></label>
+        		      <label><input type="checkbox" onchange="updateTransferDepartments()" id="dep_transfer_exclude_disabled"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/transferchat','Exclude disabled departments');?></label>
         		    </div>
         		</div>
             </div>

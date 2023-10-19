@@ -10,11 +10,17 @@ $defaultValue = 1;
 
 if ($Params['user_parameters_unordered']['action'] == 'tabs') {
     $identifier = 'hide_tabs';
+} elseif ($Params['user_parameters_unordered']['action'] == 'static_order') {
+    $identifier = 'static_order';
+    $defaultValue = 0;
 } elseif ($Params['user_parameters_unordered']['action'] == 'mode') {
     $identifier = 'dark_mode';
     $defaultValue = 0;
 } elseif ($Params['user_parameters_unordered']['action'] == 'left_list') {
     $identifier = 'left_list';
+    $defaultValue = 0;
+} elseif ($Params['user_parameters_unordered']['action'] == 'column_chats') {
+    $identifier = 'column_chats';
     $defaultValue = 0;
 }
 

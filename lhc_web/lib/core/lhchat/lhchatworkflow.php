@@ -17,7 +17,11 @@ class erLhcoreClassChatWorkflow {
             $msg->name_support = $name_support;
             $msg->user_id = -2;
             $msg->time = time();
-            erLhcoreClassChat::getSession()->save($msg);
+
+            \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'msg', 'msg' => & $msg, 'chat' => & $chat));
+            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_auto_responder_msg_saved', array('ignore_times' => true,'msg' => & $msg, 'chat' => & $chat));
+
+            $msg->saveThis();
 
             if ($chat->last_msg_id < $msg->id) {
                 $chat->last_msg_id = $msg->id;
@@ -69,7 +73,8 @@ class erLhcoreClassChatWorkflow {
             }
 
             // Our new department also has a transfer rule
-            if ($departmentTransfer->department_transfer !== false) {
+            // Check if further transfer is possible because of priority condition
+            if ($departmentTransfer->department_transfer !== false && !(isset($departmentTransfer->bot_configuration_array['transfer_min_priority']) && is_numeric($departmentTransfer->bot_configuration_array['transfer_min_priority']) && (int)$departmentTransfer->bot_configuration_array['transfer_min_priority'] > $chat->priority)) {
                 $chat->transfer_if_na = 1;
                 $chat->transfer_timeout_ac = $departmentTransfer->transfer_timeout;
             }
@@ -256,11 +261,13 @@ class erLhcoreClassChatWorkflow {
                     $chat->wait_time = time() - ($chat->pnd_time > 0 ? $chat->pnd_time : $chat->time);
                 }
 
-                $chat->chat_duration = erLhcoreClassChat::getChatDurationToUpdateChatID($chat);
+                \LiveHelperChat\Helpers\ChatDuration::setChatTimes($chat);
                 $chat->cls_time = time();
                 $chat->has_unread_messages = 0;
 
                 $chat->updateThis();
+
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.auto_close',array('msg' => & $msg,'chat' => & $chat));
 
                 erLhcoreClassChat::closeChatCallback($chat, $chat->user);
 
@@ -295,10 +302,12 @@ class erLhcoreClassChatWorkflow {
                     $chat->wait_time = time() - ($chat->pnd_time > 0 ? $chat->pnd_time : $chat->time);
                 }
 
-                $chat->chat_duration = erLhcoreClassChat::getChatDurationToUpdateChatID($chat);
+                \LiveHelperChat\Helpers\ChatDuration::setChatTimes($chat);
                 $chat->cls_time = time();
                 $chat->has_unread_messages = 0;
                 $chat->updateThis();
+
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.auto_close',array('msg' => & $msg,'chat' => & $chat));
 
                 erLhcoreClassChat::closeChatCallback($chat, $chat->user);
 
@@ -336,10 +345,12 @@ class erLhcoreClassChatWorkflow {
                     $chat->wait_time = time() - ($chat->pnd_time > 0 ? $chat->pnd_time : $chat->time);
                 }
 
-                $chat->chat_duration = erLhcoreClassChat::getChatDurationToUpdateChatID($chat);
+                \LiveHelperChat\Helpers\ChatDuration::setChatTimes($chat);
                 $chat->cls_time = time();
                 $chat->has_unread_messages = 0;
                 $chat->updateThis();
+
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.auto_close',array('msg' => & $msg,'chat' => & $chat));
 
                 erLhcoreClassChat::closeChatCallback($chat, $chat->user);
 
@@ -377,10 +388,12 @@ class erLhcoreClassChatWorkflow {
                     $chat->wait_time = time() - ($chat->pnd_time > 0 ? $chat->pnd_time : $chat->time);
                 }
 
-                $chat->chat_duration = erLhcoreClassChat::getChatDurationToUpdateChatID($chat);
+                \LiveHelperChat\Helpers\ChatDuration::setChatTimes($chat);
                 $chat->cls_time = time();
                 $chat->has_unread_messages = 0;
                 $chat->updateThis();
+
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.auto_close',array('msg' => & $msg,'chat' => & $chat));
 
                 erLhcoreClassChat::closeChatCallback($chat, $chat->user);
 
@@ -419,10 +432,12 @@ class erLhcoreClassChatWorkflow {
                     $chat->wait_time = 1;
                 }
 
-                $chat->chat_duration = erLhcoreClassChat::getChatDurationToUpdateChatID($chat);
+                \LiveHelperChat\Helpers\ChatDuration::setChatTimes($chat);
                 $chat->cls_time = time();
                 $chat->has_unread_messages = 0;
                 $chat->updateThis();
+
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.auto_close',array('msg' => & $msg,'chat' => & $chat));
 
                 erLhcoreClassChat::closeChatCallback($chat, $chat->user);
 
@@ -464,10 +479,12 @@ class erLhcoreClassChatWorkflow {
                     $chat->wait_time = time() - ($chat->pnd_time > 0 ? $chat->pnd_time : $chat->time);
                 }
 
-                $chat->chat_duration = erLhcoreClassChat::getChatDurationToUpdateChatID($chat);
+                \LiveHelperChat\Helpers\ChatDuration::setChatTimes($chat);
                 $chat->cls_time = time();
                 $chat->has_unread_messages = 0;
                 $chat->updateThis();
+
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.auto_close',array('msg' => & $msg,'chat' => & $chat));
 
                 erLhcoreClassChat::closeChatCallback($chat, $chat->user);
 
@@ -548,10 +565,12 @@ class erLhcoreClassChatWorkflow {
                     }
                 }
 
-                $chat->chat_duration = erLhcoreClassChat::getChatDurationToUpdateChatID($chat);
+                \LiveHelperChat\Helpers\ChatDuration::setChatTimes($chat);
                 $chat->cls_time = time();
                 $chat->has_unread_messages = 0;
                 $chat->updateThis();
+
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.auto_close',array('msg' => & $msg,'chat' => & $chat));
 
                 if (!$avoidCloseCallback) {
                     erLhcoreClassChat::closeChatCallback($chat, $chat->user);
@@ -690,7 +709,7 @@ class erLhcoreClassChatWorkflow {
                         }
 
                         if (!isset($params['include_ignored_users']) || $params['include_ignored_users'] == false) {
-                            $appendSQL .= " AND exclude_autoasign = 0";
+                            $appendSQL .= " AND exclude_autoasign = 0 AND exc_indv_autoasign = 0";
                         }
 
                         // Allow limit by provided user_ids
@@ -708,12 +727,66 @@ class erLhcoreClassChatWorkflow {
                             $sort = 'active_chats ASC, last_accepted ASC';
                         }
 
+
+                        if (isset($botConfiguration['assign_by_priority']) && $botConfiguration['assign_by_priority'] == '1') {
+                            $sort = 'assign_priority DESC, '.$sort;
+                        }
+
                         $sql = "SELECT user_id FROM lh_userdep WHERE last_accepted < :last_accepted AND ro = 0 AND hide_online = 0 AND dep_id = :dep_id AND (`lh_userdep`.`last_activity` > :last_activity OR `lh_userdep`.`always_on` = 1) AND user_id != :user_id {$appendSQL} ORDER BY {$sort} LIMIT 1";
 
                         $tryDefault = true;
+                        $byPriority = false;
+
+                        // Priority assignment workflow
+                        if (isset($botConfiguration['assign_by_priority_chat']) &&
+                            $botConfiguration['assign_by_priority_chat'] == '1'&&
+                            !(isset($botConfiguration['min_chat_priority']) && (int)$botConfiguration['min_chat_priority'] != 0 && (int)$chat->priority < (int)$botConfiguration['min_chat_priority']) &&
+                            !(isset($botConfiguration['max_chat_priority']) && (int)$botConfiguration['max_chat_priority'] != 0 && (int)$chat->priority > (int)$botConfiguration['max_chat_priority'])
+                        ) {
+
+                            $sortPriority = 'last_accepted ASC';
+                            if (isset($botConfiguration['auto_lower_limit']) && $botConfiguration['auto_lower_limit'] == '1') {
+                                $sortPriority = 'active_chats ASC, last_accepted ASC';
+                            }
+
+                            if (isset($botConfiguration['assign_by_priority_chat']) && $botConfiguration['assign_by_priority_chat'] == '1') {
+                                $sortPriority = 'assign_priority DESC,' . $sortPriority;
+                            }
+
+                            $appendSQLPriority = $appendSQL;
+
+                            if (isset($botConfiguration['min_agent_priority']) && (int)$botConfiguration['min_agent_priority'] != 0) {
+                                $appendSQLPriority .= ' AND assign_priority >= ' . (int)$botConfiguration['min_agent_priority'];
+                            }
+
+                            $appendSQLPriority .= ' AND (chat_max_priority = 0 OR chat_max_priority >= ' . (int)$chat->priority .') AND (chat_min_priority = 0 OR chat_min_priority <= ' . (int)$chat->priority .')';
+
+                            $db = ezcDbInstance::get();
+                            $stmt = $db->prepare("SELECT `lh_userdep`.`user_id` FROM lh_userdep WHERE last_accepted < :last_accepted AND ro = 0 AND hide_online = 0 AND dep_id = :dep_id AND (`lh_userdep`.`last_activity` > :last_activity OR `lh_userdep`.`always_on` = 1) AND `lh_userdep`.`user_id` != :user_id {$appendSQLPriority} ORDER BY {$sortPriority} LIMIT 1");
+                            $stmt->bindValue(':dep_id',$department->id,PDO::PARAM_INT);
+                            $stmt->bindValue(':last_activity',(time()-$isOnlineUser),PDO::PARAM_INT);
+                            $stmt->bindValue(':user_id',$chat->user_id,PDO::PARAM_INT);
+                            $stmt->bindValue(':last_accepted',(time() - $department->delay_before_assign),PDO::PARAM_INT);
+
+                            if ($department->max_active_chats > 0) {
+                                $stmt->bindValue(':max_active_chats',$department->max_active_chats,PDO::PARAM_INT);
+                            }
+
+                            $stmt->execute();
+
+                            $user_id = $stmt->fetchColumn();
+
+                            if (is_numeric($user_id) && $user_id > 0) {
+                                $tryDefault = false;
+                                $byPriority = true;
+                            }
+
+                        }
+
+
 
                         // Try to assign to operator speaking same language first
-                        if ($department->assign_same_language == 1 && $chat->chat_locale != '') {
+                        if ($tryDefault == true && $department->assign_same_language == 1 && $chat->chat_locale != '') {
 
                             $sqlLanguages =  "SELECT `lh_userdep`.`user_id` FROM lh_userdep INNER JOIN lh_speech_user_language ON `lh_speech_user_language`.`user_id` = `lh_userdep`.`user_id` WHERE last_accepted < :last_accepted AND ro = 0 AND hide_online = 0 AND dep_id = :dep_id AND (`lh_userdep`.`last_activity` > :last_activity OR `lh_userdep`.`always_on` = 1) AND `lh_userdep`.`user_id` != :user_id AND `lh_speech_user_language`.`language` = :chatlanguage {$appendSQL} ORDER BY {$sort} LIMIT 1";
 
@@ -737,8 +810,6 @@ class erLhcoreClassChatWorkflow {
                                 $tryDefault = false;
                             }
                         }
-
-
 
                         if ($tryDefault == true) {
                             $db = ezcDbInstance::get();
@@ -764,6 +835,8 @@ class erLhcoreClassChatWorkflow {
 
                     if ($user_id > 0) {
 
+
+
                         $previousMessage = '';
 
                         $msg = new erLhcoreClassModelmsg();
@@ -787,7 +860,7 @@ class erLhcoreClassChatWorkflow {
 
                         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_msg_user_saved', array('msg' => & $msg, 'chat' => & $chat, 'user_id' => $user_id));
 
-                        $msg->msg = $previousMessage . erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Chat was assigned to') . ' [' . $userNew->id .'] ' . $msg->name_support;
+                        $msg->msg = $previousMessage . erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Chat was assigned to') . ' [' . $userNew->id .'] ' . (isset($byPriority) && $byPriority === true ? '[' . $chat->priority . '] ' : '') . (isset($byPriority) && $byPriority === false && isset($tryDefault) && $tryDefault === false ? '[' . $chat->chat_locale . '] ' : '') . $msg->name_support;
 
                         erLhcoreClassChat::getSession()->save($msg);
 
@@ -864,6 +937,7 @@ class erLhcoreClassChatWorkflow {
 
             $items = array($cannedMsg);
 
+            \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'canned_replace', 'replace_array' => & $replaceArray, 'user' => $chat->user, 'chat' => $chat));
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.workflow.canned_message_replace',array('items' => & $items, 'user' => $chat->user, 'chat' => $chat, 'replace_array' => & $replaceArray));
 
             $cannedMsg = $items[0];
@@ -889,6 +963,7 @@ class erLhcoreClassChatWorkflow {
             $chat->has_unread_op_messages = 1;
             $chat->unread_op_messages_informed = 0;
 
+            \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'msg', 'msg' => & $msg, 'chat' => & $chat));
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.workflow.canned_message_before_save',array('msg' => & $msg, 'chat' => & $chat));
 
             erLhcoreClassChat::getSession()->save($msg);
@@ -929,6 +1004,7 @@ class erLhcoreClassChatWorkflow {
     public static function getChatHistory($chat, $lastMessageId)
     {
         $messages = erLhcoreClassChat::getChatMessages($chat->id, erLhcoreClassChat::$limitMessages, $lastMessageId);
+        $chatMessages = $chat->id;
 
         $messageId = 0;
         $hasMessages = true;
@@ -961,6 +1037,7 @@ class erLhcoreClassChatWorkflow {
         return array(
             'chat_id' => (is_object($chat) ? $chat->id : null),
             'chat' => (is_object($chat) ? $chat : null),
+            'last_message_chat_id' => $chatMessages,
             'message_id' => $messageId,
             'messages' => $messages,
             'has_messages' => $hasMessages

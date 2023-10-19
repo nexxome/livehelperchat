@@ -30,6 +30,12 @@ $q->deleteFrom( 'lh_userdep' )->where( $q->expr->eq( 'user_id', $Params['user_pa
 $stmt = $q->prepare();
 $stmt->execute();
 
+// User views
+$q = ezcDbInstance::get()->createDeleteQuery();
+$q->deleteFrom( 'lh_abstract_saved_search' )->where( $q->expr->eq( 'user_id', $Params['user_parameters']['user_id'] ) );
+$stmt = $q->prepare();
+$stmt->execute();
+
 // User groups
 $q = ezcDbInstance::get()->createDeleteQuery();
 $q->deleteFrom( 'lh_groupuser' )->where( $q->expr->eq( 'user_id', $Params['user_parameters']['user_id'] ) );
@@ -53,6 +59,16 @@ $q = ezcDbInstance::get()->createDeleteQuery();
 $q->deleteFrom( 'lh_departament_group_user' )->where( $q->expr->eq( 'user_id', $Params['user_parameters']['user_id'] ) );
 $stmt = $q->prepare();
 $stmt->execute();
+
+// Group chat member
+$q = ezcDbInstance::get()->createDeleteQuery();
+$q->deleteFrom( 'lh_group_chat_member' )->where( $q->expr->eq( 'user_id', $Params['user_parameters']['user_id'] ) );
+$stmt = $q->prepare();
+$stmt->execute();
+
+foreach (\LiveHelperChat\Models\Departments\UserDepAlias::getList(['filter' => ['user_id' => (int)$Params['user_parameters']['user_id']]]) as $item) {
+    $item->removeThis();
+}
 
 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.deleted',array('userData' => $departament));
 

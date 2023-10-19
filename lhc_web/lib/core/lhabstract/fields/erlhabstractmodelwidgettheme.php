@@ -1,6 +1,14 @@
 <?php 
 
 $fields = array(
+                'theme_expires' => array(
+                    'type' => 'text',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','If more than one theme is passed, randomly chosen theme is fixed for selected period of time.'),
+                    'required' => false,
+                    'hidden' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
+                ),
    				'name' => array(
    						'type' => 'text',
    						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Name'),
@@ -12,7 +20,7 @@ $fields = array(
    						'type' => 'text',
    						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Alias for argument. No spaces or slashes.'),
    						'required' => false,
-                    'hidden' => true,
+                        //'hidden' => true,
    						'validation_definition' => new ezcInputFormDefinitionElement(
    								ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
    						)),
@@ -161,14 +169,75 @@ $fields = array(
                     'validation_definition' => new ezcInputFormDefinitionElement(
                         ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
                     )),
+
+
                 'hide_ts' => array(
-   				        'type' => 'checkbox',
-   						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Hide message time from visitor'),
+   				        'type' => 'combobox',
+   						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Message time visible for'),
    						'required' => false,
    						'hidden' => true,
+                        'hide_optional' => true,
+                        'frontend' => 'name',
+                        'name_attr' => 'name',
+                        'source' => function() {
+
+                               $items = [];
+                               $item = new StdClass();
+                               $item->id = 0;
+                               $item->name = 'Hidden by default';
+                               $items[] = $item;
+
+                               $item = new StdClass();
+                               $item->id = 1;
+                               $item->name = 'Visitor messages';
+                               $items[] = $item;
+
+                               $item = new StdClass();
+                               $item->id = 2;
+                               $item->name = 'Operator/Bot messages';
+                               $items[] = $item;
+
+                               $item = new StdClass();
+                               $item->id = 3;
+                               $item->name = 'Operator/Bot/Visitor messages';
+                               $items[] = $item;
+
+                               $item = new StdClass();
+                               $item->id = 4;
+                               $item->name = 'Operator/Visitor messages';
+                               $items[] = $item;
+
+                               return $items;
+                        },
    						'validation_definition' => new ezcInputFormDefinitionElement(
-   								ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+   								ezcInputFormDefinitionElement::OPTIONAL, 'int'
    						)),
+                    'hide_op_ts' => array(
+   				        'type' => 'combobox',
+   						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Message time placement'),
+   						'required' => false,
+   						'hidden' => true,
+                        'hide_optional' => true,
+                        'frontend' => 'name',
+                        'name_attr' => 'name',
+                        'source' => function() {
+                               $items = [];
+                               $item = new StdClass();
+                               $item->id = 0;
+                               $item->name = 'Above first message sequence';
+                               $items[] = $item;
+
+                               $item = new StdClass();
+                               $item->id = 1;
+                               $item->name = 'Below message sequence';
+                               $items[] = $item;
+
+                               return $items;
+                        },
+   						'validation_definition' => new ezcInputFormDefinitionElement(
+   								ezcInputFormDefinitionElement::OPTIONAL, 'int'
+   						)),
+
                 'modern_look' => array(
    				        'type' => 'checkbox',
    						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Use modern look. It is used only in older widget.'),
@@ -508,6 +577,18 @@ $fields = array(
    						'validation_definition' => new ezcInputFormDefinitionElement(
    								ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
    						)),
+                'custom_html_footer' => array(
+   						'type' => 'textarea',
+   						'height' => '50px',
+                        'ace_editor' => 'html',
+                        'translatable' => true,
+                        'main_attr' => 'bot_configuration_array',
+   						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom html after widget content'),
+   						'required' => false,
+   						'hidden' => true,
+   						'validation_definition' => new ezcInputFormDefinitionElement(
+   								ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+   						)),
                 'intro_message' => array(
    						'type' => 'textarea',
    						'height' => '50px',
@@ -580,6 +661,18 @@ $fields = array(
    						'validation_definition' => new ezcInputFormDefinitionElement(
    								ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
    						)),
+                'after_chat_status' => array(
+   						'type' => 'textarea',
+   						'height' => '50px',
+                        'ace_editor' => 'html',
+                        'translatable' => true,
+                        'main_attr' => 'bot_configuration_array',
+   						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom html after chat status'),
+   						'required' => false,
+   						'hidden' => true,
+   						'validation_definition' => new ezcInputFormDefinitionElement(
+   								ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+   						)),
                 'custom_start_button' => array(
    						'type' => 'text',
    						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Start chat button text, standard chat'),
@@ -633,6 +726,28 @@ $fields = array(
                       'validation_definition' => new ezcInputFormDefinitionElement(
                           ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
                       )),
+                'fheight_text_class' => array(
+                      'type' => 'text',
+                      'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Switch to default widget position'),
+                      'required' => false,
+                      'hidden' => true,
+                      'placeholder' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Switch to Classic'),
+                      'translatable' => true,
+                      'main_attr' => 'bot_configuration_array',
+                      'validation_definition' => new ezcInputFormDefinitionElement(
+                          ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                      )),
+                'fheight_text_col' => array(
+                      'type' => 'text',
+                      'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Switch to full height widget position'),
+                      'required' => false,
+                      'hidden' => true,
+                      'placeholder' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Switch to Column'),
+                      'translatable' => true,
+                      'main_attr' => 'bot_configuration_array',
+                      'validation_definition' => new ezcInputFormDefinitionElement(
+                          ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                      )),
                 'custom_start_button_bot' => array(
    						'type' => 'text',
    						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Start chat button text, bot chat'),
@@ -650,7 +765,7 @@ $fields = array(
                         'frontend' => 'name',
    						'hidden' => true,
                         'source' => 'erLhcoreClassModelGenericBotBot::getList',
-                        'params_call' => array(),
+                        'params_call' => array('sort' => '`name` ASC'),
    						'main_attr' => 'bot_configuration_array',
    						'validation_definition' => new ezcInputFormDefinitionElement(
    								ezcInputFormDefinitionElement::OPTIONAL, 'string'
@@ -836,7 +951,6 @@ $fields = array(
    						'validation_definition' => new ezcInputFormDefinitionElement(
    								ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
    						)),
-
                 'thank_feedback' => array(
                     'type' => 'text',
                     'main_attr' => 'bot_configuration_array',
@@ -849,7 +963,18 @@ $fields = array(
                     'validation_definition' => new ezcInputFormDefinitionElement(
                         ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
                     )),
-
+                'blocked_visitor' => array(
+                    'type' => 'text',
+                    'main_attr' => 'bot_configuration_array',
+                    'translatable' => true,
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Blocked visitor message'),
+                    'placeholder' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/checkchatstatus','At this moment you can contact us via email only. Sorry for the inconveniences.'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                    )),
    				'need_help_border' => array(
    						'type' => 'colorpicker',
    						'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Need help border color'),
@@ -1437,6 +1562,26 @@ $fields = array(
                     'validation_definition' => new ezcInputFormDefinitionElement(
                         ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
                 )),
+                'use_system_tz' => array(
+                    'type' => 'checkbox',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Use system timezone instead of a visitor. Visitor TZ will be overriden with system a system one.'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                )),
+                'print_btn_msg' => array(
+                    'type' => 'checkbox',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Print button as a message as soon visitor clicks a button.'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                )),
                 'survey_button' => array(
                     'type' => 'checkbox',
                     'main_attr' => 'bot_configuration_array',
@@ -1447,6 +1592,70 @@ $fields = array(
                     'validation_definition' => new ezcInputFormDefinitionElement(
                         ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
                 )),
+                'enable_react_for_vi' => array(
+                    'type' => 'checkbox',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Enable reactions for visitor'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                    )),
+                'one_reaction_per_msg' => array(
+                    'type' => 'checkbox',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Only one reaction can be chosen per message'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                    )),
+                'reactions_always_visible_under' => array(
+                    'type' => 'checkbox',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Selected reactions should be always visible under a message'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                    )),
+                'always_visible_reactions' => array(
+                    'type' => 'checkbox',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Always visible reactions'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                    )),
+                'custom_tb_reactions' => array(
+                    'type' => 'textarea',
+                    'height' => '100px',
+                    'css_class' => 'form-control-sm',
+                    'translatable' => true,
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom toolbar icons'),
+                    'required' => false,
+                    'hidden' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                    )),
+                'custom_mw_reactions' => array(
+                    'type' => 'textarea',
+                    'height' => '100px',
+                    'css_class' => 'form-control-sm',
+                    'translatable' => true,
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom modal window icons'),
+                    'required' => false,
+                    'hidden' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                    )),
                 'fscreen_embed' => array(
                     'type' => 'checkbox',
                     'main_attr' => 'bot_configuration_array',
@@ -1719,6 +1928,26 @@ $fields = array(
         'type' => 'text',
         'main_attr' => 'bot_configuration_array',
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Close button position in embed mode'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+    'msg_time_format_day' => array(
+        'type' => 'text',
+        'main_attr' => 'bot_configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Date format if message is on different day'),
+        'placeholder' => 'Y-m-d H:i:s',
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+    'msg_time_format_time' => array(
+        'type' => 'text',
+        'placeholder' => 'H:i:s',
+        'main_attr' => 'bot_configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Date format if message is on same day'),
         'required' => false,
         'hidden' => true,
         'validation_definition' => new ezcInputFormDefinitionElement(

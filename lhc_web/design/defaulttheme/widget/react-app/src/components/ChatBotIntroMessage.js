@@ -5,6 +5,10 @@ import { withTranslation } from 'react-i18next';
 
 class ChatBotIntroMessage extends PureComponent {
 
+    state = {
+        value: ''
+    };
+
     constructor(props) {
         super(props);
         this.abstractClick = this.abstractClick.bind(this);
@@ -13,10 +17,42 @@ class ChatBotIntroMessage extends PureComponent {
         this.disableEditor = false;
     }
 
+    getDirectInnerText(element) {
+        var childNodes = element.childNodes;
+        var result = '';
+
+        for (var i = 0; i < childNodes.length; i++) {
+            if(childNodes[i].nodeType == 3) {
+                result += childNodes[i].data.trim();
+            }
+        }
+
+        return result;
+    }
+
     addLoader(attrs, element) {
-        if (!attrs["data-no-change"] && attrs.type == 'button') {
+
+        if (this.props.printButton == true && !attrs["data-no-msg"] && (attrs.type == 'button' || element.tagName === 'A')) {
+            this.setState({value : this.getDirectInnerText(element)});
+            if (element.tagName !== 'A') {
+                this.removeMetaMessage(attrs['data-id']);
+            }
+        }
+
+        if (attrs["data-no-msg"] && !attrs["data-no-change"] && attrs.type == 'button') {
             element.setAttribute("disabled","disabled");
             element.innerHTML = "<i class=\"material-icons\">&#xf113;</i>" + element.innerHTML;
+        }
+    }
+
+    removeMetaMessage(messageId) {
+        var msgArea = document.getElementById('messages-scroll');
+        if (msgArea) {
+            var x = msgArea.getElementsByClassName("meta-message-" + messageId);
+            var i;
+            for (i = 0; i < x.length; i++) {
+                x[i].parentNode.removeChild(x[i]);
+            }
         }
     }
 
@@ -74,8 +110,7 @@ class ChatBotIntroMessage extends PureComponent {
 
     render() {
 
-        return parse(this.props.content, {
-
+        let content = parse(this.props.content, {
             replace: domNode => {
                 if (domNode.attribs) {
 
@@ -83,6 +118,16 @@ class ChatBotIntroMessage extends PureComponent {
 
                     if (domNode.attribs.onclick) {
                         delete domNode.attribs.onclick;
+                    }
+
+                    if (domNode.attribs.class) {
+                        domNode.attribs.className = domNode.attribs.class;
+
+                        if (domNode.attribs.className.indexOf('message-row') !== -1) {
+                            domNode.attribs.className += ' index-row-0';
+                        }
+
+                        delete domNode.attribs.class;
                     }
 
                     if (domNode.name && domNode.name === 'button') {
@@ -99,6 +144,9 @@ class ChatBotIntroMessage extends PureComponent {
                 }
             }
         });
+
+        return <React.Fragment>{content}{this.state.value != '' && <div data-op-id="0" className="message-row response msg-to-store index-row-0"><div className="msg-body">{this.state.value.split('\n').map((item, idx) => {return (<React.Fragment key={idx}>{item}<br /></React.Fragment>)})}</div></div>}</React.Fragment>
+
     }
 }
 

@@ -4,6 +4,16 @@ $Module = array( "name" => "Live helper Chat REST API service");
 
 $ViewList = array();
 
+$ViewList['chooselanguage'] = array(
+    'params' => array(),
+    'uparams' => array('id','hash')
+);
+
+$ViewList['setsiteaccess'] = array(
+    'params' => array(),
+    'uparams' => array('id','hash','vid')
+);
+
 $ViewList['getproducts'] = array(
     'params' => array('id','product_id')
 );
@@ -81,6 +91,11 @@ $ViewList['fetchmessage'] = array(
     'uparams' => array(),
 );
 
+$ViewList['logconversions'] = array(
+    'params' => array(),
+    'uparams' => array('vid'),
+);
+
 $ViewList['addmsguser'] = array(
     'params' => array('chat_id','hash'),
     'uparams' => array('mode'),
@@ -134,6 +149,11 @@ $ViewList['checkinvitation'] = array(
 
 $ViewList['getinvitation'] = array(
     'params' => array(),
+    'uparams' => array()
+);
+
+$ViewList['proactiveonclick'] = array(
+    'params' => array('id'),
     'uparams' => array()
 );
 

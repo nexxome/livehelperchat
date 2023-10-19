@@ -7,7 +7,35 @@ $payload = json_decode(file_get_contents('php://input'),true);
 
 $r = '';
 
-if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[[msgitm]]', '',$payload['msg'])) != '' && mb_strlen($payload['msg']) < (int)erLhcoreClassModelChatConfig::fetch('max_message_length')->current_value)
+try {
+    $minLengthMessage = (int)erLhcoreClassModelChatConfig::fetch('max_message_length')->current_value;
+
+    if ($minLengthMessage === 0) {
+        $minLengthMessage = (int)erLhcoreClassModelChatConfig::fetchException('max_message_length')->current_value;
+    }
+
+} catch (Exception $e) {
+
+    $minLengthMessage = 500;
+
+    // Log to file
+    erLhcoreClassLog::write($e->getMessage() . ' - ' . $e->getTraceAsString());
+
+    // Log to database
+    erLhcoreClassLog::write($e->getMessage() . ' - ' . $e->getTraceAsString() ,
+        ezcLog::SUCCESS_AUDIT,
+        array(
+            'source' => 'lhc',
+            'category' => 'store',
+            'line' => $e->getLine(),
+            'file' => 'addmsguser.php',
+            'object_id' => $payload['id']
+        )
+    );
+}
+
+
+if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[[msgitm]]', '',$payload['msg'])) != '' && mb_strlen($payload['msg']) < $minLengthMessage)
 {
     try {
         $db = ezcDbInstance::get();
@@ -29,7 +57,7 @@ if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.validstatus_chat',array('chat' => & $chat, 'valid_statuses' => & $validStatuses));
 
-        if ($chat->hash == $payload['hash'] && (in_array($chat->status,$validStatuses)) && !in_array($chat->status_sub, array(erLhcoreClassModelChat::STATUS_SUB_SURVEY_COMPLETED, erLhcoreClassModelChat::STATUS_SUB_USER_CLOSED_CHAT, erLhcoreClassModelChat::STATUS_SUB_SURVEY_SHOW, erLhcoreClassModelChat::STATUS_SUB_CONTACT_FORM))) // Allow add messages only if chat is active
+        if ($chat->hash === $payload['hash'] && (in_array($chat->status,$validStatuses)) && !in_array($chat->status_sub, array(erLhcoreClassModelChat::STATUS_SUB_SURVEY_COMPLETED, erLhcoreClassModelChat::STATUS_SUB_USER_CLOSED_CHAT, erLhcoreClassModelChat::STATUS_SUB_SURVEY_SHOW, erLhcoreClassModelChat::STATUS_SUB_CONTACT_FORM))) // Allow add messages only if chat is active
         {
             $msgText = preg_replace('/\[html\](.*?)\[\/html\]/ms','',$payload['msg']);
 
@@ -56,7 +84,7 @@ if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[
             }
 
             if (!isset($msg)) {
-                $r = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please enter a message, max characters').' - '.(int)erLhcoreClassModelChatConfig::fetch('max_message_length')->current_value;
+                $r = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please enter a message, max characters').' - '.$minLengthMessage;
                 echo erLhcoreClassChat::safe_json_encode(array('error' => true, 'r' => $r));
                 exit;
             }
@@ -95,6 +123,19 @@ if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[
                 $updateFields[] = 'chat_variables';
             }
 
+            // Visitor hold should be removed on visitor message
+            /*if ($chat->status_sub == erLhcoreClassModelChat::STATUS_SUB_ON_HOLD && isset($chat->chat_variables_array['lhc_hldu'])) {
+                $chat->status_sub = 0;
+                $chat->operation_admin .= ";$('#hold-action-usr-".$chat->id."').removeClass('btn-outline-info')";
+                $chatVariables = $chat->chat_variables_array;
+                unset($chatVariables['lhc_hldu']);
+                $chat->chat_variables_array = $chatVariables;
+                $chat->chat_variables = json_encode($chatVariables);
+                $updateFields[] = 'chat_variables';
+                $updateFields[] = 'status_sub';
+                $updateFields[] = 'operation_admin';
+            }*/
+
             $chat->last_user_msg_time = $msg->time;
             $chat->lsync = time();
             $chat->last_msg_id = $chat->last_msg_id < $msg->id ? $msg->id : $chat->last_msg_id;
@@ -121,6 +162,20 @@ if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[
         flush();
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
+        }
+
+        // Log executed triggers if required
+        if (!empty($triggers) && isset($chat->chat_variables_array['gbot_debug']) && $chat->chat_variables_array['gbot_debug'] == 1) {
+            erLhcoreClassLog::write(json_encode(erLhcoreClassGenericBotWorkflow::$triggerNameDebug,JSON_PRETTY_PRINT),
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'bot',
+                    'line' => 0,
+                    'file' => 'addmsguser.php',
+                    'object_id' => $chat->id
+                )
+            );
         }
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.addmsguser',array('chat' => & $chat, 'msg' => & $msg));
@@ -157,7 +212,7 @@ if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[
     }
 
 } else {
-    $r = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please enter a message') . ', ' . (int)erLhcoreClassModelChatConfig::fetch('max_message_length')->current_value . ' ' . erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','characters max.');
+    $r = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please enter a message') . ', ' . $minLengthMessage . ' ' . erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','characters max.');
     echo erLhcoreClassChat::safe_json_encode(array('error' => true, 'r' => $r));
     exit;
 }

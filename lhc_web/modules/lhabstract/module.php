@@ -12,7 +12,15 @@ $ViewList['new'] = array(
 $ViewList['list'] = array(
     'functions' => array( 'use' ),
     'params' => array('identifier'),
-    'uparams' => array('name','object_id','category','source')
+    'uparams' => array(
+        'name',
+        'object_id',
+        'category',
+        'source',
+        'message',
+        'timefrom','timefrom_hours','timefrom_seconds','timefrom_minutes',
+        'timeto', 'timeto_minutes', 'timeto_seconds', 'timeto_hours',
+        )
 );
 
 $ViewList['downloadbinnary'] = array(
@@ -37,6 +45,11 @@ $ViewList['delete'] = array(
 );
 
 $ViewList['index'] = array(
+    'functions' => array( 'use' ),
+    'params' => array()
+);
+
+$ViewList['testmasking'] = array(
     'functions' => array( 'use' ),
     'params' => array()
 );

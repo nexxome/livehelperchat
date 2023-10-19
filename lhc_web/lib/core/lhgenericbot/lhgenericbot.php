@@ -315,6 +315,12 @@ class erLhcoreClassGenericBot {
             'Nick' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
             ),
+            'bot_lang' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'use_translation_service' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
         );
 
         $form = new ezcInputForm( INPUT_POST, $definition );
@@ -332,6 +338,18 @@ class erLhcoreClassGenericBot {
             $botTranslation->nick = '';
         }
 
+        if ( $form->hasValidData( 'bot_lang' )  ) {
+            $botTranslation->bot_lang = $form->bot_lang;
+        } else {
+            $botTranslation->bot_lang = '';
+        }
+
+        if ( $form->hasValidData( 'use_translation_service' ) && $form->use_translation_service == true ) {
+            $botTranslation->use_translation_service = 1;
+        } else {
+            $botTranslation->use_translation_service = 0;
+        }
+
         return $Errors;
     }
 
@@ -343,7 +361,8 @@ class erLhcoreClassGenericBot {
             'default_message' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw' ),
             'message_item' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw',null,FILTER_REQUIRE_ARRAY ),
             'languages' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw',null,FILTER_REQUIRE_ARRAY),
-            'group_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1))
+            'group_id' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)),
+            'auto_translate' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'boolean')
         );
 
         $form = new ezcInputForm( INPUT_POST, $definition );
@@ -370,9 +389,7 @@ class erLhcoreClassGenericBot {
 
         $data['items'] = $languagesData;
 
-        if ( !$form->hasValidData( 'default_message' ) || $form->default_message == '' ) {
-            $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('departament/edit','Please enter default translation!');
-        } else {
+        if ( $form->hasValidData( 'default_message' ) ) {
             $data['default'] = $form->default_message;
         }
 
@@ -383,6 +400,12 @@ class erLhcoreClassGenericBot {
             $botTranslationItem->group_id = $form->group_id;
         } else {
             $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('departament/edit','Please choose a group!');
+        }
+
+        if ( $form->hasValidData( 'auto_translate' ) ) {
+            $botTranslationItem->auto_translate = 1;
+        } else {
+            $botTranslationItem->auto_translate = 0;
         }
 
         return $Errors;
@@ -455,6 +478,18 @@ class erLhcoreClassGenericBot {
             'command' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'string'
             ),
+            'sub_command' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'info_msg' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'shortcut_1' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'shortcut_2' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
             'bot_id' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL,'int', array('min_range' => 1)
             ),
@@ -475,16 +510,40 @@ class erLhcoreClassGenericBot {
             $botCommand->command = $form->command;
         }
 
+        if ( $form->hasValidData( 'sub_command' )) {
+            $botCommand->sub_command = $form->sub_command;
+        } else {
+            $botCommand->sub_command = '';
+        }
+
+        if ( $form->hasValidData( 'info_msg' )) {
+            $botCommand->info_msg = $form->info_msg;
+        } else {
+            $botCommand->info_msg = '';
+        }
+
+        if ( $form->hasValidData( 'shortcut_1' ) ) {
+            $botCommand->shortcut_1 = $form->shortcut_1;
+        } else {
+            $botCommand->shortcut_1 = '';
+        }
+
+        if ( $form->hasValidData( 'shortcut_2' ) ) {
+            $botCommand->shortcut_2 = $form->shortcut_2;
+        } else {
+            $botCommand->shortcut_2 = '';
+        }
+
         if ( $form->hasValidData( 'bot_id' ) ) {
             $botCommand->bot_id = $form->bot_id;
         } else {
-            $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('departament/edit','Please choose a bot!');
+            $botCommand->bot_id = 0;
         }
 
         if ( $form->hasValidData( 'AbstractInput_trigger_id' ) ) {
             $botCommand->trigger_id = $form->AbstractInput_trigger_id;
         } else {
-            $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('departament/edit','Please choose a trigger!');
+            $botCommand->trigger_id = 0;
         }
 
         if ( $form->hasValidData( 'dep_id' ) ) {

@@ -25,6 +25,63 @@ class erLhcoreClassGenericBotValidator {
         self::extractPayloadEvents($trigger, $data['actions']);
     }
 
+    public static function loadEventTemplate($data) {
+        $eventTemplate = erLhcoreClassModelGenericBotTriggerEventTemplate::fetch($data['id']);
+
+        $trigger = erLhcoreClassModelGenericBotTrigger::fetch($data['trigger_id']);
+
+        foreach (erLhcoreClassModelGenericBotTriggerEvent::getList(['filter' => ['trigger_id' => $trigger->id]]) as $triggerEvent) {
+            $triggerEvent->removeThis();
+        }
+
+        // Save new trigger events
+        foreach ($eventTemplate->configuration_array as $triggerEventPayload) {
+            $triggerEvent = new erLhcoreClassModelGenericBotTriggerEvent();
+            $triggerEvent->setState($triggerEventPayload);
+            $triggerEvent->trigger_id = $trigger->id;
+            $triggerEvent->bot_id = $trigger->bot_id;
+            $triggerEvent->id = null;
+            $triggerEvent->configuration = json_encode($triggerEventPayload['configuration_array']);
+            $triggerEvent->saveThis();
+        }
+    }
+
+    public static function validateEventTemplateSave(& $data) {
+        $trigger = erLhcoreClassModelGenericBotTriggerEventTemplate::findOne(['filter' => ['name' => $data['name']]]);
+
+        if (!($trigger instanceof erLhcoreClassModelGenericBotTriggerEventTemplate)){
+            $trigger = new erLhcoreClassModelGenericBotTriggerEventTemplate();
+        }
+
+        $trigger->configuration = json_encode($data['actions']);
+        $trigger->name = $data['name'];
+        $trigger->saveThis();
+    }
+
+    public static function validateTemplateSave(& $data) {
+
+        $trigger = erLhcoreClassModelGenericBotTriggerTemplate::findOne(['filter' => ['name' => $data['name']]]);
+
+        if (!($trigger instanceof erLhcoreClassModelGenericBotTriggerTemplate)){
+            $trigger = new erLhcoreClassModelGenericBotTriggerTemplate();
+        }
+
+        $trigger->actions = json_encode($data['actions']);
+
+        $matches = [];
+        preg_match_all('/"_id":"([A-Za-z_\-0-9]+)"/s',$trigger->actions,$matches);
+
+        // Save _id's as new always to avoid cache collisions
+        if (isset($matches[1]) && !empty($matches[0])) {
+            foreach ($matches[1] as $index => $match) {
+                $trigger->actions = str_replace($matches[0][$index], str_replace($matches[1][$index],  erLhcoreClassChat::generateHash(10), $matches[0][$index]), $trigger->actions);
+            }
+        }
+
+        $trigger->name = $data['name'];
+        $trigger->saveThis();
+    }
+
     public static function validateTriggerEvent(& $data) {
         $triggerEvent = erLhcoreClassModelGenericBotTriggerEvent::fetch($data['id']);
         $triggerEvent->type = $data['type'];
@@ -34,6 +91,7 @@ class erLhcoreClassGenericBotValidator {
         $triggerEvent->configuration = json_encode($triggerEvent->configuration_array);
         $triggerEvent->on_start_type = (int)$data['on_start_type'];
         $triggerEvent->priority = (int)$data['priority'];
+        $triggerEvent->skip = (int)$data['skip'];
         $triggerEvent->saveThis();
     }
 
@@ -314,6 +372,7 @@ class erLhcoreClassGenericBotValidator {
                 $triggerObj->name = $trigger['trigger']['name'];
                 $triggerObj->default = $trigger['trigger']['default'];
                 $triggerObj->default_unknown = $trigger['trigger']['default_unknown'];
+                $triggerObj->default_unknown_btn = isset($trigger['trigger']['default_unknown_btn']) ? $trigger['trigger']['default_unknown_btn'] : 0;
                 $triggerObj->actions = $trigger['trigger']['actions'];
                 $triggerObj->saveThis();
 
@@ -339,6 +398,10 @@ class erLhcoreClassGenericBotValidator {
 
                     if (isset($event['on_start_type'])) {
                         $eventObj->on_start_type = $event['on_start_type'];
+                    }
+
+                    if (isset($event['skip'])) {
+                        $eventObj->skip = (int)$event['skip'];
                     }
 
                     if (isset($event['priority'])) {

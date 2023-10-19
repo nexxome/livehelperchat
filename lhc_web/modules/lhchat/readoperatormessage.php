@@ -84,7 +84,7 @@ $tpl->set('playsound',(string)$Params['user_parameters_unordered']['playsound'] 
 
 $fullHeight = (isset($Params['user_parameters_unordered']['fullheight']) && $Params['user_parameters_unordered']['fullheight'] == 'true') ? true : false;
 
-if (is_numeric($inputData->departament_id) && $inputData->departament_id > 0 && ($startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('filter' => array('department_id' => $inputData->departament_id)))) !== false) {
+if (is_numeric($inputData->departament_id) && $inputData->departament_id > 0 && ($startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('customfilter' => array("((`dep_ids` != '' AND JSON_CONTAINS(`dep_ids`,'" . (int)$inputData->departament_id . "','$')) OR department_id = " . (int)$inputData->departament_id . ")" )))) !== false) {
 	$startDataFields = $startDataDepartment->data_array;
 } else {
 	// Start chat field options
@@ -385,14 +385,11 @@ if (isset($_POST['askQuestion']))
     }
 
     // Detect user locale
-    if(isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-        $parts = explode(';',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
-        $languages = explode(',',$parts[0]);
-        if (isset($languages[0])) {
-            $chat->chat_locale = $languages[0];
-        }
+    $chatLocale = erLhcoreClassChatValidator::getVisitorLocale();
+    if ($chatLocale !== null) {
+        $chat->chat_locale = $chatLocale;
     }
-		
+
 	if (!empty($stringParts)) {
 	   $chat->additional_data = json_encode ( $stringParts );
 	}
@@ -489,7 +486,7 @@ if (isset($_POST['askQuestion']))
 
        $ignoreResponder = isset($onlineAttrSystem['lhc_ignore_autoresponder']) && $onlineAttrSystem['lhc_ignore_autoresponder'] == 1;
 
-       if (isset($onlineAttrSystem['lhc_assign_to_me']) && $onlineAttrSystem['lhc_assign_to_me'] == 1 && $userInstance->operator_user_id > 0) {
+       if (isset($onlineAttrSystem['lhc_assign_to_me']) && $onlineAttrSystem['lhc_assign_to_me'] == 1 && $userInstance->operator_user !== false && $userInstance->operator_user_id > 0) {
            $chat->user_id = $userInstance->operator_user_id;
            $chat->tslasign = time();
        }

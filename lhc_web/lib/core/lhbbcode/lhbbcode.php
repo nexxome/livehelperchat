@@ -67,12 +67,12 @@ class erLhcoreClassBBCode
        }
        $url = str_replace(';//', '://', $url);
        /* If the URL doesn't appear to contain a scheme, we
-        * presume it needs http:// prepended (unless a relative
+        * presume it needs https:// prepended (unless a relative
         * link starting with /, # or ? or a php file).
        */
        if ( strpos($url, ':') === false && ! in_array( $url[0], array( '/', '#', '?' ) ) &&
            ! preg_match('/^[a-z0-9-]+?\.php/i', $url) )
-               $url = 'http://' . $url;
+               $url = 'https://' . $url;
            // Replace ampersands and single quotes only when displaying.
            if ( 'display' == $_context ) {
                $url = self::wp_kses_normalize_entities( $url );
@@ -681,7 +681,7 @@ class erLhcoreClassBBCode
             $append = '</a>';
         }
 
-        return  "<div class=\"img_embed\">{$prepend}<img title=\"\" onclick='lhinst.zoomImage()' class='action-image img-fluid' src=\"".$url."\" alt=\"\" />{$append}</div>";
+        return  "<div class=\"img_embed\">{$prepend}<img title=\"\" onclick='lhinst.zoomImage(this)' class='action-image img-fluid' src=\"".$url."\" alt=\"\" />{$append}</div>";
    }
 
    public static function _make_embed_map($matches)
@@ -722,7 +722,7 @@ class erLhcoreClassBBCode
    public static function _make_web_ftp_clickable_cb( $matches ) {
        $ret = '';
        $dest = $matches[2];
-       $dest = 'http://' . $dest;
+       $dest = 'https://' . $dest;
        // removed trailing [.,;:)] from URL
        if ( in_array( substr($dest, -1), array('.', ',', ';', ':', ')') ) === true ) {
            $ret = substr($dest, -1);
@@ -748,7 +748,7 @@ class erLhcoreClassBBCode
      */
    public static function _make_email_clickable_cb( $matches ) {
     	$email = $matches[2] . '@' . $matches[3];
-    	return $matches[1] . "<a rel=\"noreferrer\" class=\"link\" href=\"mailto:$email\">$email</a>";
+    	return $matches[1] . "<a rel=\"noreferrer\" target=\"_blank\" class=\"link\" href=\"mailto:$email\">$email</a>";
    }
 
    
@@ -795,18 +795,7 @@ class erLhcoreClassBBCode
    }
 
    public static function getHost() {
-
-       if (isset($_SERVER['HTTP_HOST'])) {
-           $site_address = (erLhcoreClassSystem::$httpsMode == true ? 'https:' : 'http:') . '//' . $_SERVER['HTTP_HOST'] ;
-       } else if (class_exists('erLhcoreClassInstance')) {
-           $site_address = 'https://' . erLhcoreClassInstance::$instanceChat->address . '.' . erConfigClassLhConfig::getInstance()->getSetting( 'site', 'seller_domain');
-       } else if (class_exists('erLhcoreClassExtensionLhcphpresque')) {
-           $site_address = erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhcphpresque')->settings['site_address'];
-       } else {
-           $site_address = '';
-       }
-
-       return $site_address;
+        return erLhcoreClassSystem::getHost();
    }
 
    public static function _make_upload_link($matches){
@@ -836,8 +825,7 @@ class erLhcoreClassBBCode
                     // Check that user has permission to see the chat. Let say if user purposely types file bbcode
                     if ($hash == $file->security_hash) {
                         $fileExtension = strtolower($file->extension);
-                        if (in_array($fileExtension,['jfif','jpg','jpeg','png','gif'])){
-
+                        if (in_array($fileExtension,['jfif','jpg','jpeg','png','gif','webp'])){
                             // Make link if required
                             $prepend = '';
                             $append = '';
@@ -859,7 +847,7 @@ class erLhcoreClassBBCode
                                 $prepend = '<div class="position-relative">';
                                 $append = '<a class="hidden-download" target="_blank" rel="noreferrer" href="'. self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}".'/(inline)/true"></a></div>';
                             }
-                            return $prepend . '<img onclick="lhinst.zoomImage()" id="img-file-' . $file->id . '" title="'.htmlspecialchars($file->upload_name).'" class="action-image img-fluid" src="' . self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}" . '" alt="'.htmlspecialchars($file->upload_name).'" />' . $append;
+                            return $prepend . '<img onclick="lhinst.zoomImage(this)" id="img-file-' . $file->id . '" title="'.htmlspecialchars($file->upload_name).'" class="action-image img-fluid" src="' . self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}" . '" alt="'.htmlspecialchars($file->upload_name).'" />' . $append;
                         }
 
                         $audio = '';
@@ -1105,7 +1093,11 @@ class erLhcoreClassBBCode
         $ret = ' ' . $ret;
 
         $makeLinksClickable = true;
-        
+
+        if (isset($paramsMessage['see_sensitive_information']) && $paramsMessage['see_sensitive_information'] === false && $paramsMessage['sender'] == 0) {
+           $ret = \LiveHelperChat\Models\LHCAbstract\ChatMessagesGhosting::maskMessage($ret);
+        }
+
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_make_clickable',array('msg' => & $ret, 'makeLinksClickable' => & $makeLinksClickable));
 
         // Make base URL
@@ -1117,11 +1109,13 @@ class erLhcoreClassBBCode
 
         $ret = preg_replace_callback('/\[url\="?(.*?)"?\](.*?)\[\/url\]/ms', "erLhcoreClassBBCode::_make_url_embed", $ret);
 
+
         if (isset($paramsMessage['sender']) && $paramsMessage['sender'] == 0) {
             $ret = preg_replace('/\[html\](.*?)\[\/html\]/ms','',$ret);
         } else if (isset($paramsMessage['html_as_text']) && $paramsMessage['html_as_text'] == true) {
             $ret = preg_replace_callback('/\[html\](.*?)\[\/html\]/ms', function ($matches) {
-                return '<code class="rounded mx170 text-white">'.trim($matches[1]).'</code>';
+                $messageId = erLhcoreClassChat::generateHash(10);
+                return '<button class="btn btn-xs text-white fs13 btn-link btn-sm p-0 pb-1" onclick="$(\'#message-more-'. $messageId.'\').toggleClass(\'hide\')" >'.erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncuser', 'Hide/Show HTML Code').'</button><span id="message-more-'. $messageId.'" class="hide"><br/><code class="rounded mx170 text-white">'.trim($matches[1]).'</code></span>';
             }, $ret);
         }
 

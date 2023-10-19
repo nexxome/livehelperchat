@@ -3,19 +3,38 @@
 $tpl = erLhcoreClassTemplate::getInstance( 'lhuser/new.tpl.php');
 
 $UserData = new erLhcoreClassModelUser();
-
-$UserDepartaments = isset($_POST['UserDepartament']) ? $_POST['UserDepartament'] : array();
-$userDepartamentsGroup = isset($_POST['UserDepartamentGroup']) ? $_POST['UserDepartamentGroup'] : array();
-$userDepartamentsGroupRead = isset($_POST['UserDepartamentGroupRead']) ? $_POST['UserDepartamentGroupRead'] : array();
-$userDepartamentsRead = isset($_POST['UserDepartamentRead']) ? $_POST['UserDepartamentRead'] : array();
-
 $tpl->set('tab',$Params['user_parameters_unordered']['tab'] == 'canned' ? 'tab_canned' : '');
 
 $groups_can_edit = erLhcoreClassUser::instance()->hasAccessTo('lhuser', 'editusergroupall') == true ? true : erLhcoreClassGroupRole::getGroupsAccessedByUser(erLhcoreClassUser::instance()->getUserData());
 
-$userParams = array('edit_params' => erLhcoreClassUserValidator::getDepartmentValidationParams($UserData), 'show_all_pending' => 1, 'global_departament' => array(), 'groups_can_read' => array(), 'groups_can_edit' => ($groups_can_edit === true ? true : $groups_can_edit['groups']));
+$userParams = array(
+    'edit_params' => erLhcoreClassUserValidator::getDepartmentValidationParams($UserData),
+    'show_all_pending' => 1,
+    'global_departament' => array(),
+    'groups_can_read' => array(),
+    'auto_join_private' => 1,
+    'no_scroll_bottom' => 0,
+    'remove_closed_chats' => 0,
+    'remove_closed_chats_remote' => 0,
+    'remove_close_timeout' => 5,
+    'auto_preload' => 0,
+    'auto_uppercase' => 1,
+    'chat_text_rows' => 2,
 
-if (isset($_POST['Update_account']))
+    // Notifications
+    'ownntfonly' => 0,
+    'sn_off' => 1,
+    'show_alert_chat' => 0,
+    'show_alert_transfer' => 1,
+    'hide_quick_notifications' => 0,
+    'trackactivity' => 0,
+    'trackactivitytimeout' => -1,
+
+    // Groups
+    'groups_can_edit' => ($groups_can_edit === true ? true : $groups_can_edit['groups'])
+);
+
+if (isset($_POST['Update_account']) || isset($_POST['Update_account_edit']))
 {
 	
 	if (!isset($_POST['csfr_token']) || !$currentUser->validateCSFRToken($_POST['csfr_token'])) {
@@ -33,6 +52,10 @@ if (isset($_POST['Update_account']))
 
             $db->beginTransaction();
 
+            if ($UserData->time_zone == 'default') {
+                $UserData->time_zone = '';
+            }
+
             erLhcoreClassUser::getSession()->save($UserData);
 
             if ( isset($_POST['ForceResetPassword']) ) {
@@ -43,10 +66,6 @@ if (isset($_POST['Update_account']))
                 ));
             }
 
-            if (count($userParams['global_departament']) > 0) {
-               erLhcoreClassUserDep::addUserDepartaments($userParams['global_departament'], $UserData->id, $UserData, $userDepartamentsRead);
-            }
-
             $UserData->setUserGroups();
 
             $userPhotoErrors = erLhcoreClassUserValidator::validateUserPhoto($UserData);
@@ -55,19 +74,36 @@ if (isset($_POST['Update_account']))
             	$UserData->saveThis();
             }
 
-            // Write
-            erLhcoreClassModelDepartamentGroupUser::addUserDepartmentGroups($UserData, erLhcoreClassUserValidator::validateDepartmentsGroup($UserData, array('edit_params' => $userParams['edit_params'])));
-
-            // Read
-            erLhcoreClassModelDepartamentGroupUser::addUserDepartmentGroups($UserData, erLhcoreClassUserValidator::validateDepartmentsGroup($UserData, array('edit_params' => $userParams['edit_params'], 'read_only' => true)), true);
-
+            // Chats
             erLhcoreClassModelUserSetting::setSetting('show_all_pending', $userParams['show_all_pending'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('auto_join_private', $userParams['auto_join_private'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('remove_closed_chats', $userParams['remove_closed_chats'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('remove_closed_chats_remote', $userParams['remove_closed_chats_remote'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('remove_close_timeout', $userParams['remove_close_timeout'], $UserData->id);
+
+            erLhcoreClassModelUserSetting::setSetting('auto_preload', $userParams['auto_preload'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('no_scroll_bottom', $userParams['no_scroll_bottom'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('auto_uppercase', $userParams['auto_uppercase'], $UserData->id);
+
+            // Notifications
+            erLhcoreClassModelUserSetting::setSetting('show_alert_chat', $userParams['show_alert_chat'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('sn_off', $userParams['sn_off'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('ownntfonly', $userParams['ownntfonly'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('trackactivity', $userParams['trackactivity'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('hide_quick_notifications', $userParams['hide_quick_notifications'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('trackactivitytimeout', $userParams['trackactivitytimeout'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('show_alert_transfer', $userParams['show_alert_transfer'], $UserData->id);
+            erLhcoreClassModelUserSetting::setSetting('chat_text_rows', $userParams['chat_text_rows'], $UserData->id);
 
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.user_created',array('userData' => & $UserData, 'password' => $UserData->password_front));
 
             $db->commit();
 
-            erLhcoreClassModule::redirect('user/userlist');
+            if (isset($_POST['Update_account_edit'])) {
+                erLhcoreClassModule::redirect('user/edit','/' . $UserData->id);
+            } else {
+                erLhcoreClassModule::redirect('user/userlist');
+            }
             exit;
 
         } catch (Exception $e) {
@@ -87,11 +123,7 @@ if (isset($_POST['Update_account']))
 }
 
 $tpl->set('user',$UserData);
-$tpl->set('userDepartaments',$UserDepartaments);
-$tpl->set('userDepartamentsGroup',$userDepartamentsGroup);
-$tpl->set('userDepartamentsGroupRead',$userDepartamentsGroupRead);
-$tpl->set('userDepartamentsRead',$userDepartamentsRead);
-$tpl->set('show_all_pending',$userParams['show_all_pending']);
+$tpl->set('quick_settings', $userParams);
 
 $userGroupFilter = $groups_can_edit === true ? array() : array('filterin' => array('id' => $groups_can_edit['groups']));
 $tpl->set('user_groups_filter',$userGroupFilter);

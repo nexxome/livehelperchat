@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhcoreClassModelCannedMsg
 {
     use erLhcoreClassDBTrait;
@@ -39,6 +39,7 @@ class erLhcoreClassModelCannedMsg
             'repetitiveness' => $this->repetitiveness,
             'days_activity' => $this->days_activity,
             'disabled' => $this->disabled,
+            'delete_on_exp' => $this->delete_on_exp,
         );
     }
 
@@ -210,7 +211,7 @@ class erLhcoreClassModelCannedMsg
             
             if (!($tag instanceof erLhcoreClassModelCannedMsgTag)) {                   
                 $tag = new erLhcoreClassModelCannedMsgTag();
-                $tag->tag = $tagKeywordTrimmed;
+                $tag->tag = substr($tagKeywordTrimmed,0,40);
                 $tag->saveThis();
             }
             
@@ -247,7 +248,7 @@ class erLhcoreClassModelCannedMsg
             }
         }
         
-        $this->tags = $tag;
+        $this->tags = $tagsArrayObj;
         $this->tags_plain = implode(', ', $tagsArray);        
     }
     
@@ -336,8 +337,8 @@ class erLhcoreClassModelCannedMsg
 
             $filter[] = "(
                 repetitiveness = 0 OR 
-                (repetitiveness = 1 AND JSON_EXTRACT(days_activity,'$.".$dayShort[date('N')].".start') <= " . date('Hi') . " AND JSON_EXTRACT(days_activity,'$.".$dayShort[date('N')].".end') >= " . date('Hi') . " ) OR
-                (repetitiveness = 2 AND active_from <= " . time() . " AND active_to >= " . time() . ") OR
+                (repetitiveness = 1 AND days_activity != '' AND JSON_EXTRACT(days_activity,'$.".$dayShort[date('N')].".start') <= " . date('Hi') . " AND JSON_EXTRACT(days_activity,'$.".$dayShort[date('N')].".end') >= " . date('Hi') . " ) OR
+                (repetitiveness = 2 AND active_from <= " . time() . " AND (active_to = 0 OR active_to >= " . time() . ")) OR
                 (repetitiveness = 3 AND FROM_UNIXTIME(active_from,'%m%d%H%i') <= " . date('mdHi') . " AND FROM_UNIXTIME(active_to,'%m%d%H%i') >= " . date('mdHi') . ")
             )";
 
@@ -384,6 +385,7 @@ class erLhcoreClassModelCannedMsg
             }
         }
 
+        \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'canned_replace', 'replace_array' => & $replaceArray, 'chat' => $chat, 'user' => $user));
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.workflow.canned_message_replace', array(
             'chat' => $chat,
             'replace_array' => & $replaceArray,
@@ -416,14 +418,22 @@ class erLhcoreClassModelCannedMsg
         if (!empty($replaceCustomArgs)) {
 
             $identifiers = [];
+            $identifiersApplied = [];
             foreach ($replaceCustomArgs as $replaceArg) {
                 $identifiers[] = str_replace(['{','}'],'', $replaceArg);
             }
 
-            $replaceRules = erLhcoreClassModelCannedMsgReplace::getList(array('limit' => false, 'filterin' => array('identifier' => $identifiers)));
+            $replaceRules = erLhcoreClassModelCannedMsgReplace::getList(array(
+                'sort' => 'repetitiveness DESC', // Default translation will be the last one if more than one same identifier is found
+                'limit' => false,
+                'filterin' => array('identifier' => $identifiers))
+            );
 
             foreach ($replaceRules as $replaceRule) {
-                $replaceArray['{' . $replaceRule->identifier . '}'] = $replaceRule->getValueReplace(['chat' => $chat, 'user' => $user]);
+                if ($replaceRule->is_active && !in_array($replaceRule->identifier,$identifiersApplied)) {
+                    $replaceArray['{' . $replaceRule->identifier . '}'] = $replaceRule->getValueReplace(['chat' => $chat, 'user' => $user]);
+                    $identifiersApplied[] = $replaceRule->identifier;
+                }
             }
         }
 
@@ -431,6 +441,18 @@ class erLhcoreClassModelCannedMsg
 
             // Set replace data
             $item->setReplaceData($replaceArray);
+
+
+            if (strpos($item->msg, '{args.') !== false) {
+                $matchesValues = array();
+                preg_match_all('~\{args\.((?:[^\{\}\}]++|(?R))*)\}~', $item->msg, $matchesValues);
+                if (!empty($matchesValues[0])) {
+                    foreach ($matchesValues[0] as $indexElement => $elementValue) {
+                        $valueAttribute = erLhcoreClassGenericBotActionRestapi::extractAttribute(array('user' => $user, 'chat' => $chat), $matchesValues[1][$indexElement], '.');
+                        $item->msg = str_replace($elementValue, $valueAttribute['found'] == true ? $valueAttribute['value'] : '', $item->msg);
+                    }
+                }
+            }
 
             $type = $item->department_id > 0 ? 0 : ($item->user_id > 0 ? 1 : 2);
             $id = $item->department_id > 0 ? $item->department_id : ($item->user_id > 0 ? $item->user_id : 0);
@@ -501,6 +523,7 @@ class erLhcoreClassModelCannedMsg
     public $repetitiveness = self::REP_NO;
     public $days_activity = '';
     public $disabled = 0;
+    public $delete_on_exp = 0;
 
 
 }

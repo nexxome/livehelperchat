@@ -21,6 +21,23 @@ if ( isset($_POST['Delete_departament']) ) {
     exit;
 }
 
+if ($Params['user_parameters_unordered']['action'] == 'operators') {
+    $tpl = erLhcoreClassTemplate::getInstance( 'lhdepartment/operators_group.tpl.php');
+    $tpl->set('department_group', $Departament_group);
+    $tpl->set('group_op', isset($_GET['group']) && $_GET['group'] === 'true' ? true : (isset($_GET['group']) ? false : null));
+    $tpl->set('only_online', isset($_GET['only_online']) && $_GET['only_online'] === 'true' ? true : (isset($_GET['only_online']) ? false : null));
+    $tpl->set('only_logged', isset($_GET['only_logged']) && $_GET['only_logged'] === 'true' ? true : (isset($_GET['only_logged']) ? false : null));
+    $tpl->set('only_offline', isset($_GET['only_offline']) && $_GET['only_offline'] === 'true' ? true : (isset($_GET['only_offline']) ? false : null));
+    echo $tpl->fetch();
+    exit;
+}
+
+if ($Params['user_parameters_unordered']['action'] == 'updatestats') {
+    erLhcoreClassChatStatsResque::updateDepartmentGroupStats($Departament_group);
+    erLhcoreClassModule::redirect('department/group');
+    exit;
+}
+
 if (isset($_POST['Update_departament']) || isset($_POST['Save_departament'])  )
 {
 	if (!isset($_POST['csfr_token']) || !$currentUser->validateCSFRToken($_POST['csfr_token'])) {
@@ -39,6 +56,8 @@ if (isset($_POST['Update_departament']) || isset($_POST['Save_departament'])  )
         erLhcoreClassAdminChatValidatorHelper::clearUsersCache();
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('department.edit_department_group',array('department_group' => & $Departament_group));
+
+        erLhcoreClassChatStatsResque::updateDepartmentGroupStats($Departament_group);
 
         if (isset($_POST['Save_departament'])) {
             erLhcoreClassModule::redirect('department/group');

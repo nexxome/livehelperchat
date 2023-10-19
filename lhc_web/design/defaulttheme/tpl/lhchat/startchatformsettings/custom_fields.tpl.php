@@ -84,7 +84,7 @@
 
 
 			<div class="form-group">
-				<div class="btn-group float-right" role="group" aria-label="...">
+				<div class="btn-group float-end" role="group" aria-label="...">
 					<button ng-if="$index > 0" type="button" class="btn btn-secondary btn-xs" ng-click="startChat.moveLeftField(field)">&laquo; <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','left')?></button>
 					<button ng-if="$index < startChat.startchatfields.length-1" type="button" class="btn btn-secondary btn-xs" ng-click="startChat.moveRightField(field)"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','right')?> &raquo;</button>
 				</div>
@@ -174,7 +174,7 @@
             </div>
 
             <div class="form-group">
-                <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Options')?></label>
+                <label><a href="#" onclick="lhc.revealModal({'url':WWW_DIR_JAVASCRIPT+'genericbot/help/dropdownoptions'});" class="material-icons text-muted">help</a><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Options')?></label>
                 <textarea name="customFieldOptions[]" class="form-control" ng-model="field.options" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchatformsettings','Each option in new line')?>"></textarea>
             </div>
 

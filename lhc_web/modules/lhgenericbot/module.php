@@ -17,6 +17,12 @@ $ViewList['initbot'] = array(
     'functions' => array( 'use' )
 );
 
+$ViewList['testpattern'] = array(
+    'params' => array('id'),
+    'uparams' => array(),
+    'functions' => array( 'use' )
+);
+
 $ViewList['commands'] = array(
     'params' => array('id'),
     'uparams' => array(),
@@ -79,7 +85,7 @@ $ViewList['botimportgroup'] = array(
 
 $ViewList['triggersbybot'] = array(
     'params' => array('id','trigger_id'),
-    'uparams' => array('preview','element'),
+    'uparams' => array('preview','element','asarg'),
     'functions' => array( 'use_operator' )
 );
 
@@ -128,13 +134,13 @@ $ViewList['listexceptions'] = array(
 $ViewList['listtranslations'] = array(
     'params' => array(),
     'uparams' => array(),
-    'functions' => array( 'use' )
+    'functions' => array( 'use_individualization' )
 );
 
 $ViewList['listtranslationsitems'] = array(
     'params' => array(),
     'uparams' => array('group_id'),
-    'functions' => array( 'use' )
+    'functions' => array( 'use_individualization' )
 );
 
 $ViewList['new'] = array(
@@ -158,25 +164,25 @@ $ViewList['newexception'] = array(
 $ViewList['newtrgroup'] = array(
     'params' => array(),
     'uparams' => array(),
-    'functions' => array( 'use' )
+    'functions' => array( 'use_individualization' )
 );
 
 $ViewList['newtritem'] = array(
     'params' => array(),
     'uparams' => array('group_id'),
-    'functions' => array( 'use' )
+    'functions' => array( 'use_individualization' )
 );
 
 $ViewList['edittrgroup'] = array(
     'params' => array('id'),
     'uparams' => array(),
-    'functions' => array( 'use' )
+    'functions' => array( 'use_individualization' )
 );
 
 $ViewList['edittritem'] = array(
     'params' => array('id'),
     'uparams' => array(),
-    'functions' => array( 'use' )
+    'functions' => array( 'use_individualization' )
 );
 
 $ViewList['editrestapi'] = array(
@@ -224,13 +230,13 @@ $ViewList['deleteexception'] = array(
 $ViewList['deletetritem'] = array(
     'params' => array('id'),
     'uparams' => array('csfr'),
-    'functions' => array( 'use' )
+    'functions' => array( 'use_individualization' )
 );
 
 $ViewList['deletetrgroup'] = array(
     'params' => array('id'),
     'uparams' => array('csfr'),
-    'functions' => array( 'use' )
+    'functions' => array( 'use_individualization' )
 );
 
 $ViewList['nodegrouptriggers'] = array(
@@ -360,8 +366,8 @@ $ViewList['notifications'] = array(
 );
 
 $ViewList['buttonclicked'] = array(
-    'params' => array('chat_id', 'hash'),
-    'uparams' => array('type')
+    'params' => array('chat_id', 'hash' ),
+    'uparams' => array('type','theme')
 );
 
 $ViewList['updatebuttonclicked'] = array(
@@ -375,8 +381,34 @@ $ViewList['chatactions'] = array(
     'functions' => array( 'see_actions' )
 );
 
+$ViewList['conditions'] = array(
+    'params' => array(),
+    'uparams' => array(),
+    'functions' => array( 'manage_conditions' )
+);
+
+$ViewList['newcondition'] = array(
+    'params' => array(),
+    'uparams' => array(),
+    'functions' => array( 'manage_conditions' )
+);
+
+$ViewList['editcondition'] = array(
+    'params' => array('id'),
+    'uparams' => array(),
+    'functions' => array( 'manage_conditions' )
+);
+
+$ViewList['deletecondition'] = array(
+    'params' => array('id'),
+    'uparams' => array('csfr'),
+    'functions' => array( 'manage_conditions' )
+);
+
 $FunctionList['use'] = array('explain' => 'General permission to use generic bot module');
 $FunctionList['use_operator'] = array('explain' => 'Allow operator to change bot notifications settings');
 $FunctionList['see_actions'] = array('explain' => 'Allow operator to see chat actions');
+$FunctionList['use_individualization'] = array('explain' => 'Allow operator to change bot individualisation');
+$FunctionList['manage_conditions'] = array('explain' => 'Allow operator to manage conditions templates');
 
 ?>

@@ -2,6 +2,18 @@
 
 $tpl = erLhcoreClassTemplate::getInstance('lhaudit/configuration.tpl.php');
 
+if (!class_exists('erLhcoreClassInstance') && $_SERVER['REQUEST_METHOD'] === 'POST' && $Params['user_parameters_unordered']['action'] == 'kill' && is_numeric($Params['user_parameters_unordered']['id'])) {
+    if (!isset($Params['user_parameters_unordered']['csfr']) || !$currentUser->validateCSFRToken($Params['user_parameters_unordered']['csfr'])) {
+        die('Invalid CSRF Token');
+        exit;
+    }
+    $db = ezcDbInstance::get();
+    $stmt = $db->prepare('KILL :process_id');
+    $stmt->bindValue(':process_id', (int)$Params['user_parameters_unordered']['id'],PDO::PARAM_INT);
+    $stmt->execute();
+    exit;
+}
+
 $auditOptions = erLhcoreClassModelChatConfig::fetch('audit_configuration');
 $data = (array)$auditOptions->data;
 
@@ -17,6 +29,7 @@ if ( isset($_POST['StoreOptions']) ) {
         'log_js' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'boolean'),
         'log_user' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'boolean'),
         'log_block' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'boolean'),
+        'log_files' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'boolean'),
         'log_objects' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw',null,FILTER_REQUIRE_ARRAY),
     );
 
@@ -45,6 +58,12 @@ if ( isset($_POST['StoreOptions']) ) {
         $data['log_block'] = 1;
     } else {
         $data['log_block'] = 0;
+    }
+    
+    if ( $form->hasValidData( 'log_files' )) {
+        $data['log_files'] = 1;
+    } else {
+        $data['log_files'] = 0;
     }
 
     if ( $form->hasValidData( 'log_user' )) {

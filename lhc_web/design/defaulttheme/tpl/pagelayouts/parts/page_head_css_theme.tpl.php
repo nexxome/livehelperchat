@@ -1,7 +1,17 @@
 <?php if (isset($Result['theme']) && $Result['theme'] !== false) : ?>
 <?php if (!isset($react)) : ?>
     <style>
-<?php endif; ?>
+<?php endif;
+if (isset($theme) && $theme->custom_widget_css != '') {
+    $matchesImport = [];
+    preg_match_all("/@import url\((.*)\);/",$theme->custom_widget_css, $matchesImport);
+    foreach ($matchesImport[0] as $rule) {
+        echo $rule;
+        $theme->custom_widget_css = str_replace($rule,'',$theme->custom_widget_css);
+    }
+}
+?>
+
         <?php if ($Result['theme']->buble_visitor_background != '') : ?>
         #messagesBlock div.message-row.response div.msg-body:not(.msg-body-media):not(.msg-body-widget):not(.msg-body-emoji)
         {background-color:#<?php echo htmlspecialchars($Result['theme']->buble_visitor_background)?>!important;}
@@ -18,10 +28,13 @@
         <?php endif;?>
 
         <?php if ($Result['theme']->buble_operator_background != '') : ?>
+        #messagesBlock div.reactions-holder,
         #messagesBlock div.message-admin div.msg-body:not(.msg-body-media):not(.msg-body-widget):not(.msg-body-emoji){background-color:#<?php echo htmlspecialchars($Result['theme']->buble_operator_background)?>!important;}
         <?php endif;?>
 
         <?php if ($Result['theme']->buble_operator_text_color != '') : ?>
+        #messagesBlock .reaction-item,
+        #messagesBlock .reaction-item:hover,
         #messagesBlock div.message-admin div.msg-body,
         #messagesBlock div.message-admin div.msg-body a.link{color:#<?php echo htmlspecialchars($Result['theme']->buble_operator_text_color)?>!important;}
         <?php endif;?>
@@ -93,15 +106,22 @@
     font-size: 24px!important;
 }
 
+div.message-admin div.msg-date,
 div.message-admin div.msg-body,
 div.message-admin div.meta-message{
     margin-left:29px!important;
 }
 
+
+
 <?php if (!(isset($theme->bot_configuration_array['hide_visitor_profile']) && $theme->bot_configuration_array['hide_visitor_profile'] == 1)) : ?>
 div.response div.msg-body,
+div.message-row.response div.msg-date,
 div.response div.meta-message{
     margin-right:29px!important;
+}
+.message-row.response .reactions-holder {
+    right:29px!important;
 }
 <?php endif; ?>
 

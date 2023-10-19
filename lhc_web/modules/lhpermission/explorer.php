@@ -21,7 +21,7 @@ if ($Params['user_parameters_unordered']['action'] == 1) {
                 $url = [];
                 if (isset($function['url'])) {
                     foreach ($function['url'] as $urlData) {
-                        $url[] = (erLhcoreClassSystem::$httpsMode == true ? 'https:' : 'http:') . '//' . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurl('/') . preg_replace('/^lh/', '', $urlData);
+                        $url[] = erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurl('/') . preg_replace('/^lh/', '', $urlData);
                     }
                 }
                 fputcsv($fp, [
@@ -69,6 +69,73 @@ if ($Params['user_parameters_unordered']['action'] == 2) {
     echo htmlspecialchars(json_encode($moduleData,JSON_PRETTY_PRINT));
     echo "</pre>";
 
+    exit;
+}
+
+if ($Params['user_parameters_unordered']['action'] == 3) {
+
+    $tpl = erLhcoreClassTemplate::getInstance('lhpermission/permission_users.tpl.php');
+    $tpl->set('users',[]);
+
+    if (!isset($_POST['module']) || !isset($_POST['function'])){
+        echo $tpl->fetch();
+        exit;
+    }
+
+    // Get roles which grants this permissions
+    $roles = erLhcoreClassModelRoleFunction::getList(['limit' => false, 'filter' => ['module' => (string)$_POST['module'], 'function' => (string)$_POST['function']]]);
+
+    foreach (erLhcoreClassModelRoleFunction::getList(['limit' => false,'filter' => ['module' => $_POST['module'], 'function' => '*']]) as $roleFunction) {
+        $roles[$roleFunction->id] = $roleFunction;
+    }
+
+    foreach (erLhcoreClassModelRoleFunction::getList(['limit' => false,'filter' => ['module' => '*', 'function' => '*']]) as $roleFunction) {
+        $roles[$roleFunction->id] = $roleFunction;
+    }
+
+    $roleId = [];
+    foreach ($roles as $role) {
+        $roleId[] = $role->role_id;
+    }
+
+    if (empty($roleId)) {
+        echo $tpl->fetch();
+        exit;
+    }
+
+    $groupsRoles = erLhcoreClassModelGroupRole::getList(['limit' => false, 'filterin' => ['role_id' => $roleId]]);
+
+    $groupIds = [];
+    foreach ($groupsRoles as $groupRole) {
+        $groupIds[] = $groupRole->group_id;
+    }
+
+    $groupsActive = erLhcoreClassModelGroup::getList(['filter' => ['disabled' => 0], 'filterin' => ['id' => $groupIds]]);
+
+    $groupIds = array_keys($groupsActive);
+
+    if (empty($groupIds)) {
+        echo $tpl->fetch();
+        exit;
+    }
+
+    $groupUsers = erLhcoreClassModelGroupUser::getList(['limit' => false, 'filterin' => ['group_id' => $groupIds]]);
+
+    $userIds = [];
+    foreach ($groupUsers as $groupUser) {
+        $userIds[] = $groupUser->user_id;
+    }
+
+    if (empty($userIds)) {
+        echo $tpl->fetch();
+        exit;
+    }
+
+    $tpl->set('users',erLhcoreClassModelUser::getList(['limit' => false, 'filter' => ['disabled' => 0], 'filterin' => ['id' => $userIds]]));
+    $tpl->set('roles',erLhcoreClassModelRole::getList(['limit' => false, 'filterin' => ['id' => $roleId]]));
+    $tpl->set('groups',$groupsActive);
+
+    echo $tpl->fetch();
     exit;
 }
 

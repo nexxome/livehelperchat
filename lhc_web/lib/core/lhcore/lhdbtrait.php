@@ -18,6 +18,14 @@ trait erLhcoreClassDBTrait
         $this->clearCache();
     }
 
+    public function saveThisOnly($params = array())
+    {
+        $this->beforeSave($params);
+        self::getSession()->save($this, (isset($params['ignore']) ? $params['ignore'] : array()), (isset($params['update']) ? $params['update'] : array()));
+        $this->afterSave($params);
+        $this->clearCache();
+    }
+
     public function saveOrUpdate($params = array())
     {
         $this->beforeSave($params);
@@ -44,6 +52,9 @@ trait erLhcoreClassDBTrait
 
     public function syncAndLock()
     {
+        if ($this->id === null) {
+            return;
+        }
 
         $db = ezcDbInstance::get();
 
@@ -53,7 +64,9 @@ trait erLhcoreClassDBTrait
 
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $this->setState($data);
+        if (is_array($data)) {
+            $this->setState($data);
+        }
     }
 
     public function beforeSave($params = array())
@@ -93,13 +106,15 @@ trait erLhcoreClassDBTrait
 
     public function clearCache()
     {
-
         $cache = CSCacheAPC::getMem();
         $cache->increaseCacheVersion('site_attributes_version_' . strtolower(__CLASS__));
-        $cache->delete('object_' . strtolower(__CLASS__) . '_' . $this->id);
 
-        if (isset($GLOBALS[__CLASS__ . $this->id])) {
-            unset($GLOBALS[__CLASS__ . $this->id]);
+        if (isset($this->id)) {
+            $cache->delete('object_' . strtolower(__CLASS__) . '_' . $this->id);
+
+            if (isset($GLOBALS[__CLASS__ . $this->id])) {
+                unset($GLOBALS[__CLASS__ . $this->id]);
+            }
         }
 
         $this->clearCacheClassLevel();
@@ -229,7 +244,7 @@ trait erLhcoreClassDBTrait
         return $stmt->fetch(PDO::FETCH_COLUMN);
     }
 
-    public static function getCount($params = array(), $operation = 'COUNT', $field = false, $rawSelect = false, $fetchColumn = true, $fetchAll = false, $fetchColumnAll = false)
+    public static function getCount($params = array(), $operation = 'COUNT', $field = false, $rawSelect = false, $fetchColumn = true, $fetchAll = false, $fetchColumnAll = false, $groupedCount = false)
     {
 
         if (isset($params['enable_sql_cache']) && $params['enable_sql_cache'] == true) {
@@ -270,6 +285,11 @@ trait erLhcoreClassDBTrait
         $stmt = $q->prepare();
 
         $stmt->execute();
+
+        // I know I should use sub select, but just no time for that. Only canned messages is using that thing
+        if ($groupedCount === true) {
+            return count($stmt->fetchAll(PDO::FETCH_COLUMN));
+        }
 
         if ($fetchColumn == true) {
             $result = $stmt->fetchColumn();
@@ -451,6 +471,12 @@ trait erLhcoreClassDBTrait
             }
         }
 
+        if (isset($params['leftjoinraw']) && count($params['leftjoinraw']) > 0) {
+            foreach ($params['leftjoinraw'] as $table => $joinOn) {
+                $q->leftJoin($table, $joinOn);
+            }
+        }
+
         if (isset($params['innerjoinsame']) && count($params['innerjoinsame']) > 0) {
             foreach ($params['innerjoinsame'] as $table => $joinOn) {
                 $q->innerJoin($q->alias($table, 't2'), $q->expr->eq($joinOn[0], $joinOn[1]));
@@ -468,7 +494,6 @@ trait erLhcoreClassDBTrait
             }
 
             $conditions[] = $q->expr->lOr($conditionsLor);
-
         }
 
         if (isset($params['filterlorf']) && count($params['filterlorf']) > 0) {

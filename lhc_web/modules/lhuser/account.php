@@ -33,6 +33,10 @@ if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','allowtochoosependingmod
             'show_all_pending' => erLhcoreClassModelUserSetting::getSetting('show_all_pending',  1, $UserData->id),
             'auto_join_private' =>  erLhcoreClassModelUserSetting::getSetting('auto_join_private',  1, $UserData->id),
             'no_scroll_bottom' =>  erLhcoreClassModelUserSetting::getSetting('no_scroll_bottom',  0, $UserData->id),
+            'remove_closed_chats' =>  erLhcoreClassModelUserSetting::getSetting('remove_closed_chats',  0, $UserData->id),
+            'remove_closed_chats_remote' =>  erLhcoreClassModelUserSetting::getSetting('remove_closed_chats_remote',  0, $UserData->id),
+            'remove_close_timeout' =>  erLhcoreClassModelUserSetting::getSetting('remove_close_timeout',  5, $UserData->id),
+            'chat_text_rows' =>  erLhcoreClassModelUserSetting::getSetting('chat_text_rows',  2, $UserData->id),
         );
         $originalSettings['new'] = $pendingSettings;
 
@@ -48,6 +52,7 @@ if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','allowtochoosependingmod
 
 	erLhcoreClassModelUserSetting::setSetting('show_all_pending', $pendingSettings['show_all_pending']);
 	erLhcoreClassModelUserSetting::setSetting('auto_uppercase', $pendingSettings['auto_uppercase']);
+	erLhcoreClassModelUserSetting::setSetting('chat_text_rows', $pendingSettings['chat_text_rows']);
 
     $UserData->exclude_autoasign = $pendingSettings['exclude_autoasign'];
     $UserData->auto_accept = $pendingSettings['auto_accept'];
@@ -58,6 +63,24 @@ if (erLhcoreClassUser::instance()->hasAccessTo('lhuser','allowtochoosependingmod
         erLhcoreClassModelUserSetting::setSetting('auto_preload', 1);
     } else {
         erLhcoreClassModelUserSetting::setSetting('auto_preload', 0);
+    }
+
+    if (isset($_POST['remove_closed_chats']) && $_POST['remove_closed_chats'] == 1) {
+        erLhcoreClassModelUserSetting::setSetting('remove_closed_chats', 1);
+    } else {
+        erLhcoreClassModelUserSetting::setSetting('remove_closed_chats', 0);
+    }
+
+    if (isset($_POST['remove_closed_chats_remote']) && $_POST['remove_closed_chats_remote'] == 1) {
+        erLhcoreClassModelUserSetting::setSetting('remove_closed_chats_remote', 1);
+    } else {
+        erLhcoreClassModelUserSetting::setSetting('remove_closed_chats_remote', 0);
+    }
+
+    if (isset($_POST['remove_close_timeout']) && (int)$_POST['remove_close_timeout'] >= 1 || (int)$_POST['remove_close_timeout'] <= 60 ) {
+        erLhcoreClassModelUserSetting::setSetting('remove_close_timeout', (int)$_POST['remove_close_timeout']);
+    } else {
+        erLhcoreClassModelUserSetting::setSetting('remove_close_timeout', 5);
     }
 
     if (isset($_POST['auto_join_private']) && $_POST['auto_join_private'] == 1) {
@@ -177,6 +200,7 @@ if (isset($_POST['UpdateNotifications_account'])) {
     erLhcoreClassModelUserSetting::setSetting('sn_off', $validateNotificationsData['sn_off']);
     erLhcoreClassModelUserSetting::setSetting('ownntfonly', $validateNotificationsData['ownntfonly']);
     erLhcoreClassModelUserSetting::setSetting('trackactivity', $validateNotificationsData['trackactivity']);
+    erLhcoreClassModelUserSetting::setSetting('hide_quick_notifications', $validateNotificationsData['hide_quick_notifications']);
 
     if ($currentUser->hasAccessTo('lhuser', 'largeactivitytimeout')) {
         erLhcoreClassModelUserSetting::setSetting('trackactivitytimeout', $validateNotificationsData['trackactivitytimeout']);
@@ -199,48 +223,47 @@ if ($allowEditDepartaments && isset($_POST['UpdateDepartaments_account']) && ($c
         exit;
     }
 
-    if ($currentUser->hasAccessTo('lhuser','see_assigned_departments')) {
-        $departmentEditParams = [
-            'individual' => [
-                'edit_all' => $currentUser->hasAccessTo('lhuser','see_assigned_departments'),
-            ],
-            'groups' => [
-                'edit_all' => $currentUser->hasAccessTo('lhuser','see_assigned_departments_groups')
-            ]
-        ];
+    try {
+        $db = ezcDbInstance::get();
 
-        $globalDepartament = erLhcoreClassUserValidator::validateDepartments($UserData, [
-            'all_departments' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','self_all_departments'),
-            'edit_params' => $departmentEditParams
-        ]);
+        $db->beginTransaction();
 
-        $readOnlyDepartments = array();
-        if (isset($_POST['UserDepartamentRead']) && count($_POST['UserDepartamentRead']) > 0) {
-            $readOnlyDepartments = $_POST['UserDepartamentRead'];
+        if ($currentUser->hasAccessTo('lhuser', 'see_assigned_departments')) {
+
+            $globalDepartament = array();
+
+            if (erLhcoreClassUser::instance()->hasAccessTo('lhuser', 'self_all_departments'))
+            {
+                if (isset($_POST['all_departments']) && $_POST['all_departments'] == 'on') {
+                    $UserData->all_departments = 1;
+                    $globalDepartament[] = 0;
+                } else {
+                    $UserData->all_departments = 0;
+                    if(isset($params['all_departments_0_global_value'])) {
+                        $globalDepartament[] = $params['all_departments_0_global_value'];
+                    } else {
+                        $globalDepartament[] = -1;
+                    }
+                }
+
+                erLhcoreClassUserDep::addUserDepartaments($globalDepartament, false, $UserData, [], [], ['only_global' => true]);
+
+                $UserData->updateThis();
+            }
         }
 
-        $UserData->updateThis();
+        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.after_user_departments_update', array('user' => & $UserData));
 
-        if (count($globalDepartament) > 0) {
-            erLhcoreClassUserDep::addUserDepartaments($globalDepartament, false, $UserData, $readOnlyDepartments);
-        } else {
-            erLhcoreClassUserDep::addUserDepartaments(array(), false, $UserData, $readOnlyDepartments);
-        }
+        $tpl->set('account_updated_departaments', 'done');
+        $tpl->set('tab', 'tab_departments');
+
+        $db->commit();
+
+    } catch (Exception $e) {
+        $db->rollback();
+        $tpl->set('account_updated_departaments','failed');
+        $tpl->set('tab', 'tab_departments');
     }
-
-    if ($currentUser->hasAccessTo('lhuser','see_assigned_departments_groups')) {
-        // Write mode
-        erLhcoreClassModelDepartamentGroupUser::addUserDepartmentGroups($UserData, erLhcoreClassUserValidator::validateDepartmentsGroup($UserData, array('edit_params' => $departmentEditParams)));
-
-        // Read mode
-        erLhcoreClassModelDepartamentGroupUser::addUserDepartmentGroups($UserData, erLhcoreClassUserValidator::validateDepartmentsGroup($UserData, array('edit_params' => $departmentEditParams, 'read_only' => true)), true);
-    }
-
-	erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.after_user_departments_update',array('user' => & $UserData));
-
-	$tpl->set('account_updated_departaments','done');
-	$tpl->set('tab','tab_departments');
-   
 }
 
 

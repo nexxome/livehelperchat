@@ -15,12 +15,23 @@
                 <i ng-class="{'text-muted' : (lhc.toggleWidgetData['onop_sort'] != 'ac_dsc' && lhc.toggleWidgetData['onop_sort'] != 'ac_asc')}" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Sort by active chats number')?>" class="material-icons">{{lhc.toggleWidgetData['onop_sort'] == 'ac_dsc' || lhc.toggleWidgetData['onop_sort'] != 'ac_asc' ? 'trending_up' : 'trending_down'}}</i>
             </a>
         </th>
-        <th width="30%"><i title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Department');?>" class="material-icons">home</i></th>
+        <th width="30%"><i title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Department');?>" class="material-icons">home</i>
+
+            <div class="float-end expand-actions">
+                <a ng-click="lhc.changeWidgetHeight('operatord',true)" class="text-muted disable-select">
+                    <i title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','More rows')?>" class="material-icons">expand</i>
+                </a>
+                <a ng-click="lhc.changeWidgetHeight('operatord',false)" class="text-muted disable-select">
+                    <i title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Less rows')?>" class="material-icons">compress</i>
+                </a>
+            </div>
+
+        </th>
     </tr>
     </thead>
     <tr ng-repeat="operator in online_op.list track by operator.id">
         <td>
-            <img class="rounded-circle" ng-if="operator.avatar" ng-src="{{operator.avatar}}" alt="" width="35" />
+            <img class="rounded-circle" ng-if="operator.avatar" ng-src="{{operator.avatar}}" alt="" width="20" />
 
             <?php include(erLhcoreClassDesign::designtpl('lhfront/dashboard/panels/bodies/online_operators_status_multiinclude.tpl.php')); ?>
 
@@ -29,7 +40,7 @@
             <?php endif; ?>
             <i class="material-icons<?php if ($currentUser->hasAccessTo('lhuser','setopstatus')) : ?> action-image<?php endif;?>" <?php if ($currentUser->hasAccessTo('lhuser','setopstatus')) : ?>ng-click="lhc.openModal('user/setopstatus/' + operator.user_id)" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Change operator status');?>" <?php endif;?> >{{operator.hide_online == 1 ? 'flash_off' : 'flash_on'}}</i>
 
-            <?php if ($currentUser->hasAccessTo('lhstatistic','userstats')) : ?><a href="#" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','See operator statistic')?>" ng-click="lhc.openModal('statistic/userstats/'+operator.user_id)"><?php endif; ?>
+            <?php if ($currentUser->hasAccessTo('lhstatistic','userstats')) : ?><a ng-class="{'text-muted' : operator.ro}" href="#" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','See operator statistic')?>" ng-click="lhc.openModal('statistic/userstats/'+operator.user_id)"><?php endif; ?>
                 {{operator.hide_online == 1 ? operator.offline_since : ''}} {{operator.name_official}}
             <?php if ($currentUser->hasAccessTo('lhstatistic','userstats')) : ?></a><?php endif; ?>
         </td>

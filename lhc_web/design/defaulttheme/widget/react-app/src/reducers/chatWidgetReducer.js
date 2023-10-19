@@ -21,6 +21,7 @@ const initialState = fromJS({
     department: [],
     product: [],
     jsVars: [],
+    jsVarsPrefill: [],
     offlineData: {'fetched' : false},
     onlineData: {'fetched' : false},
     customData: {'fields' : []},
@@ -29,14 +30,16 @@ const initialState = fromJS({
     attr_prefill_admin: [],
     extension: {}, // Holds extensions data for reuse
     chat_ui : {}, // Settings from themes, UI
-    chat_ui_state : {'confirm_close': 0, 'show_survey' : 0}, // Settings from themes, UI we store our present state here
+    chat_ui_state : {'confirm_close': 0, 'show_survey' : 0, 'pre_survey_done' : 0}, // Settings from themes, UI we store our present state here
     processStatus : 0,
     chatData : {}, // Stores only chat id and hash
-    chatLiveData : {'lmsop':0, 'vtm':0,'otm':0, 'msop':0, 'uid' : 0, 'error' : '','lfmsgid':0, 'lmsgid' : 0, 'operator' : '', 'messages' : [], 'closed' : false, 'ott' : '', 'status_sub' : 0, 'status' : 0}, // Stores live chat data
+    chatLiveData : {'msg_to_store':[] ,'lmsop':0, 'vtm':0,'otm':0, 'msop':0, 'uid' : 0, 'error' : '','lfmsgid':0, 'lmsgid' : 0, 'operator' : '', 'messages' : [], 'closed' : false, 'ott' : '', 'status_sub' : 0, 'status' : 0}, // Stores live chat data
     chatStatusData : {},
     usersettings : {soundOn : false},
     vid: null,
     base_url: null,
+    position_placement: '',
+    position_placement_original: '',
     initClose : false,
     // Was initialized data loaded
     initLoaded : false,
@@ -45,6 +48,7 @@ const initialState = fromJS({
     lang : '',
     bot_id : '',
     trigger_id : '',
+    subject_id : '',
     operator : '',
     priority : null,
     ses_ref : null,
@@ -96,9 +100,13 @@ const chatWidgetReducer = (state = initialState, action) => {
         case 'base_url':
         case 'theme':
         case 'jsVars':
+        case 'jsVarsPrefill':
+        case 'subject_id':
         case 'bot_id':
         case 'trigger_id':
         case 'priority':
+        case 'position_placement':
+        case 'position_placement_original':
         case 'lang': {
             return state.set(action.type,action.data);
         }
@@ -107,6 +115,11 @@ const chatWidgetReducer = (state = initialState, action) => {
             // Visitor clicked widget and it has invitation shown. We leave invitation mode
             if (action.data == true && state.getIn(['proactive','pending']) === true) {
                 state = state.setIn(['proactive','pending'],false);
+            }
+
+            // This type of invitation should not be ever appended to content
+            if (action.data == true && state.hasIn(['proactive','data','hide_on_open'])) {
+                state = state.set('proactive',fromJS({'pending' : false, 'has' : false, data : {}}));
             }
 
             return state.set('shown',action.data);
@@ -143,11 +156,13 @@ const chatWidgetReducer = (state = initialState, action) => {
                 .set('proactive',fromJS({'pending' : false, 'has' : false, data : {}}))
                 .set('chatData',fromJS({}))
                 .removeIn(['chat_ui','survey_id'])
+                .removeIn(['chat_ui','cmmsg_widget'])
                 .setIn(['onlineData','fetched'],false)
-                .set('chatLiveData',fromJS({'lmsop':0, 'vtm':0, 'otm':0, 'msop':0, 'uid':0, 'status' : 0, 'status_sub' : 0, 'uw' : false, 'ott' : '', 'closed' : false, 'lfmsgid': 0, 'lmsgid' : 0, 'operator' : '', 'messages' : []}))
+                .set('chatLiveData',fromJS({'msg_to_store':[], 'lmsop':0, 'vtm':0, 'otm':0, 'msop':0, 'uid':0, 'status' : 0, 'status_sub' : 0, 'uw' : false, 'ott' : '', 'closed' : false, 'lfmsgid': 0, 'lmsgid' : 0, 'operator' : '', 'messages' : []}))
                 .set('chatStatusData',fromJS({}))
-                .set('chat_ui_state',fromJS({'confirm_close': 0, 'show_survey' : 0}))
+                .set('chat_ui_state',fromJS({'confirm_close': 0, 'show_survey' : 0, 'pre_survey_done' : 0}))
                 .set('initClose',false)
+                .set('msgLoaded',false)
                 .set('initLoaded',false);
         }
 
@@ -201,7 +216,11 @@ const chatWidgetReducer = (state = initialState, action) => {
                     }
                 }
 
-                return state.set('processStatus', 2).set('isChatting',true).set('chatData',fromJS(action.data.chatData)).set('validationErrors',fromJS({}));;
+                return state.set('processStatus', 2).
+                set('isChatting',true).
+                set('chatData',fromJS(action.data.chatData)).
+                setIn(['chatLiveData','lfmsgid'],action.data.chatLiveData.message_id_first).
+                set('validationErrors',fromJS({}));
             } else {
                 return state.set('validationErrors',fromJS(action.data.errors)).set('processStatus',0).setIn(['chat_ui','auto_start'],false);
             }
@@ -244,7 +263,27 @@ const chatWidgetReducer = (state = initialState, action) => {
             return state.setIn(['chat_ui_state',action.data.attr],action.data.val);
         }
 
+        case 'UPDATE_LIVE_DATA': {
+            return state.setIn(['chatLiveData', action.data.attr], action.data.val);
+        }
+
+        case 'ADD_MSG_TO_STORE': {
+            return state.updateIn(['chatLiveData','msg_to_store'],list => list.push(action.data))
+        }
+
+        case 'UPDATE_SCROLL_TO_MESSAGE': {
+            if (action.data > state.getIn(['chatLiveData','lfmsgid'])) {
+                return state.setIn(['chatLiveData', 'lfmsgid'], action.data);
+            }
+            return state;
+        }
+
         case 'INIT_CHAT_SUBMITTED' : {
+
+            if (action.data.chat_ui_state) {
+                state = state.set('chat_ui_state', state.get('chat_ui_state').merge(fromJS(action.data.chat_ui_state)));
+            }
+
             return state.setIn(['chatLiveData','operator'], action.data.operator)
                 .set('chat_ui', state.get('chat_ui').merge(fromJS(action.data.chat_ui)))
                 .setIn(['chatLiveData','status_sub'], action.data.status_sub)
@@ -264,7 +303,34 @@ const chatWidgetReducer = (state = initialState, action) => {
             return state.set('chat_ui', state.get('chat_ui').merge(fromJS(action.data.chat_ui)));
         }
 
+        case 'FETCH_MESSAGE_SUBMITTED' : {
+
+            let index = state.getIn(['chatLiveData','messages']).findIndex(msg => {
+                if (msg.msg.includes("id=\"msg-"+action.data.id+"\"")) {
+                    return true;
+                }
+            });
+
+            if (index !== -1) {
+                var nodeParse = document.createElement('div');
+                nodeParse.innerHTML = state.getIn(["chatLiveData", "messages", index, "msg"]);
+                var messageExtractor = nodeParse.querySelector("#msg-"+action.data.id);
+                if (messageExtractor) {
+                    nodeParse.innerHTML = nodeParse.innerHTML.replace(messageExtractor.outerHTML,action.data.msg);
+                    state = state.setIn(["chatLiveData", "messages", index, "msg"], nodeParse.innerHTML);
+                }
+            }
+
+            return state;
+        }
+
         case 'FETCH_MESSAGES_SUBMITTED' : {
+
+            // Ignore request if chat is gone
+            // Avoids flicker
+            if (!state.hasIn(['chatData','id'])) {
+                return state;
+            }
 
             if (action.data.closed_arg && action.data.closed_arg.survey_id) {
                 state = state.setIn(['chat_ui','survey_id'],action.data.closed_arg.survey_id);
@@ -292,6 +358,7 @@ const chatWidgetReducer = (state = initialState, action) => {
 
             if (action.data.vtm) {
                 state = state.updateIn(['chatLiveData','vtm'], (counter) => {return counter + action.data.vtm})
+                             .updateIn(['chatLiveData','msg_to_store'],list => list.splice(0,action.data.vtm))
             }
 
             if (action.data.otm) {
@@ -320,6 +387,7 @@ const chatWidgetReducer = (state = initialState, action) => {
                 .setIn(['chatLiveData','status'], action.data.status)
                 .setIn(['chatLiveData','uid'], action.data.uid)
                 .setIn(['chatLiveData','ru'], action.data.ru ? action.data.ru : null)
+                .set('chat_ui',state.get('chat_ui').merge(fromJS(action.data.chat_ui)))
                 .set('network_down', false)
                 .setIn(['chatLiveData','status_sub'], action.data.status_sub);
         }
@@ -349,7 +417,9 @@ const chatWidgetReducer = (state = initialState, action) => {
         }
 
         case 'ADD_MESSAGES_SUBMITTED': {
-            return state.setIn(['chatLiveData','error'], action.data.r).setIn(['chatLiveData','lmsg'], action.data.r ? action.data.msg : "");
+            return state.setIn(['chatLiveData','error'], action.data.r)
+                .setIn(['chatLiveData','lmsg'], action.data.r ? action.data.msg : "")
+                .setIn(['chatLiveData','msg_to_store'], fromJS([]));
         }
 
         case 'NO_CONNECTION': {

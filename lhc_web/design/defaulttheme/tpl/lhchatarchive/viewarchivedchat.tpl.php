@@ -1,3 +1,22 @@
+<div role="tabpanel" class="pt-0" id="tabs">
+
+    <?php if (isset($Result['path'])) :
+        $pathElementCount = count($Result['path'])-1;
+        if ($pathElementCount >= 0): ?>
+            <div id="path-container" style="margin-left: -8px;margin-right: -7px" ng-non-bindable>
+                <ul class="breadcrumb rounded-0 border-bottom p-2 mb-0" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <li class="breadcrumb-item"><a rel="home" itemprop="url" href="<?php echo erLhcoreClassDesign::baseurl()?>"><span itemprop="title"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('pagelayout/pagelayout','Home')?></span></a></li>
+                    <?php foreach ($Result['path'] as $key => $pathItem) : if (isset($pathItem['url']) && $pathElementCount != $key) { ?><li class="breadcrumb-item" itemscope itemtype="http://data-vocabulary.org/Breadcrumb"><a href="<?php echo $pathItem['url']?>" itemprop="url"><span itemprop="title"><?php echo htmlspecialchars(htmlspecialchars_decode($pathItem['title'],ENT_QUOTES))?></span></a></li><?php } else { ?><li class="breadcrumb-item" itemscope itemtype="http://data-vocabulary.org/Breadcrumb"><span itemprop="title"><?php echo htmlspecialchars(htmlspecialchars_decode($pathItem['title'], ENT_QUOTES))?></span></li><?php }; ?><?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+    <?php endif;?>
+
+    <ul class="nav nav-pills d-none" role="tablist">
+    </ul>
+    <div class="tab-content ps-1">
+
+        <div class="tab-pane active chat-tab-pane">
 
 <div class="row" ng-non-bindable>
     <div class="col-sm-7 chat-main-left-column" id="chat-main-column-<?php echo $chat->id;?>">
@@ -34,3 +53,8 @@
     </div>
 </div>
 <script>ee.emitEvent('adminArchiveChatLoaded', [<?php echo $archive->id?>,<?php echo $chat->id;?>]);</script>
+
+    </div>
+
+    </div>
+</div>

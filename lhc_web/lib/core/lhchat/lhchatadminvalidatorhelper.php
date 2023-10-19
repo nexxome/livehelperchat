@@ -11,6 +11,9 @@ class erLhcoreClassAdminChatValidatorHelper {
             'name' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
             ),
+            'description' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
             'days' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 30)
             ),
@@ -30,11 +33,21 @@ class erLhcoreClassAdminChatValidatorHelper {
         } else {
             $search->name = $form->name;
         }
+        
+        if ( $form->hasValidData( 'description' ) ) {
+            $search->description = $form->description;
+        }
 
         if ($form->hasValidData( 'position' )) {
             $search->position = $form->position;
         } else {
             $search->position = 0;
+        }
+
+        if ($form->hasValidData( 'days' )) {
+            $search->days = $form->days;
+        } else {
+            $search->days = 30;
         }
 
         if ($form->hasValidData( 'passive' ) && $form->passive == true) {
@@ -59,11 +72,45 @@ class erLhcoreClassAdminChatValidatorHelper {
             ),
             'conditions' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
-            )
+            ),
+            'repetitiveness' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0,'max_range' => 3)
+            ),
+            'active_from' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'active_to' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'time_zone' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
         );
+
+        foreach (erLhcoreClassDepartament::getWeekDays() as $dayShort => $dayLong) {
+            $definition[$dayShort] = new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            );
+
+            $key = $dayShort.'StartTime';
+            $definition[$key] = new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            );
+
+            $key = $dayShort.'EndTime';
+            $definition[$key] = new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            );
+        }
 
         $form = new ezcInputForm( INPUT_POST, $definition );
         $Errors = array();
+
+        if ( $form->hasValidData( 'time_zone' ) && $form->time_zone != '') {
+            $replace->time_zone = $form->time_zone;
+        } else {
+            $replace->time_zone = '';
+        }
 
         if ( !$form->hasValidData( 'identifier' ) || $form->identifier == '' ) {
             $Errors[] =  erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Please enter a identifier');
@@ -81,6 +128,71 @@ class erLhcoreClassAdminChatValidatorHelper {
             $replace->conditions = $form->conditions;
         } else {
             $replace->conditions = '';
+        }
+
+        if ( $form->hasValidData( 'repetitiveness' ) ) {
+            $replace->repetitiveness = $form->repetitiveness;
+        } else {
+            $replace->repetitiveness = 0;
+        }
+
+        if ($replace->repetitiveness == erLhcoreClassModelCannedMsg::REP_DAILY) {
+            $activeDays = [];
+            foreach (erLhcoreClassDepartament::getWeekDays() as $dayShort => $dayLong) {
+                if ($form->hasValidData( $dayShort ) && $form->{$dayShort} == true) {
+
+                    if ($form->hasValidData( $dayShort . 'StartTime' ) && $form->{$dayShort . 'StartTime'} != '') {
+                        $activeDays[$dayShort]['start'] = (int)str_replace(':','',$form->{$dayShort . 'StartTime'});
+                    }
+
+                    if ($form->hasValidData( $dayShort . 'EndTime' ) && $form->{$dayShort . 'EndTime'} != '') {
+                        $activeDays[$dayShort]['end'] = (int)str_replace(':','',$form->{$dayShort . 'EndTime'});
+                    }
+
+                    if (
+                        !isset($activeDays[$dayShort]['start']) ||
+                        !isset($activeDays[$dayShort]['end']) ||
+                        !is_numeric($activeDays[$dayShort]['start']) ||
+                        !is_numeric($activeDays[$dayShort]['end']) ||
+                        $activeDays[$dayShort]['end'] <= $activeDays[$dayShort]['start']
+                    ) {
+                        $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Please enter from and to time. To has to be greater than from.');
+                    }
+                }
+            }
+            $replace->days_activity = json_encode($activeDays, JSON_FORCE_OBJECT);
+            $replace->days_activity_array = $activeDays;
+        }
+
+        if (
+            $replace->repetitiveness == erLhcoreClassModelCannedMsg::REP_PERIOD ||
+            $replace->repetitiveness == erLhcoreClassModelCannedMsg::REP_PERIOD_REP
+        ) {
+
+            if ( $form->hasValidData( 'active_from' ) && !empty($form->active_from) )
+            {
+                $d = new DateTime($form->active_from,$replace->time_zone != '' ? new DateTimeZone($replace->time_zone) : null);
+                $replace->active_from = $d->getTimestamp();
+            }
+
+            if ( $form->hasValidData( 'active_to' ) && !empty($form->active_to) )
+            {
+                $d = new DateTime($form->active_to,$replace->time_zone != '' ? new DateTimeZone($replace->time_zone) : null);
+                $replace->active_to = $d->getTimestamp();
+                //$replace->active_to = strtotime($form->active_to);
+            }
+
+            if (!is_numeric($replace->active_to)) {
+                $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Please enter activity to period');
+            }
+
+            if (!is_numeric($replace->active_from)) {
+                $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Please enter activity from period');
+            }
+
+            if (empty($Errors) && $replace->active_from > $replace->active_to) {
+                $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Activity to period has to be bigger than activity from');
+            }
         }
 
         return $Errors;
@@ -125,6 +237,9 @@ class erLhcoreClassAdminChatValidatorHelper {
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
             'Disabled' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
+            'delete_on_exp' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
             'Tags' => new ezcInputFormDefinitionElement(
@@ -173,6 +288,12 @@ class erLhcoreClassAdminChatValidatorHelper {
             $cannedMessage->repetitiveness = 0;
         }
 
+        if ( $form->hasValidData( 'delete_on_exp' ) ) {
+            $cannedMessage->delete_on_exp = 1;
+        } else {
+            $cannedMessage->delete_on_exp = 0;
+        }
+
         if ($cannedMessage->repetitiveness == erLhcoreClassModelCannedMsg::REP_DAILY) {
             $activeDays = [];
             foreach (erLhcoreClassDepartament::getWeekDays() as $dayShort => $dayLong) {
@@ -214,9 +335,11 @@ class erLhcoreClassAdminChatValidatorHelper {
             if ( $form->hasValidData( 'active_to' ) && !empty($form->active_to) )
             {
                 $cannedMessage->active_to = strtotime($form->active_to);
+            } else {
+                $cannedMessage->active_to = 0;
             }
 
-            if (!is_numeric($cannedMessage->active_to)) {
+            if ((!is_numeric($cannedMessage->active_to) || $cannedMessage->active_to == 0) && $cannedMessage->repetitiveness == erLhcoreClassModelCannedMsg::REP_PERIOD_REP && $cannedMessage->repetitiveness == erLhcoreClassModelCannedMsg::REP_PERIOD) {
                 $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Please enter activity to period');
             }
 
@@ -224,7 +347,7 @@ class erLhcoreClassAdminChatValidatorHelper {
                 $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Please enter activity from period');
             }
 
-            if (empty($Errors) && $cannedMessage->active_from > $cannedMessage->active_to) {
+            if (empty($Errors) && is_numeric($cannedMessage->active_to) && $cannedMessage->active_to > 0 &&  $cannedMessage->active_from > $cannedMessage->active_to) {
                 $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Activity to period has to be bigger than activity from');
             }
         }
@@ -1404,9 +1527,21 @@ class erLhcoreClassAdminChatValidatorHelper {
             'disabled' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
+            'log_incoming' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
+            'log_failed_parse' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
             'dep_id' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)
-            )
+            ),
+            'icon' => new ezcInputFormDefinitionElement(
+        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'icon_color' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
         );
 
         $form = new ezcInputForm( INPUT_POST, $definition );
@@ -1415,6 +1550,18 @@ class erLhcoreClassAdminChatValidatorHelper {
         if ($form->hasValidData('name'))
         {
             $webhook->name = $form->name;
+        }
+
+        if ( $form->hasValidData( 'log_incoming' ) && $form->log_incoming == true ) {
+            $webhook->log_incoming = 1;
+        } else {
+            $webhook->log_incoming = 0;
+        }
+        
+        if ( $form->hasValidData( 'log_failed_parse' ) && $form->log_failed_parse == true ) {
+            $webhook->log_failed_parse = 1;
+        } else {
+            $webhook->log_failed_parse = 0;
         }
 
         if ($form->hasValidData('configuration'))
@@ -1436,6 +1583,18 @@ class erLhcoreClassAdminChatValidatorHelper {
             $webhook->scope = $form->scope;
         } else {
             $webhook->scope = '';
+        }
+
+        if ( $form->hasValidData( 'icon' )) {
+            $webhook->icon = $form->icon;
+        } else {
+            $webhook->icon = '';
+        }
+
+        if ( $form->hasValidData( 'icon_color' )) {
+            $webhook->icon_color = $form->icon_color;
+        } else {
+            $webhook->icon_color = '';
         }
 
         if ($form->hasValidData('disabled') && $form->disabled == true)

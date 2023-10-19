@@ -6,6 +6,8 @@ window.lhcAxios = axios;
 
 let syncStatus = {
     'msg' : false,
+    'add_msg': false,
+    'add_msg_pending': [],
     'status' : false,
     'error_counter' : 0,
     'auto_close_timeout': null
@@ -25,13 +27,13 @@ export function abtractAction(eventData) {
     }
 }
 
-export function hideInvitation(persistent) {
+export function hideInvitation(persistent, asConversion) {
     return function(dispatch, getState) {
         const state = getState();
         helperFunctions.sendMessageParent('closeWidget', [{'sender' : 'closeButton'}]);
         helperFunctions.sendMessageParent('cancelInvitation', [{'name' :  state.chatwidget.getIn(['proactive','data','invitation_name'])}]);
 
-        axios.post(window.lhcChat['base_url'] + "chat/chatwidgetclosed/(vid)/" + state.chatwidget.get('vid'), null, defaultHeaders).then((response) => {
+        axios.post(window.lhcChat['base_url'] + "chat/chatwidgetclosed/(vid)/" + state.chatwidget.get('vid') + (asConversion === true ? '/(conversion)/true' : ''), null, defaultHeaders).then((response) => {
             if (persistent){
                 dispatch({type: "CANCEL_INVITATION"});
             } else {
@@ -57,6 +59,34 @@ export function minimizeWidget(forceClose) {
             helperFunctions.removeSessionStorage('_reset_chat');
             window.close();
         }
+    }
+}
+
+export function cancelPresurvey(confirm) {
+    return function(dispatch, getState) {
+        const state = getState();
+
+        let args = '';
+
+        if (state.chatwidget.get('theme')) {
+            args = args + '/(theme)/' + state.chatwidget.get('theme');
+        }
+
+        if (confirm === true) {
+            args = args + '/(confirm)/true';
+        }
+
+        axios.post(window.lhcChat['base_url'] + state.chatwidget.getIn(['chat_ui','pre_survey_url']) + state.chatwidget.getIn(['chatData','id']) + '/' +  state.chatwidget.getIn(['chatData','hash']) + args, null, defaultHeaders).then((response) => {
+            if (confirm === false || response.data.confirmed) {
+                dispatch({'type' : 'UI_STATE', 'data' : {'attr': 'pre_survey_done', 'val': 2}});
+                if (!state.chatwidget.hasIn(['chat_ui','survey_id'])) {
+                    helperFunctions.sendMessageParent('endChat',[{'sender' : 'endButton'}]);
+                }
+            }
+        })
+        .catch((err) => {
+            console.log(err);
+        })
     }
 }
 
@@ -88,6 +118,10 @@ export function endChat(obj, action) {
     }
 }
 
+export function setSiteAccess(payload) {
+    return axios.post(window.lhcChat['base_url'] + "widgetrestapi/setsiteaccess/", payload, defaultHeaders);
+}
+
 export function getProducts(obj) {
     return function(dispatch) {
         axios.post(window.lhcChat['base_url'] + "widgetrestapi/getproducts/" + obj['dep_id'], null, defaultHeaders)
@@ -102,6 +136,10 @@ export function getProducts(obj) {
 
 export function voteAction(obj) {
     return axios.post(window.lhcChat['base_url'] + "chat/voteaction/" + obj.id + '/' + obj.hash + '/' + obj.type, null, defaultHeaders)
+}
+
+export function updateMessageData(obj, payload) {
+    return axios.post(window.lhcChat['base_url'] + "chat/updatemessagedata/" + obj.id + '/' + obj.hash + '/' + obj.msg_id, payload, defaultHeaders)
 }
 
 export function transferToHumanAction(obj) {
@@ -181,7 +219,8 @@ export function storeSubscriber(payload) {
                         'chat_id': state.chatwidget.getIn(['chatData','id']),
                         'hash' : state.chatwidget.getIn(['chatData','hash']),
                         'lmgsid' : state.chatwidget.getIn(['chatLiveData','lmsgid']),
-                        'theme' : state.chatwidget.get('theme')
+                        'theme' : state.chatwidget.get('theme'),
+                        'active_widget' : true
                     }));
                 }
         })
@@ -261,7 +300,7 @@ export function getCaptcha(dispatch, form, obj) {
 export function submitOnlineForm(obj) {
     return function(dispatch) {
         dispatch({type: "ONLINE_SUBMITTING"});
-        axios.post(window.lhcChat['base_url'] + "widgetrestapi/submitonline", obj, defaultHeaders)
+        axios.post(window.lhcChat['base_url'] + "widgetrestapi/submitonline", obj, {withCredentials: true, headers : {'Content-Type': 'application/x-www-form-urlencoded'}})
         .then((response) => {
 
             // If validation contains invalid captcha update it instantly
@@ -382,7 +421,7 @@ function processResponseCheckStatus(response, getState, dispatch) {
                 updateUISettings({'id' : state.chatwidget.getIn(['chatData','id']), 'hash' : state.chatwidget.getIn(['chatData','hash'])})(dispatch, getState);
             } else if (action.indexOf('lhinst.updateMessageRow') !== -1) {
                 const state = getState();
-                updateMessage({'msg_id' : action.replace('lhinst.updateMessageRow(','').replace(')','') ,'id' : state.chatwidget.getIn(['chatData','id']), 'hash' : state.chatwidget.getIn(['chatData','hash'])})(dispatch, getState);
+                updateMessage({'msg_id' : action.replace('lhinst.updateMessageRow(','').replace(')',''), 'lmgsid' : state.chatwidget.getIn(['chatLiveData','lmsgid']), 'mode' :  state.chatwidget.get('mode'), 'theme' : state.chatwidget.get('theme'), 'id' : state.chatwidget.getIn(['chatData','id']), 'hash' : state.chatwidget.getIn(['chatData','hash'])})(dispatch, getState);
             }
         });
     }
@@ -394,50 +433,32 @@ export function updateMessage(obj) {
 
         axios.post(window.lhcChat['base_url'] + "widgetrestapi/fetchmessage", obj, defaultHeaders)
         .then((response) => {
+
+            // Get present className of the row
             let elm = document.getElementById('msg-'+response.data.id);
-            if (elm === null) {
-                return;
+            let classNameRow = null;
+            if (elm !== null) {
+                classNameRow = elm.className;
             }
-            const classNameRow = elm.className;
-            elm.outerHTML = response.data.msg;
-            elm.className = classNameRow;
+
+            // Now we can update as we know a class
+            dispatch({type: "FETCH_MESSAGE_SUBMITTED", data: response.data});
+
+            // Reselect updated row
+            elm = document.getElementById('msg-'+response.data.id);
+
+            // Update className
+            if (elm && classNameRow !== null) {
+                elm.className = classNameRow;
+            }
 
             // Just adjust a scroll
-            let elmScroll = document.getElementById('messages-scroll');
-            if (elmScroll !== null) {
-                elmScroll.scrollTop = elmScroll.scrollHeight + 1000;
-            }
-
-            let elmUpdated = document.getElementById('msg-'+response.data.id);
-            let collection = elmUpdated.getElementsByTagName('script');
-            let collectionButton = elmUpdated.getElementsByTagName('button');
-
-            for (let item of collection) {
-                var attribs = {};
-                if (item.hasAttributes()) {
-                    var attrs = item.attributes;
-                    for (var i = attrs.length - 1; i >= 0; i--) {
-                        attribs[attrs[i].name] = attrs[i].value;
-                    }
-                }
-                item.attribs = attribs;
-                parseScript(item, this);
-            }
-
-            for (let item of collectionButton) {
-                var attribs = {};
-                if (item.hasAttributes()) {
-                    var attrs = item.attributes;
-                    for (var i = attrs.length - 1; i >= 0; i--) {
-                        attribs[attrs[i].name] = attrs[i].value;
-                    }
-                }
-                item.attribs = attribs;
-                if (item.onclick) {
-                    item.onclick = () => parseScript(item, this);
+            if (!obj.no_scroll) {
+                let elmScroll = document.getElementById('messages-scroll');
+                if (elmScroll !== null) {
+                    elmScroll.scrollTop = elmScroll.scrollHeight + 1000;
                 }
             }
-
         })
         .catch((err) => {
             console.log(err);
@@ -445,15 +466,36 @@ export function updateMessage(obj) {
     }
 }
 
-
-
-export function parseScript(domNode, inst) {
+export function parseScript(domNode, inst, obj, dispatch, getState) {
     const attr = domNode.attribs || domNode;
 
     if (attr['data-bot-action'] == 'lhinst.disableVisitorEditor') {
         inst.disableEditor = true;
     } else if (attr['data-bot-action'] == 'lhinst.setDelay') {
         inst.delayData.push(JSON.parse(attr['data-bot-args']));
+    } else if (attr['data-bot-action'] == 'button-click') {
+        dispatch(updateTriggerClicked({'type' : '/(type)/'+attr['data-action-type'] + (obj.theme ? '/(theme)/' + obj.theme : '')}, {
+            "payload-id": (typeof attr['data-identifier'] === 'undefined' ? null : attr['data-identifier']),
+            payload: attr['data-payload'],
+            id : attr['data-id'],
+            processed : (typeof attr['data-keep'] === 'undefined')})).then((data) => {
+            if (data.data.t) {
+                helperFunctions.sendMessageParent('botTrigger', [{'trigger' : data.data.t}]);
+            }
+            if (data.data.update_message) {
+                const state = getState();
+                updateMessage({'no_scroll' : true, 'msg_id' : attr['data-id'], 'lmgsid' : state.chatwidget.getIn(['chatLiveData','lmsgid']), 'mode' :  state.chatwidget.get('mode'), 'theme' : state.chatwidget.get('theme'), 'id' : state.chatwidget.getIn(['chatData','id']), 'hash' : state.chatwidget.getIn(['chatData','hash'])})(dispatch, getState);
+            } else {
+                fetchMessages({'theme' : obj.theme, 'chat_id' : obj.id, 'lmgsid' : obj.lmgsid, 'hash' : obj.hash})(dispatch, getState);
+                checkChatStatus({
+                    'chat_id': obj.id,
+                    'hash' : obj.hash,
+                    'theme' : obj.theme,
+                    'mode' : obj.mode
+                })
+            }
+        });
+
     } else if (attr['data-bot-action'] == 'execute-js') {
         if (attr['data-bot-extension']) {
             var args = {};
@@ -490,7 +532,7 @@ function isNetworkError(err) {
 export function fetchMessages(obj) {
     return function(dispatch, getState) {
 
-        if (syncStatus.msg == true) {
+        if (syncStatus.msg == true || syncStatus.add_msg == true) {
             return;
         }
 
@@ -499,31 +541,36 @@ export function fetchMessages(obj) {
         axios.post(window.lhcChat['base_url'] + "widgetrestapi/fetchmessages", obj, defaultHeaders)
         .then((response) => {
 
-            syncStatus.msg = false;
+            try {
+                dispatch({type: "FETCH_MESSAGES_SUBMITTED", data: response.data});
 
-            dispatch({type: "FETCH_MESSAGES_SUBMITTED", data: response.data});
+                processResponseCheckStatus(response.data, getState, dispatch);
 
-            processResponseCheckStatus(response.data, getState, dispatch);
+                helperFunctions.emitEvent('chat.fetch_messages',[response.data, dispatch, getState]);
 
-            helperFunctions.emitEvent('chat.fetch_messages',[response.data, dispatch, getState]);
+                if (response.data.cs || (response.data.closed && response.data.closed === true)) {
+                    axios.post(window.lhcChat['base_url'] + "widgetrestapi/checkchatstatus", obj, defaultHeaders)
+                        .then((response) => {
+                            if (response.data.deleted) {
+                                helperFunctions.sendMessageParent('endChat',[{'sender' : 'endButton'}]);
+                                clearTimeout(syncStatus.auto_close_timeout);
+                            } else {
+                                dispatch({type: "CHECK_CHAT_STATUS_FINISHED", data: response.data});
+                                helperFunctions.emitEvent('chat.check_status',[response.data, dispatch, getState]);
+                            }
+                            if (response.data.closed && response.data.closed === true && !response.data.deleted) {
+                                setAutoClose(getState);
+                            }
+                        })
+                        .catch((err) => {
+                            dispatch({type: "CHECK_CHAT_STATUS_REJECTED", data: err})
+                        })
+                }
 
-            if (response.data.cs || (response.data.closed && response.data.closed === true)) {
-                axios.post(window.lhcChat['base_url'] + "widgetrestapi/checkchatstatus", obj, defaultHeaders)
-                .then((response) => {
-                    if (response.data.deleted) {
-                        helperFunctions.sendMessageParent('endChat',[{'sender' : 'endButton'}]);
-                        clearTimeout(syncStatus.auto_close_timeout);
-                    } else {
-                        dispatch({type: "CHECK_CHAT_STATUS_FINISHED", data: response.data});
-                        helperFunctions.emitEvent('chat.check_status',[response.data, dispatch, getState]);
-                    }
-                    if (response.data.closed && response.data.closed === true && !response.data.deleted) {
-                        setAutoClose(getState);
-                    }
-                })
-                .catch((err) => {
-                    dispatch({type: "CHECK_CHAT_STATUS_REJECTED", data: err})
-                })
+            } catch (e) {
+                throw e;
+            } finally {
+                syncStatus.msg = false;
             }
 
         })
@@ -622,8 +669,19 @@ function checkErrorCounter() {
    }
 }
 
-export function addMessage(obj) {
+export function addMessage(obj, ignoreAdd) {
     return function(dispatch, getState) {
+
+        if (!ignoreAdd) {
+            dispatch({type: "ADD_MSG_TO_STORE", data: obj.msg});
+        }
+
+        if (syncStatus.add_msg == true) {
+            syncStatus.add_msg_pending.push(obj);
+            return;
+        }
+
+        syncStatus.add_msg = true;
 
         try {
             helperFunctions.eventEmitter.emitEvent('messageSend', [{'chat_id':obj.id, 'hash': obj.hash, msg: obj.msg}]);
@@ -635,36 +693,46 @@ export function addMessage(obj) {
 
         axios.post(window.lhcChat['base_url'] + "widgetrestapi/addmsguser", obj, defaultHeaders)
             .then((response) => {
+                try {
+                    // Update error state if it changed
+                    if (response.data.error || getState().chatwidget.getIn(['chatLiveData','error'])) {
+                        dispatch({type: "ADD_MESSAGES_SUBMITTED", data: {r: response.data.r, msg: obj.msg}});
+                    }
+                    
+                    syncStatus.add_msg = false;
+                    
+                    fetchMessages({'active_widget': true, 'theme' : obj.theme, 'chat_id' : obj.id, 'lmgsid' : getState().chatwidget.getIn(['chatLiveData','lmsgid']), 'hash' : obj.hash})(dispatch, getState);
 
-                // Update error state if it changed
-                if (response.data.error || getState().chatwidget.getIn(['chatLiveData','error'])) {
-                    dispatch({type: "ADD_MESSAGES_SUBMITTED", data: {r: response.data.r, msg: obj.msg}});
-                }
-
-                fetchMessages({'theme' : obj.theme, 'chat_id' : obj.id, 'lmgsid' : obj.lmgsid, 'hash' : obj.hash})(dispatch, getState);
-
-                if (response.data.t) {
-                    helperFunctions.sendMessageParent('botTrigger',[{'trigger' : response.data.t}]);
-                }
-
-                if (typeof response.data.r === 'undefined' || (response.data.error === true && response.data.system === true)) {
-
-                    syncStatus.error_counter++;
-
-                    // Log error only if it happens two times in a row
-                    if (syncStatus.error_counter == 2) {
-                        helperFunctions.logJSError({
-                            'stack' :  JSON.stringify(JSON.stringify(response) + "\nRD:"+JSON.stringify(response.data) +"\nRH:"+ JSON.stringify(response.headers) +"\nRS:"+ JSON.stringify(response.status))
-                        });
-
-                        checkErrorCounter();
+                    if (response.data.t) {
+                        helperFunctions.sendMessageParent('botTrigger',[{'trigger' : response.data.t}]);
                     }
 
-                    helperFunctions.eventEmitter.emitEvent('messageSendError', [{'chat_id':obj.id, 'hash': obj.hash, msg: JSON.stringify(response.data)}]);
-                } else {
-                    syncStatus.error_counter = 0;
-                }
+                    if (typeof response.data.r === 'undefined' || (response.data.error === true && response.data.system === true)) {
 
+                        syncStatus.error_counter++;
+
+                        // Log error only if it happens two times in a row
+                        if (syncStatus.error_counter == 2) {
+                            helperFunctions.logJSError({
+                                'stack' :  JSON.stringify(JSON.stringify(response) + "\nRD:"+JSON.stringify(response.data) +"\nRH:"+ JSON.stringify(response.headers) +"\nRS:"+ JSON.stringify(response.status))
+                            });
+
+                            checkErrorCounter();
+                        }
+
+                        helperFunctions.eventEmitter.emitEvent('messageSendError', [{'chat_id':obj.id, 'hash': obj.hash, msg: JSON.stringify(response.data)}]);
+                    } else {
+                        syncStatus.error_counter = 0;
+                    }
+                } catch (e) {
+                    throw e;
+                } finally {
+                    syncStatus.add_msg = false;
+                    // There is pending message to be added
+                    if (syncStatus.add_msg_pending.length > 0) {
+                        addMessage(syncStatus.add_msg_pending.shift(), true)(dispatch, getState);
+                    }
+                }
             })
             .catch((error) => {
                 if (isNetworkError(error)) {
@@ -698,10 +766,14 @@ export function addMessage(obj) {
 
                         dispatch({type: "ADD_MESSAGES_SUBMITTED", data: {r: "SEND_FAILED", "msg" : obj.msg}});
 
+                        syncStatus.add_msg = false;
+
                         // Try to send message again
-                        addMessage(obj)(dispatch, getState);
+                        addMessage(obj, true)(dispatch, getState);
                     }
                 }
+
+                syncStatus.add_msg = false;
             })
     }
 }
@@ -724,4 +796,8 @@ export function userTyping(status, msg) {
             });
         }
     }
+}
+
+export function submitInlineSurvey(obj) {
+    return axios.post(window.lhcChat['base_url'] + "survey/fillinline", obj, defaultHeaders);
 }

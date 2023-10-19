@@ -70,9 +70,9 @@ class erLhcoreClassRestAPIHandler
         return false;
     }
 
-    public static function setHeaders($content = 'Content-Type: application/json')
+    public static function setHeaders($content = 'Content-Type: application/json', $origin = "*")
     {
-        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Origin: '. $origin);
         header('Access-Control-Allow-Credentials: true');
         header('Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, API-Key, Authorization');
         header($content);
@@ -477,7 +477,7 @@ class erLhcoreClassRestAPIHandler
             $filter['filtergt']['id'] = (int)$_GET['filtergt']['id'];
         }
 
-        if (isset($_GET['departament_ids'])) {
+        if (isset($_GET['departament_ids']) && !empty($_GET['departament_ids'])) {
             $idDep = explode(',',$_GET['departament_ids']);
             erLhcoreClassChat::validateFilterIn($idDep);
             if (!empty($idDep)){
@@ -485,7 +485,7 @@ class erLhcoreClassRestAPIHandler
             }
         }
 
-        if (isset($_GET['user_ids'])) {
+        if (isset($_GET['user_ids']) && !empty($_GET['user_ids'])) {
             $uidDep = explode(',',$_GET['user_ids']);
             erLhcoreClassChat::validateFilterIn($uidDep);
             if (!empty($uidDep)){
@@ -493,7 +493,7 @@ class erLhcoreClassRestAPIHandler
             }
         }
 
-        if (isset($_GET['status_ids'])) {
+        if (isset($_GET['status_ids']) && !empty($_GET['status_ids'])) {
             $statusIds = explode(',',$_GET['status_ids']);
             erLhcoreClassChat::validateFilterIn($statusIds);
             if (!empty($statusIds)){
@@ -713,7 +713,7 @@ class erLhcoreClassRestAPIHandler
 
         if (in_array('link',$prefillFields)) {
             foreach ($chats as $index => $chat) {
-                $chats[$index]->link = erLhcoreClassXMP::getBaseHost() . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::baseurl('user/login').'/(r)/'.rawurlencode(base64_encode('chat/single/'.$chat->id));
+                $chats[$index]->link = erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurl('user/login').'/(r)/'.rawurlencode(base64_encode('chat/single/'.$chat->id));
             }
         }
 
@@ -904,7 +904,7 @@ class erLhcoreClassRestAPIHandler
         $createArrayImporter = function (SimpleXMLElement $subject) {
             $add = function (SimpleXMLElement $subject, $key, $value) use (&$add) {
                 
-                $addChildCdata = function ($name, $value = NULL, & $parent) {
+                $addChildCdata = function ($name, $value, & $parent) {
                     $new_child = $parent->addChild($name);
                 
                     if ($new_child !== NULL) {

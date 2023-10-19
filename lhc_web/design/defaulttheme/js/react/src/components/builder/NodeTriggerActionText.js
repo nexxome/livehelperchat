@@ -11,6 +11,7 @@ class NodeTriggerActionText extends Component {
         this.changeType = this.changeType.bind(this);
         this.setText = this.setText.bind(this);
         this.setHTML = this.setHTML.bind(this);
+        this.setReactions = this.setReactions.bind(this);
         this.addQuickReply = this.addQuickReply.bind(this);
         this.addAction = this.addAction.bind(this);
         this.removeAction = this.removeAction.bind(this);
@@ -29,6 +30,7 @@ class NodeTriggerActionText extends Component {
         this.onStoreValueChange = this.onStoreValueChange.bind(this);
         this.onButtonIDChange = this.onButtonIDChange.bind(this);
         this.onButtonStoreTypeChange = this.onButtonStoreTypeChange.bind(this);
+        this.onButtonNoName = this.onButtonNoName.bind(this);
 
         // Abstract methods
         this.onDeleteField = this.onDeleteField.bind(this);
@@ -39,6 +41,7 @@ class NodeTriggerActionText extends Component {
 
         // Text area focys
         this.textMessageRef = React.createRef();
+        this.reactionMessageRef = React.createRef();
     }
 
     changeType(e) {
@@ -50,7 +53,6 @@ class NodeTriggerActionText extends Component {
     }
 
     addAnswerVariation() {
-        console.log('add answer validation');
         var newVal = this.props.action.getIn(['content','text'])+" |||\n";
         this.props.onChangeContent({id : this.props.id, 'path' : ['content','text'], value : newVal});
         this.textMessageRef.current.focus();
@@ -59,6 +61,10 @@ class NodeTriggerActionText extends Component {
 
     setHTML(e) {
         this.props.onChangeContent({id : this.props.id, 'path' : ['content','html'], value : e.target.value});
+    }
+
+    setReactions(e) {
+        this.props.onChangeContent({id : this.props.id, 'path' : ['content','reactions'], value : e.target.value});
     }
 
     addQuickReply(e) {
@@ -100,6 +106,10 @@ class NodeTriggerActionText extends Component {
 
     onButtonStoreTypeChange(e) {
         this.props.onChangeContent({id : this.props.id, 'path' : ['content','quick_replies',e.id,'content','as_variable'], value : e.value});
+    }
+
+    onButtonNoName(e) {
+        this.props.onChangeContent({id : this.props.id, 'path' : ['content','quick_replies',e.id,'content','no_name'], value : e.value});
     }
 
     onRenderArgsChange(e) {
@@ -150,7 +160,7 @@ class NodeTriggerActionText extends Component {
             var totalButtons = this.props.action.getIn(['content','quick_replies']).size;
 
             quick_replies = this.props.action.getIn(['content','quick_replies']).map((reply, index) => {
-                return <NodeTriggerActionQuickReply onPayloadAttrChange={this.onPayloadAttrChange} upField={(e) => this.upChildField(index)} downField={(e) => this.downChildField(index)} onButtonStoreTypeChange={this.onButtonStoreTypeChange} onButtonIDChange={this.onButtonIDChange} isFirst={index == 0} isLast={index + 1 == totalButtons} onStoreValueChange={this.onStoreValueChange} onStoreNameChange={this.onStoreNameChange} onPrecheckChange={this.onPrecheckChange} onRenderArgsChange={this.onRenderArgsChange} onPayloadTypeChange={this.onQuickReplyPayloadTypeChange} deleteReply={this.onDeleteQuickReply} onNameChange={this.onQuickReplyNameChange}  onPayloadChange={this.onQuickReplyPayloadChange} id={index} key={reply.get('_id') || index} reply={reply} />
+                return <NodeTriggerActionQuickReply onPayloadAttrChange={this.onPayloadAttrChange} upField={(e) => this.upChildField(index)} downField={(e) => this.downChildField(index)} onButtonNoName={this.onButtonNoName} onButtonStoreTypeChange={this.onButtonStoreTypeChange} onButtonIDChange={this.onButtonIDChange} isFirst={index == 0} isLast={index + 1 == totalButtons} onStoreValueChange={this.onStoreValueChange} onStoreNameChange={this.onStoreNameChange} onPrecheckChange={this.onPrecheckChange} onRenderArgsChange={this.onRenderArgsChange} onPayloadTypeChange={this.onQuickReplyPayloadTypeChange} deleteReply={this.onDeleteQuickReply} onNameChange={this.onQuickReplyNameChange}  onPayloadChange={this.onQuickReplyPayloadChange} id={index} key={reply.get('_id') || index} reply={reply} />
             });
         }
 
@@ -167,46 +177,48 @@ class NodeTriggerActionText extends Component {
                 <div className="col-12">
                     <div className="d-flex flex-row">
                         <div>
-                            <div className="btn-group float-left" role="group" aria-label="Trigger actions">
+                            <div className="btn-group float-start" role="group" aria-label="Trigger actions">
                                 <button disabled="disabled" className="btn btn-sm btn-info">{this.props.id + 1}</button>
-                                {this.props.isFirst == false && <button className="btn btn-secondary btn-sm" onClick={(e) => this.props.upField(this.props.id)}><i className="material-icons mr-0">keyboard_arrow_up</i></button>}
-                                {this.props.isLast == false && <button className="btn btn-secondary btn-sm" onClick={(e) => this.props.downField(this.props.id)}><i className="material-icons mr-0">keyboard_arrow_down</i></button>}
+                                {this.props.isFirst == false && <button className="btn btn-secondary btn-sm" onClick={(e) => this.props.upField(this.props.id)}><i className="material-icons me-0">keyboard_arrow_up</i></button>}
+                                {this.props.isLast == false && <button className="btn btn-secondary btn-sm" onClick={(e) => this.props.downField(this.props.id)}><i className="material-icons me-0">keyboard_arrow_down</i></button>}
                             </div>
                         </div>
                         <div className="flex-grow-1 px-2">
                             <NodeTriggerActionType onChange={this.changeType} type={this.props.action.get('type')} />
                         </div>
-                        <div className="pr-2">
+                        <div className="pe-2">
                             <div className="input-group input-group-sm">
-                                <div className="input-group-prepend">
-                                    <span className="input-group-text" id="basic-addon1"><span className="material-icons">vpn_key</span></span>
-                                </div>
+                                <span className="input-group-text" id="basic-addon1"><span className="material-icons">vpn_key</span></span>
                                 <input type="text" className="form-control" readOnly="true" value={this.props.action.getIn(['_id'])} title="Action ID"/>
                             </div>
                         </div>
-                        <div className="pr-2 pt-1 text-nowrap">
+                        <div className="pe-2 pt-1 text-nowrap">
                             <label className="form-check-label" title="Response will not be executed. Usefull for a quick testing."><input onChange={(e) => this.props.onChangeContent({id : this.props.id, 'path' : ['skip_resp'], value : e.target.checked})} defaultChecked={this.props.action.getIn(['skip_resp'])} type="checkbox"/> Skip</label>
                         </div>
                         <div>
-                            <button onClick={this.removeAction} type="button" className="btn btn-danger btn-sm float-right">
-                                <i className="material-icons mr-0">delete</i>
+                            <button onClick={this.removeAction} type="button" className="btn btn-danger btn-sm float-end">
+                                <i className="material-icons me-0">delete</i>
                             </button>
                         </div>
                     </div>
 
-                    <a title="Need help?" className="float-right" onClick={(e) => this.showHelp('text')}><i className="material-icons mr-0">help</i></a>
+                    <a title="Need help?" className="float-end" onClick={(e) => this.showHelp('text')}><i className="material-icons me-0">help</i></a>
 
                     <div className="form-group">
                         <label>Enter text</label>
-
-                        <a title="Add answer variation" className="float-right" onClick={this.addAnswerVariation}><i className="material-icons mr-0">question_answer</i></a>
-
+                        <a title="Add answer variation" className="float-end" onClick={this.addAnswerVariation}><i className="material-icons me-0">question_answer</i></a>
                         <textarea rows="3" placeholder="Write your response here!" onChange={this.setText} ref={this.textMessageRef} defaultValue={this.props.action.getIn(['content','text'])} className="form-control form-control-sm"></textarea>
                     </div>
 
                     <div className="form-group">
                         <label>Enter HTML</label>
                         <textarea placeholder="Write your response here!" onChange={this.setHTML} defaultValue={this.props.action.getIn(['content','html'])} className="form-control form-control-sm"></textarea>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="mb-0">Reaction options <button onClick={(e) => {this.reactionMessageRef.current.value = "thumb_up|1|thumb|Thumbs up"+"\n"+"thumb_down|0|thumb|Thumbs down";this.props.onChangeContent({id : this.props.id, 'path' : ['content','reactions'], value : this.reactionMessageRef.current.value})}} className="btn btn-secondary btn-xs">Set thumbs sample</button> </label>
+                        <p><small><i>Icon from material icons or Unicode Character&lt;required&gt;|internal value&lt;required&gt;|identifier&lt;required&gt;|Title&lt;optional&gt;</i></small></p>
+                        <textarea rows="3" ref={this.reactionMessageRef} placeholder={"E.g"+"\n"+"thumb_up|1|thumb|Thumbs up"+"\n"+"thumb_down|0|thumb|Thumbs down"} onChange={this.setReactions} defaultValue={this.props.action.getIn(['content','reactions'])} className="form-control form-control-sm"></textarea>
                     </div>
 
                     <div className="row">
@@ -220,6 +232,9 @@ class NodeTriggerActionText extends Component {
                             <div role="group">
                                 <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','hide_on_next'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','hide_on_next'])} /> Hide on next message.</label> <i className="material-icons" title="Hide message content on next message.">info</i>
                             </div>
+                            <div role="group">
+                                <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','auto_translate'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','auto_translate'])} /> Automatic translations.</label> <i className="material-icons" title="If you have enabled automatic translations for translation group we will translate this message. You can't mix manual and automatic translations in the same message. Before final save we will translate all response including buttons to visitor language.">info</i>
+                            </div>
                         </div>
                         <div className="col-6">
                             <div role="group">
@@ -231,11 +246,19 @@ class NodeTriggerActionText extends Component {
                             <div role="group">
                                 <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','as_log_msg'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','as_log_msg'])} /> Save as a log message.</label> <i className="material-icons" title="Message will be saved in audit log only.">info</i>
                             </div>
+                            <div role="group">
+                                <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','reactions_visible'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','reactions_visible'])} /> Reactions always visible.</label> <i className="material-icons" title="Make reactions icons always visible. By default they are visible on mouse over.">info</i>
+                            </div>
                         </div>
+                        <div className="col-12 pb-2">
+                            <label>Webhook execution delay</label> <i className="material-icons" title="Sometimes if you have background workers webhook messages events are executed in paralell. If you want to keep exact order you can add a delay.">info</i>
+                            <input type="number" max="30" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','wh_delay'], 'value' : e.target.value})} defaultValue={this.props.action.getIn(['content','attr_options','wh_delay'])} className="form-control form-control-sm" placeholder="Webhook execution delay in seconds" />
+                        </div>
+
                         <div className="col-12 text-right">
                             <div className="btn-group" role="group">
-                                <button onClick={this.addAction} className="btn btn-xs btn-secondary"><i className="material-icons mr-0">add</i> Add action on message</button>
-                                <button onClick={this.addQuickReply} className="btn btn-xs btn-secondary"><i className="material-icons mr-0">add</i> Add quick reply</button>
+                                <button onClick={this.addAction} className="btn btn-xs btn-secondary"><i className="material-icons me-0">add</i> Add action on message</button>
+                                <button onClick={this.addQuickReply} className="btn btn-xs btn-secondary"><i className="material-icons me-0">add</i> Add quick reply</button>
                             </div>
                         </div>
                     </div>

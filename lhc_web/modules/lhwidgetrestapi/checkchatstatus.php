@@ -140,6 +140,8 @@ try {
             $responseArray['deleted'] = true;
         }
 
+        
+        
 	    $tpl->set('chat', $chat);
     } else {
         $responseArray['error'] = 'false';
@@ -165,6 +167,20 @@ $responseArray['activated'] = $activated;
 $responseArray['uid'] = (int)$chat->user_id;
 $responseArray['status'] = (int)$chat->status;
 $responseArray['status_sub'] = (int)$chat->status_sub;
+$responseArray['chat_ui'] = ['voice' => false];
+
+if (isset($chat) && $chat->status == erLhcoreClassModelChat::STATUS_ACTIVE_CHAT) {
+    $voiceData = (array)erLhcoreClassModelChatConfig::fetch('vvsh_configuration')->data;
+    if (isset($voiceData['voice']) && $voiceData['voice'] == true && $chat->user_id > 0 && erLhcoreClassRole::hasAccessTo($chat->user_id,'lhvoicevideo','use' )) {
+        $responseArray['chat_ui']['voice'] = true;
+    }
+}
+
+if (((int)$chat->user_id > 0 && \LiveHelperChat\Models\LHCAbstract\ChatMessagesGhosting::shouldMask($chat->user_id)) || $chat->user_id == 0) {
+    $responseArray['chat_ui']['hide_typing'] = true;
+} else {
+    $responseArray['chat_ui']['hide_typing'] = false;
+}
 
 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.checkchatstatus',array('chat' => & $chat, 'response' => & $responseArray));
 

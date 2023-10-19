@@ -48,7 +48,13 @@ class erLhcoreClassAbstract
                         $ngModel .= " maxlength=\"{$attr['maxlength']}\" ";
                     }
 
-                    return '<input class="form-control form-control-sm' . (isset($attr['css_class']) ? ' ' . $attr['css_class'] : '') . '" ' . $ngModel . ' name="AbstractInput_' . $name . '" type="' . $attr['type'] . '" value="' . htmlspecialchars($value) . '" />';
+                    if (isset($attr['list_identifier'])) {
+                        $ngModel .= " list=\"{$attr['list_identifier']}\" ";
+                    }
+
+                    $nameInputPrepend = (isset($attr['direct_name']) && $attr['direct_name'] == true) ? '' : 'AbstractInput_';
+
+                    return '<input class="form-control form-control-sm' . (isset($attr['css_class']) ? ' ' . $attr['css_class'] : '') . '" ' . $ngModel . ' name="' . $nameInputPrepend . $name . '" type="' . $attr['type'] . '" value="' . htmlspecialchars((string)$value) . '" />';
                 }
                 break;
 
@@ -153,13 +159,20 @@ class erLhcoreClassAbstract
             case 'combobox':
 
                 $onchange = isset($attr['on_change']) ? $attr['on_change'] : '';
-                $return = '<select ng-non-bindable class="form-control form-control-sm" name="AbstractInput_' . $name . '"' . $onchange . '>';
+                $nameInputPrepend = (isset($attr['direct_name']) && $attr['direct_name'] == true) ? '' : 'AbstractInput_';
+
+                $return = '<select ng-non-bindable class="form-control form-control-sm" name="' . $nameInputPrepend . $name . '"' . $onchange . '>';
 
                 if (!isset($attr['hide_optional']) || $attr['hide_optional'] == false) {
-                    $return .= '<option value="0">Choose option</option>';
+                    $optionalValue = isset($attr['optional_value']) ? $attr['optional_value'] : 0;
+                    $return .= '<option value="' . $optionalValue . '">' . erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Choose') . '</option>';
                 }
 
-                $items = call_user_func($attr['source'], $attr['params_call']);
+                if ($attr['source'] instanceof Closure) {
+                    $items = $attr['source']();
+                } else {
+                    $items = call_user_func($attr['source'], $attr['params_call']);
+                }
 
                 if (isset($attr['main_attr']) && !empty($attr['main_attr'])) {
                     if (isset($object->{$attr['main_attr']}[$name])) {
@@ -219,11 +232,11 @@ class erLhcoreClassAbstract
                 break;
                 
             case 'text_display':
-                return '<p ng-non-bindable>' . htmlspecialchars($object->$name) . '</p>';
+                return '<p ng-non-bindable>' . htmlspecialchars((string)$object->$name) . '</p>';
                 break;
 
             case 'text_pre':
-                return '<pre ng-non-bindable>' . htmlspecialchars($object->$name) . '</pre>';
+                return '<pre ng-non-bindable>' . htmlspecialchars((string)$object->$name) . '</pre>';
                 break;
 
             case 'multi_dropdown':
@@ -260,10 +273,19 @@ class erLhcoreClassAbstract
         }
     }
 
-    public static function validateInput(& $object)
+    public static function validateInput(& $object, $fieldsToValidate = [])
     {
         $definition = array();
         $fields = $object->getFields();
+
+        if (!empty($fieldsToValidate)) {
+            $fieldsNew = [];
+            foreach ($fieldsToValidate as $fieldToValidate) {
+                $fieldsNew[$fieldToValidate] = $fields[$fieldToValidate];
+            }
+            $fields = $fieldsNew;
+        }
+
         foreach ($fields as $key => $field) {
 
             if (isset($field['multilanguage']) && $field['multilanguage'] == true) {
@@ -412,6 +434,8 @@ class erLhcoreClassAbstract
                     $object->$key = $form->{'AbstractInput_' . $key};
                 }
 
+            } elseif (!$form->hasValidData('AbstractInput_' . $key) && ($field['type'] == 'combobox' || $field['type'] == 'text' || $field['type'] == 'number') && isset($field['default_value']) && $field['default_value'] != '') {
+                $object->$key = $field['default_value'];
             } elseif ($form->hasValidData('AbstractInput_' . $key) && (($field['required'] == false) || ($field['type'] == 'combobox') || ($field['required'] == true && ($field['type'] == 'text' || $field['type'] == 'number') && $form->{'AbstractInput_' . $key} != ''))) {
 
                 if (isset($field['multilanguage']) && $field['multilanguage'] == true) {

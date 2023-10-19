@@ -2,8 +2,8 @@
 
 class erLhcoreClassUpdate
 {
-	const DB_VERSION = 268;
-	const LHC_RELEASE = 396;
+    const DB_VERSION = 300;
+    const LHC_RELEASE = 429;
 
 	public static function doTablesUpdate($definition){
 		$updateInformation = self::getTablesStatus($definition);
@@ -12,6 +12,7 @@ class erLhcoreClassUpdate
         $errorMessages = array();
 
 		try {
+            $db->query('SET GLOBAL innodb_strict_mode=0;');
             $db->query('SET GLOBAL innodb_file_per_table=1;');
             $db->query('SET GLOBAL innodb_large_prefix=1;');
         } catch (Exception $e) {
@@ -48,6 +49,8 @@ class erLhcoreClassUpdate
     		    $archive->setTables();
     		    $definition['tables'][erLhcoreClassModelChatArchiveRange::$archiveTable] = $definition['tables']['lh_chat'];
     		    $definition['tables'][erLhcoreClassModelChatArchiveRange::$archiveMsgTable] = $definition['tables']['lh_msg'];
+    		    $definition['tables'][erLhcoreClassModelChatArchiveRange::$archiveChatParticipantTable] = $definition['tables']['lh_chat_participant'];
+    		    $definition['tables_create'][erLhcoreClassModelChatArchiveRange::$archiveChatParticipantTable] = str_replace('`lh_chat_participant`',"`".erLhcoreClassModelChatArchiveRange::$archiveChatParticipantTable."`",$definition['tables_create']['lh_chat_participant']);
     		}
 		}
 
@@ -79,6 +82,7 @@ class erLhcoreClassUpdate
 
 			try {
 				$sql = 'SHOW FULL COLUMNS FROM '.$table;
+
 				$stmt = $db->prepare($sql);
 				$stmt->execute();
 				$columnsData = $stmt->fetchAll(PDO::FETCH_ASSOC);				

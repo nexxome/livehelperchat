@@ -27,6 +27,10 @@ export default ({onChange, type}) => {
             'value':'typing',
             'text' : 'Send Typing',
         },
+        {            
+            'value':'pauseBot',
+            'text' : 'Pause bot',
+        },
         {
             'value':'video',
             'text' : 'Send Video',
@@ -70,6 +74,10 @@ export default ({onChange, type}) => {
         {
             'value': 'mail',
             'text' : 'Send mail',
+        },
+        {
+            'value': 'survey',
+            'text' : 'Send inline survey',
         }
     ]);
 
@@ -101,6 +109,10 @@ export default ({onChange, type}) => {
         {
             'value': 'tbody',
             'text' : 'Execute trigger body',
+        },
+        {
+            'value': 'iframe',
+            'text' : 'Sourceless Iframe',
         },
         {
             'value': 'laction',

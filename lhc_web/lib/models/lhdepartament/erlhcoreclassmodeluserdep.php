@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhcoreClassModelUserDep
 {
     use erLhcoreClassDBTrait;
@@ -31,7 +31,11 @@ class erLhcoreClassModelUserDep
             'type' => $this->type,
             'dep_group_id' => $this->dep_group_id,
             'exclude_autoasign' => $this->exclude_autoasign,
+            'exc_indv_autoasign' => $this->exc_indv_autoasign,
             'max_chats' => $this->max_chats,
+            'assign_priority' => $this->assign_priority,
+            'chat_min_priority' => $this->chat_min_priority,
+            'chat_max_priority' => $this->chat_max_priority,
         );
     }
 
@@ -82,6 +86,10 @@ class erLhcoreClassModelUserDep
                 if ($ids != '') {
                     $parts = explode(',', $ids);
                     sort($parts);
+
+                    if (!empty($this->dep_id_filter)) {
+                        $parts = array_intersect($parts,$this->dep_id_filter);
+                    }
 
                     $totalAssigned = count($parts);
 
@@ -146,7 +154,7 @@ class erLhcoreClassModelUserDep
 
         $filter = array_merge_recursive($filter, $params);
 
-        $filter['ignore_fields'] = array('exclude_autoasign','max_chats','dep_group_id','type','ro','id','dep_id','hide_online_ts','hide_online','last_activity','lastd_activity','always_on','last_accepted','active_chats','pending_chats','inactive_chats');
+        $filter['ignore_fields'] = array('chat_max_priority','chat_min_priority','assign_priority','exc_indv_autoasign','exclude_autoasign','max_chats','dep_group_id','type','ro','id','dep_id','hide_online_ts','hide_online','last_activity','lastd_activity','always_on','last_accepted','active_chats','pending_chats','inactive_chats','ro');
 
         $filter['select_columns'] = '
         max(`id`) as `id`, 
@@ -161,9 +169,19 @@ class erLhcoreClassModelUserDep
         max(`last_accepted`) as `last_accepted`,
         max(`active_chats`) as `active_chats`,
         max(`pending_chats`) as `pending_chats`,
-        max(`inactive_chats`) as `inactive_chats`';
+        max(`inactive_chats`) as `inactive_chats`,
+        min(`ro`) as `ro`';
 
-        return self::getList($filter);
+        $list = self::getList($filter);
+
+        if (isset($userDepartaments)) {
+            $userDepartaments[] = 0;
+            foreach ($list as & $listItem) {
+                $listItem->dep_id_filter = $userDepartaments;
+            }
+        }
+
+        return $list;
     }
 
     public $id = null;
@@ -182,7 +200,13 @@ class erLhcoreClassModelUserDep
     public $type = 0;
     public $dep_group_id = 0;
     public $exclude_autoasign = 0;
+    public $exc_indv_autoasign = 0;
     public $max_chats = 0;
+    public $assign_priority = 0;
+    public $chat_min_priority = 0;
+    public $chat_max_priority = 0;
+
+    public $dep_id_filter = [];
 }
 
 ?>

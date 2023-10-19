@@ -16,7 +16,7 @@ try {
 
     $chat = erLhcoreClassModelChat::fetch($requestPayload['id']);
 
-    if ($chat instanceof erLhcoreClassModelChat && $chat->hash == $requestPayload['hash'])
+    if ($chat instanceof erLhcoreClassModelChat && $chat->hash === $requestPayload['hash'])
     {
         $msg = erLhcoreClassModelmsg::fetch($requestPayload['msg_id']);
 
@@ -28,6 +28,10 @@ try {
             $tpl->set('react',true);
             $tpl->set('sync_mode','');
             $tpl->set('async_call',true);
+            
+            if (isset($requestPayload['theme']) && ($themeId = erLhcoreClassChat::extractTheme($requestPayload['theme'])) !== false) {
+                $tpl->set('theme',erLhAbstractModelWidgetTheme::fetch($requestPayload['theme']));
+            }
 
             echo json_encode(array('id' => $msg->id, 'msg' => trim($tpl->fetch())));
             exit;

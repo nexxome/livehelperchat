@@ -11,6 +11,7 @@ return array (
                     'installed' => false,
                     'secrethash' => '',
                     'debug_output' => false,
+                    'log_slow_request' => false,
                     'templatecache' => false,
                     'templatecompile' => false,
                     'modulecompile' => false,
@@ -18,6 +19,7 @@ return array (
                     'proxy_mode' => false,
                     'disable_rest_api_by_user' => false,
                     'one_login_per_account' => false,
+                    'php_session_cookie_name' => '',
                     'time_zone' => '',
                     'date_format' => 'Y-m-d',
                     'date_hour_format' => 'H:i:s',
@@ -26,6 +28,9 @@ return array (
                     'maps_api_key' => false,
                     'default_group' => '',
                     'default_user' => '',
+                    'site_address' => '',
+                    'trusted_host_patterns' => [
+                    ],
                     'extensions' =>
                         array (
                             // 0 => 'customstatus',

@@ -110,6 +110,10 @@ export class mainWidgetPopup {
                 urlArgumetns = urlArgumetns + "/(trigger)/" + this.attributes['trigger_id'];
             }
 
+            if (this.attributes['subject_id']) {
+                urlArgumetns = urlArgumetns + "/(subject)/" + this.attributes['subject_id'];
+            }
+
             if (this.attributes['priority']) {
                 urlArgumetns = urlArgumetns + "/(priority)/" + this.attributes['priority'];
             }
@@ -189,22 +193,26 @@ export class mainWidgetPopup {
         }
     }
 
+    getAttributesToSent(){
+        var js_vars = this.attributes['jsVars'].value;
+        var js_args = {};
+        var currentVar = null;
+        for (var index in js_vars) {
+            try {
+                currentVar = eval(js_vars[index].var);
+                if (typeof currentVar !== 'undefined' && currentVar !== null && currentVar !== '') {
+                    js_args[js_vars[index].id] = currentVar;
+                }
+            } catch (err) {
+
+            }
+        }
+        return js_args;
+    }
+
     sendParameters(chatEvents) {
         if (this.cont.elementReferrerPopup && this.cont.elementReferrerPopup.closed === false) {
-            var js_vars = this.attributes['jsVars'].value;
-            var js_args = {};
-            var currentVar = null;
-            for (var index in js_vars) {
-                try {
-                    currentVar = eval(js_vars[index].var);
-                    if (typeof currentVar !== 'undefined' && currentVar !== null && currentVar !== '') {
-                        js_args[js_vars[index].id] = currentVar;
-                    }
-                } catch (err) {
-
-                }
-            }
-            chatEvents.sendChildEvent('jsVars', [js_args]);
+            chatEvents.sendChildEvent('jsVars', [this.getAttributesToSent()]);
         }
     }
 }

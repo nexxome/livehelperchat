@@ -75,13 +75,76 @@ class erLhcoreClassUserDep
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    public static function conditionalDepartmentGroupFilter($userID = false, $column = 'id') {
+    public static function getUserDepartamentsExcAutoassignIds($userID = false)
+    {
+        $db = ezcDbInstance::get();
 
         if ($userID === false) {
             $userID = erLhcoreClassUser::instance()->getUserID();
         }
 
+        $stmt = $db->prepare('SELECT dep_id FROM lh_userdep WHERE user_id = :user_id AND type = 0 AND exc_indv_autoasign = 1 ORDER BY id ASC');
+        $stmt->bindValue(':user_id', $userID);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public static function getUserIndividualParams($userID = false)
+    {
+        $db = ezcDbInstance::get();
+
+        if ($userID === false) {
+            $userID = erLhcoreClassUser::instance()->getUserID();
+        }
+
+        $stmt = $db->prepare('SELECT `assign_priority`,`chat_min_priority`,`chat_max_priority`,`dep_id` FROM `lh_userdep` WHERE `user_id` = :user_id AND `type` = 0 ORDER BY `id` ASC');
+        $stmt->bindValue(':user_id', $userID);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rowsReturn = [];
+
+        foreach ($rows as $row) {
+            $rowsReturn[$row['dep_id']] = $row;
+        }
+
+        return $rowsReturn;
+    }
+
+    public static function conditionalDepartmentGroupFilter($userID = false, $column = 'id') {
+
+        $useUser = false;
+
+        if ($userID === false) {
+            $userID = erLhcoreClassUser::instance()->getUserID();
+            $useUser = true;
+        }
+
         if (erLhcoreClassRole::hasAccessTo($userID, 'lhdepartment', 'see_all') === true) {
+            if ($useUser === true) {
+                $limitation = erLhcoreClassUser::instance()->hasAccessTo('lhdepartment', 'see_all', true);
+                if ($limitation !== true) {
+                    $limitationParams = json_decode($limitation, true);
+
+                    $departments = [];
+                    $limitsApplied = false;
+
+                    if (isset($limitationParams['group'])) {
+                        erLhcoreClassChat::validateFilterIn($limitationParams['group']);
+                        $departments = $limitationParams['group'];
+                        $limitsApplied = true;
+                    }
+
+                    if ($limitsApplied === true && empty($departments)) {
+                        return array('filterin' => array($column => [-1]));
+                    } elseif ($limitsApplied === true) {
+                        erLhcoreClassChat::validateFilterIn($departments);
+                        return array('filterin' => array($column => $departments));
+                    }
+                }
+            }
+
             return array();
         }
 
@@ -100,14 +163,44 @@ class erLhcoreClassUserDep
 
     public static function conditionalDepartmentFilter($userID = false, $column = 'id', $cacheVersion = 0) {
 
+        $useUser = false;
+
         if ($userID === false) {
             $userID = erLhcoreClassUser::instance()->getUserID();
             $cacheVersion = erLhcoreClassUser::instance()->cache_version;
+            $useUser = true;
         }
 
         if (erLhcoreClassRole::hasAccessTo($userID, 'lhdepartment', 'see_all') === true) {
+            if ($useUser === true) {
+                $limitation = erLhcoreClassUser::instance()->hasAccessTo('lhdepartment', 'see_all', true);
+                if ($limitation !== true) {
+                    $limitationParams = json_decode($limitation, true);
+
+                    $departments = [];
+                    $limitsApplied = false;
+
+                    if (isset($limitationParams['group'])) {
+                        erLhcoreClassChat::validateFilterIn($limitationParams['group']);
+                        $departments = erLhcoreClassModelDepartamentGroupMember::getCount(['filterin' => ['dep_group_id' => $limitationParams['group']]],false,'dep_id', 'dep_id', false, true, true);
+                        $limitsApplied = true;
+                    }
+
+                    if (isset($limitationParams['department'])) {
+                        $departments = array_merge($departments, $limitationParams['department']);
+                        $limitsApplied = true;
+                    }
+
+                    if ($limitsApplied === true && empty($departments)) {
+                        return array('filterin' => array($column => [-1]));
+                    } elseif ($limitsApplied === true) {
+                        erLhcoreClassChat::validateFilterIn($departments);
+                        return array('filterin' => array($column => $departments));
+                    }
+                }
+            }
             return array();
-        };
+        }
 
         $departments = self::parseUserDepartmetnsForFilter($userID, $cacheVersion);
 
@@ -160,7 +253,7 @@ class erLhcoreClassUserDep
         return $userDepartment;
     }
 
-    public static function addUserDepartaments($Departaments, $userID = false, $UserData = false, $readOnly = array())
+    public static function addUserDepartaments($Departaments, $userID = false, $UserData = false, $readOnly = array(), $excludeAutoAssign = array(), $paramsAssignment = array())
     {
         $db = ezcDbInstance::get();
         if ($userID === false) {
@@ -168,20 +261,30 @@ class erLhcoreClassUserDep
             $userID = $currentUser->getUserID();
         }
 
-        $stmt = $db->prepare('DELETE FROM lh_userdep WHERE user_id = :user_id AND type = 0');
-        $stmt->bindValue(':user_id', $userID);
-        $stmt->execute();
+        if (!isset($paramsAssignment['only_global'])){
+            $stmt = $db->prepare('DELETE FROM lh_userdep WHERE user_id = :user_id AND type = 0');
+            $stmt->bindValue(':user_id', $userID);
+            $stmt->execute();
+        } else {
+            $stmt = $db->prepare('DELETE FROM lh_userdep WHERE user_id = :user_id AND type = 0 AND `dep_id` IN (0,-1)');
+            $stmt->bindValue(':user_id', $userID);
+            $stmt->execute();
+        }
 
         foreach ($Departaments as $DepartamentID) {
-            $stmt = $db->prepare('INSERT INTO lh_userdep (user_id,dep_id,hide_online,last_activity,last_accepted,active_chats,type,dep_group_id,max_chats,ro,pending_chats,inactive_chats,exclude_autoasign,always_on) VALUES (:user_id,:dep_id,:hide_online,0,0,:active_chats,0,0,:max_chats,:ro,0,0,:exclude_autoasign,:always_on)');
+            $stmt = $db->prepare('INSERT INTO lh_userdep (user_id,dep_id,hide_online,last_activity,last_accepted,active_chats,type,dep_group_id,max_chats,ro,pending_chats,inactive_chats,exclude_autoasign,always_on,exc_indv_autoasign,assign_priority,chat_max_priority,chat_min_priority) VALUES (:user_id,:dep_id,:hide_online,0,0,:active_chats,0,0,:max_chats,:ro,0,0,:exclude_autoasign,:always_on,:exc_indv_autoasign,:assign_priority,:chat_max_priority,:chat_min_priority)');
             $stmt->bindValue(':user_id', $userID);
             $stmt->bindValue(':max_chats', $UserData->max_active_chats);
             $stmt->bindValue(':dep_id', $DepartamentID);
             $stmt->bindValue(':hide_online', $UserData->hide_online);
             $stmt->bindValue(':exclude_autoasign', $UserData->exclude_autoasign);
-            $stmt->bindValue(':ro', in_array($DepartamentID, $readOnly) ? 1 : 0);
+            $stmt->bindValue(':exc_indv_autoasign', (in_array($DepartamentID, $excludeAutoAssign) || $DepartamentID == -1) ? 1 : 0);
+            $stmt->bindValue(':ro', (in_array($DepartamentID, $readOnly) || $DepartamentID == -1) ? 1 : 0);
             $stmt->bindValue(':active_chats', erLhcoreClassChat::getCount(array('filter' => array('user_id' => $UserData->id, 'status' => erLhcoreClassModelChat::STATUS_ACTIVE_CHAT))));
             $stmt->bindValue(':always_on',$UserData->always_on);
+            $stmt->bindValue(':assign_priority',(isset($paramsAssignment['assign_priority'][$DepartamentID]) ? (int)$paramsAssignment['assign_priority'][$DepartamentID] : 0));
+            $stmt->bindValue(':chat_max_priority',(isset($paramsAssignment['chat_max_priority'][$DepartamentID]) ? (int)$paramsAssignment['chat_max_priority'][$DepartamentID] : 0));
+            $stmt->bindValue(':chat_min_priority',(isset($paramsAssignment['chat_min_priority'][$DepartamentID]) ? (int)$paramsAssignment['chat_min_priority'][$DepartamentID] : 0));
             $stmt->execute();
         }
 

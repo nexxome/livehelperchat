@@ -1,9 +1,10 @@
 <?php
 
-erLhcoreClassRestAPIHandler::setHeaders();
-erTranslationClassLhTranslation::$htmlEscape = false;
-
 $requestPayload = json_decode(file_get_contents('php://input'),true);
+
+erLhcoreClassRestAPIHandler::setHeaders('Content-Type: application/json', (isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : (isset($requestPayload['host']) && $requestPayload['host'] != '' ? $requestPayload['host'] : "*")));
+
+erTranslationClassLhTranslation::$htmlEscape = false;
 
 $Params['user_parameters_unordered']['department'] = isset($requestPayload['department']) ? $requestPayload['department'] : null;
 
@@ -29,14 +30,18 @@ if (isset($requestPayload['fields']['DepartamentID']) && !empty($requestPayload[
 $validStart = false;
 
 if (is_array($Params['user_parameters_unordered']['department']) && count($Params['user_parameters_unordered']['department']) == 1) {
-    $parametersDepartment = erLhcoreClassChat::extractDepartment($Params['user_parameters_unordered']['department']);
-    $Params['user_parameters_unordered']['department'] = $parametersDepartment['system'];
-    $requestPayload['fields']['DepartamentID'] = $inputData->departament_id = array_shift($Params['user_parameters_unordered']['department']);
+    if (!(isset($requestPayload['fields']['DepartamentID']) && $requestPayload['fields']['DepartamentID'] == -1)) {
+        $parametersDepartment = erLhcoreClassChat::extractDepartment($Params['user_parameters_unordered']['department']);
+        $Params['user_parameters_unordered']['department'] = $parametersDepartment['system'];
+        $requestPayload['fields']['DepartamentID'] = $inputData->departament_id = array_shift($Params['user_parameters_unordered']['department']);
+    } else {
+        $inputData->departament_id = -1;
+    }
 } else {
     $inputData->departament_id = 0;
 }
 
-if (is_numeric($inputData->departament_id) && $inputData->departament_id > 0 && ($startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('filter' => array('department_id' => $inputData->departament_id)))) !== false) {
+if (is_numeric($inputData->departament_id) && $inputData->departament_id > 0 && ($startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('customfilter' => array("((`dep_ids` != '' AND JSON_CONTAINS(`dep_ids`,'" . (int)$inputData->departament_id . "','$')) OR department_id = " . (int)$inputData->departament_id . ")" )))) !== false) {
     $startDataFields = $startDataDepartment->data_array;
 } else {
     // Start chat field options
@@ -49,6 +54,10 @@ if (isset($requestPayload['theme']) && ($themeId = erLhcoreClassChat::extractThe
 }
 
 $additionalParams['payload_data'] = isset($requestPayload['fields']) ? $requestPayload['fields'] : array();
+
+if (isset($requestPayload['bpayload']['payload'])) {
+    $additionalParams['bpayload'] = $requestPayload['bpayload'];
+}
 
 if (isset($additionalParams['payload_data']['phash']) && isset($additionalParams['payload_data']['pvhash']) && (string)$additionalParams['payload_data']['phash'] != '' && (string)$additionalParams['payload_data']['pvhash'] != '') {
     $paidChatSettings = erLhcoreClassChatPaid::paidChatWorkflow(array(
@@ -75,6 +84,23 @@ if (isset($restAPI['collect_all']) && $restAPI['collect_all'] === true) {
 }
 
 if (!isset($Errors)) {
+
+    if (isset($requestPayload['invitation_id']) && is_numeric($requestPayload['invitation_id'])) {
+        $chat->invitation_id = (int)$requestPayload['invitation_id'];
+    }
+
+    $chat->referrer = isset($requestPayload['fields']['URLRefer']) ? $requestPayload['fields']['URLRefer'] : '';
+    
+    if (is_array($chat->referrer)) {
+        if (isset($chat->referrer['href'])){
+            $chat->referrer = (string)$chat->referrer['href'];
+        } else {
+            $chat->referrer = '';
+        }
+    }
+
+    $chat->session_referrer = isset($requestPayload['fields']['r']) ? $requestPayload['fields']['r'] : '';
+
     $Errors = erLhcoreClassChatValidator::validateStartChat($inputData,$startDataFields,$chat, $additionalParams);
     // Check is visitor blocked based on previous data if present chat does not have a nick
     if (empty($Errors) &&
@@ -110,17 +136,7 @@ if (empty($Errors)) {
 
     $chat->time = $chat->pnd_time = time();
     $chat->status = erLhcoreClassModelChat::STATUS_PENDING_CHAT;
-
     $chat->hash = erLhcoreClassChat::generateHash();
-    $chat->referrer = isset($requestPayload['fields']['URLRefer']) ? $requestPayload['fields']['URLRefer'] : '';
-    if (is_array($chat->referrer)) {
-        if (isset($chat->referrer['href'])){
-            $chat->referrer = (string)$chat->referrer['href'];
-        } else {
-            $chat->referrer = '';
-        }
-    }
-    $chat->session_referrer = isset($requestPayload['fields']['r']) ? $requestPayload['fields']['r'] : '';
 
     if (isset($restAPI) && isset($requestPayload['chat_variables']) && is_array($requestPayload['chat_variables'])) {
         $chat_variables_array = $chat->chat_variables_array;
@@ -164,6 +180,17 @@ if (empty($Errors)) {
 
         $paramsExecution = array();
 
+        // Handle subject
+        if (isset($requestPayload['fields']['subject_id']) && is_numeric($requestPayload['fields']['subject_id'])) {
+            $subject = erLhAbstractModelSubject::fetch($requestPayload['fields']['subject_id']);
+            if ($subject instanceof erLhAbstractModelSubject) {
+                $subjectChat = new erLhAbstractModelSubjectChat();
+                $subjectChat->subject_id = (int)$requestPayload['fields']['subject_id'];
+                $subjectChat->chat_id =$chat->id;
+                $subjectChat->saveThis();
+            }
+        }
+
         // Assign chat to user
         if ( erLhcoreClassModelChatConfig::fetch('track_online_visitors')->current_value == 1 ) {
             // To track online users
@@ -178,7 +205,7 @@ if (empty($Errors)) {
 
                     $ignoreResponder = isset($onlineAttrSystem['lhc_ignore_autoresponder']) && $onlineAttrSystem['lhc_ignore_autoresponder'] == 1;
 
-                    if (isset($onlineAttrSystem['lhc_assign_to_me']) && $onlineAttrSystem['lhc_assign_to_me'] == 1 && $userInstance->operator_user_id > 0) {
+                    if (isset($onlineAttrSystem['lhc_assign_to_me']) && $onlineAttrSystem['lhc_assign_to_me'] == 1 && $userInstance->operator_user !== false && $userInstance->operator_user_id > 0) {
                         $chat->user_id = $userInstance->operator_user_id;
                         $chat->tslasign = time();
                     }
@@ -232,7 +259,7 @@ if (empty($Errors)) {
                         erLhcoreClassChat::getSession()->save($msg);
                     }
 
-                    if ($ignoreResponder == false && $userInstance->invitation !== false) {
+                    if ($ignoreResponder == false && $userInstance->invitation !== false && (!isset($userInstance->invitation->design_data_array['use_default_autoresponder']) || $userInstance->invitation->design_data_array['use_default_autoresponder'] == false)) {
                         $responder = $userInstance->invitation->autoresponder;
                     }
 
@@ -260,9 +287,23 @@ if (empty($Errors)) {
                             }
                         }
 
+                        // Lock department support
+                        if (
+                            $invitation instanceof erLhAbstractModelProactiveChatInvitation &&
+                            isset($invitation->design_data_array['lock_department']) &&
+                            $invitation->design_data_array['lock_department'] == true &&
+                            isset($onlineAttrSystem['inv_ldp']) &&
+                            is_numeric($onlineAttrSystem['inv_ldp']) &&
+                            $onlineAttrSystem['inv_ldp'] > 0
+                        ) {
+                            $chat->dep_id = $onlineAttrSystem['inv_ldp'];
+                            unset($onlineAttrSystem['inv_ldp']); // Let invitation flow set it again
+                            $userInstance->online_attr_system = json_encode($onlineAttrSystem);
+                        }
+
                         if ($invitation instanceof erLhAbstractModelProactiveChatInvitation &&
-                            $invitation->design_data_array['show_everytime'] && $invitation->design_data_array['show_everytime'] == true &&
-                            $invitation->design_data_array['show_after_chat'] && $invitation->design_data_array['show_after_chat'] == true) {
+                            isset($invitation->design_data_array['show_everytime']) && $invitation->design_data_array['show_everytime'] == true &&
+                            isset($invitation->design_data_array['show_after_chat']) && $invitation->design_data_array['show_after_chat'] == true) {
                             $userInstance->operator_message = '';
                             $userInstance->message_seen = 0;
                             $userInstance->message_seen_ts = 0;
@@ -330,7 +371,9 @@ if (empty($Errors)) {
             $trigger = erLhcoreClassModelGenericBotTrigger::fetch($additionalParams['theme']->bot_configuration_array['trigger_id']);
             $paramsExecution['trigger_id_executed'] = $additionalParams['theme']->bot_configuration_array['trigger_id'];
             if (is_object($trigger)) {
+                erLhcoreClassGenericBotWorkflow::$setBotFlow = true;
                 erLhcoreClassGenericBotWorkflow::processTrigger($chat, $trigger);
+                erLhcoreClassGenericBotWorkflow::$setBotFlow = false;
                 $triggerEvent = erLhcoreClassModelGenericBotChatEvent::findOne(array('filter' => array('chat_id' => $chat->id)));
             }
         }
@@ -390,7 +433,7 @@ if (empty($Errors)) {
             $responder = erLhAbstractModelAutoResponder::processAutoResponder($chat);
         }
 
-        if ($responder instanceof erLhAbstractModelAutoResponder) {
+        if (isset($responder) && $responder instanceof erLhAbstractModelAutoResponder) {
             $beforeAutoResponderErrors = array();
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_auto_responder_triggered',array('chat' => & $chat, 'errors' => & $beforeAutoResponderErrors));
 
@@ -464,6 +507,13 @@ if (empty($Errors)) {
             ));
         }
 
+        // We want to find first visitor message and always scroll to it
+        $message_id_first = (int)erLhcoreClassModelmsg::getCount(['limit' => 1, 'sort' => 'id ASC', 'filter' => ['user_id' => 0, 'chat_id' => $chat->id]],'count','id','id');
+
+        if ($message_id_first == 0) { // Sometimes action can be a button click without saving visitor message, in this scenario there is no visitor message
+            $message_id_first = (int)erLhcoreClassModelmsg::getCount(['limit' => 1, 'offset' => 1, 'sort' => 'id ASC', 'filter' => ['chat_id' => $chat->id]],'count','id','id');
+        }
+
         $db->commit();
 
         $validStart = true;
@@ -476,6 +526,9 @@ if (empty($Errors)) {
     $outputResponse = array (
         'success' => true,
         't' => erLhcoreClassGenericBotWorkflow::$triggerName,
+        'chatLiveData' => array (
+            'message_id_first' => (isset($message_id_first) ? $message_id_first : 0)
+        ),
         'chatData' => array (
             'id' => $chat->id,
             'hash' => $chat->hash,
@@ -500,6 +553,20 @@ if (!isset($restAPI)) {
         flush();
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
+        }
+
+        // Log executed triggers if required
+        if (!empty(erLhcoreClassGenericBotWorkflow::$triggerName) && isset($chat->chat_variables_array['gbot_debug']) && $chat->chat_variables_array['gbot_debug'] == 1) {
+            erLhcoreClassLog::write(json_encode(erLhcoreClassGenericBotWorkflow::$triggerNameDebug,JSON_PRETTY_PRINT),
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'bot',
+                    'line' => 0,
+                    'file' => 'submitonline.php',
+                    'object_id' => $chat->id
+                )
+            );
         }
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_started', array('chat' => & $chat, 'msg' => $messageInitial));

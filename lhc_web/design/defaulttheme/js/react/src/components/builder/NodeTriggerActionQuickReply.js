@@ -23,6 +23,19 @@ class NodeTriggerActionQuickReply extends Component {
         this.onStoreNameChange = this.onStoreNameChange.bind(this);
         this.onStoreValueChange = this.onStoreValueChange.bind(this);
         this.onButtonIDChange = this.onButtonIDChange.bind(this);
+
+        this.onButtonIconContentChange = this.onButtonIconContentChange.bind(this);
+        this.onButtonCSSClassChange = this.onButtonCSSClassChange.bind(this);
+        
+        this.state = {advanced : false};
+    }
+
+    onButtonIconContentChange(e) {
+        this.props.onPayloadAttrChange({id : this.props.id, payload : {attr: 'button_icon', value: e.target.value}});
+    }
+
+    onButtonCSSClassChange(e) {
+        this.props.onPayloadAttrChange({id : this.props.id, payload : {attr: 'button_class', value: e.target.value}});
     }
 
     onStoreNameChange(e) {
@@ -70,7 +83,7 @@ class NodeTriggerActionQuickReply extends Component {
     render() {
 
         return (
-            <div className="row">
+            <div className="row border-top border-dark">
                 <div className="col-5">
                     <div className="form-group">
                         <label className="font-weight-bold">Name</label>
@@ -97,27 +110,56 @@ class NodeTriggerActionQuickReply extends Component {
                 </div>
                 <div className="col-2">
 
-                    <div className="btn-group float-left mt-4 pt-2" role="group" aria-label="Trigger actions">
+                    <div className="btn-group float-start mt-4 pt-2" role="group" aria-label="Trigger actions">
                         <button disabled="disabled" className="btn btn-xs btn-secondary">{this.props.id + 1}</button>
-                        {this.props.isFirst == false && <button className="btn btn-secondary btn-xs" onClick={this.props.upField}><i className="material-icons mr-0">keyboard_arrow_up</i></button>}
-                        {this.props.isLast == false && <button className="btn btn-secondary btn-xs" onClick={this.props.downField}><i className="material-icons mr-0">keyboard_arrow_down</i></button>}
+                        {this.props.isFirst == false && <button className="btn btn-secondary btn-xs" onClick={this.props.upField}><i className="material-icons me-0">keyboard_arrow_up</i></button>}
+                        {this.props.isLast == false && <button className="btn btn-secondary btn-xs" onClick={this.props.downField}><i className="material-icons me-0">keyboard_arrow_down</i></button>}
                     </div>
 
-                    <div className="form-group float-right mt-4 pt-1">
+                    <div className="form-group float-end mt-4 pt-1">
                         <div>
-                            <a onClick={this.deleteReply}><i className="material-icons mr-0">delete</i></a>
+                            <a onClick={this.deleteReply}><i className="material-icons me-0">delete</i></a>
                         </div>
                     </div>
                 </div>
 
-                {this.props.reply.get('type') == 'url' && <div className="col-12">
-                    <div className="form-group">
-                        <label>Button ID</label>
-                        <input type="text" placeholder="Button ID" onChange={this.onButtonIDChange} defaultValue={this.props.reply.getIn(['content','button_id'])} className="form-control form-control-sm" />
+                <div className="col-10">
+                    <a onClick={(e) => this.setState({"advanced": !this.state.advanced})}><span className="material-icons">code</span>{this.state.advanced ? 'Hide' : 'Show'} advanced options</a>
+                </div>
+
+                {this.props.reply.get('type') == 'url' && this.state.advanced && <div className="col-12">
+                    <div className="row">
+                        <div className="col-6">
+                            <div className="form-group">
+                                <label>Button ID</label>
+                                <input type="text" placeholder="Button ID" onChange={this.onButtonIDChange} defaultValue={this.props.reply.getIn(['content','button_id'])} className="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div className="col-6">
+                            <div className="form-group">
+                                <label>CSS Class element</label>
+                                <input type="text" placeholder="Button CSS class" onChange={this.onButtonCSSClassChange} defaultValue={this.props.reply.getIn(['content','button_class'])} className="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div className="col-6">
+                            <div className="form-group">
+                                <label>Icon name. Based on material icons.</label>
+                                <input type="text" placeholder="Icon name" onChange={this.onButtonIconContentChange} defaultValue={this.props.reply.getIn(['content','button_icon'])} className="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div className="col-12">
+                            <label><input type="checkbox" onChange={(e) => this.props.onPayloadAttrChange({id : this.props.id,  payload: {attr: 'override_rest_api_button', value: e.target.checked}})} defaultChecked={this.props.reply.getIn(['content','override_rest_api_button'])} /> Override Rest API button content.</label>
+                        </div>
+                        <div className="col-12">
+                            <div className="form-group">
+                                <label>Rest API button custom content.</label>
+                                <textarea onChange={(e) => this.props.onPayloadAttrChange({id : this.props.id,  payload: {attr: 'rest_api_button', value: e.target.value}})}  defaultValue={this.props.reply.getIn(['content','rest_api_button'])} className="form-control form-control-sm" ></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>}
 
-                {(this.props.reply.get('type') == 'trigger' || this.props.reply.get('type') == 'button') && <div className="col-10">
+                {(this.props.reply.get('type') == 'trigger' || this.props.reply.get('type') == 'button') && this.state.advanced && <div className="col-10">
                     <div className="row">
                         <div className="col-6">
                             <div className="form-group">
@@ -133,12 +175,33 @@ class NodeTriggerActionQuickReply extends Component {
                         </div>
                         <div className="col-6">
                             <label><input type="checkbox" onChange={(e) => this.props.onButtonStoreTypeChange({id : this.props.id, value : e.target.checked})} defaultChecked={this.props.reply.getIn(['content','as_variable'])} /> Save value as chat variable.</label> <i className="material-icons" title="This will be invisible for the operator.">info</i>
+                            <label><input type="checkbox" onChange={(e) => this.props.onButtonNoName({id : this.props.id, value : e.target.checked})} defaultChecked={this.props.reply.getIn(['content','no_name'])} /> Do not print button name on click</label> <i className="material-icons" title="This will avoid sending visitor message as button name.">info</i>
                         </div>
-
                         <div className="col-6">
                             <div className="form-group">
-                                <label>Button ID</label>
+                                <label>Button ID, element id attribute.</label>
                                 <input type="text" placeholder="Button ID" onChange={this.onButtonIDChange} defaultValue={this.props.reply.getIn(['content','button_id'])} className="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div className="col-6">
+                            <div className="form-group">
+                                <label>CSS Class element</label>
+                                <input type="text" placeholder="Button CSS class" onChange={this.onButtonCSSClassChange} defaultValue={this.props.reply.getIn(['content','button_class'])} className="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div className="col-6">
+                            <div className="form-group">
+                                <label>Icon name. Based on material icons.</label>
+                                <input type="text" placeholder="Icon name" onChange={this.onButtonIconContentChange} defaultValue={this.props.reply.getIn(['content','button_icon'])} className="form-control form-control-sm" />
+                            </div>
+                        </div>
+                        <div className="col-12">
+                            <label><input type="checkbox" onChange={(e) => this.props.onPayloadAttrChange({id : this.props.id,  payload: {attr: 'override_rest_api_button', value: e.target.checked}})} defaultChecked={this.props.reply.getIn(['content','override_rest_api_button'])} /> Override Rest API button content.</label>
+                        </div>
+                        <div className="col-12">
+                            <div className="form-group">
+                                <label>Rest API button custom content.</label>
+                                <textarea onChange={(e) => this.props.onPayloadAttrChange({id : this.props.id,  payload: {attr: 'rest_api_button', value: e.target.value}})}  defaultValue={this.props.reply.getIn(['content','rest_api_button'])} className="form-control form-control-sm" ></textarea>
                             </div>
                         </div>
                     </div>

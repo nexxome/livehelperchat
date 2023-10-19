@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhcoreClassModelChatIncoming {
 
     use erLhcoreClassDBTrait;
@@ -32,6 +32,14 @@ class erLhcoreClassModelChatIncoming {
                 $this->chat = erLhcoreClassModelChat::fetch($this->chat_id);
                 return $this->chat;
 
+            case 'chat_external_first':
+                $this->chat_external_first = explode('__',$this->chat_external_id)[0];
+                return $this->chat_external_first;
+
+            case 'chat_external_last':
+                $this->chat_external_last = explode('__',$this->chat_external_id)[1];
+                return $this->chat_external_last;
+
             case 'incoming':
                 $this->incoming = erLhcoreClassModelChatIncomingWebhook::fetch($this->incoming_id);
                 return $this->incoming;
@@ -48,6 +56,11 @@ class erLhcoreClassModelChatIncoming {
                 }
                 return $this->payload_array;
 
+            case 'incoming_dynamic_array':
+                $chat_dynamic_array = [];
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.incoming_dynamic_array', array('incoming_chat' => $this, 'dynamic_array' => & $chat_dynamic_array));
+                $this->incoming_dynamic_array = $chat_dynamic_array;
+                return $this->incoming_dynamic_array;
 
             default:
                 break;

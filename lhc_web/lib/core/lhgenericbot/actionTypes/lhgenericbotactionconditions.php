@@ -29,6 +29,8 @@ class erLhcoreClassGenericBotActionConditions {
                 }
             }
 
+            $conditionsDebug = [];
+
             foreach ($action['content']['conditions'] as $condition) {
 
                 if (isset($multiAttr)) {
@@ -96,6 +98,8 @@ class erLhcoreClassGenericBotActionConditions {
                     } elseif (strpos($condition['content']['attr'],'{args.') !== false) {
                         $valueAttribute = erLhcoreClassGenericBotActionRestapi::extractAttribute(array_merge($params,array('chat' => $chat)), str_replace(array('{args.','{','}'),'',$condition['content']['attr']), '.');
                         $attr = $valueAttribute['found'] == true ? $valueAttribute['value'] : null;
+                    } elseif ($paramsConditions[0] == '{condition') {
+                        $attr = erLhcoreClassGenericBotWorkflow::translateMessage($condition['content']['attr'], array('chat' => $chat, 'args' => ['chat' => $chat]));
                     } else {
                         $attrData = erLhcoreClassGenericBotActionRestapi::extractAttribute($chatVariables, $condition['content']['attr']);
                         if ($attrData['found'] == true) {
@@ -104,6 +108,7 @@ class erLhcoreClassGenericBotActionConditions {
                             $attr = '';
                         }
                     }
+
 
                     if ($attr === null) {
                        $conditionsMet = false;
@@ -165,6 +170,8 @@ class erLhcoreClassGenericBotActionConditions {
                         $valAttr = (string)$valAttr;
                     }
 
+                    $conditionsDebug[] = json_encode($attr) . ' ' . $condition['content']['comp'] . ' ' . json_encode($valAttr);
+
                     if ($condition['content']['comp'] == 'eq' && !((isset($multiAttr) && in_array($valAttr,$multiAttr)) || (!isset($multiAttr) && $attr == $valAttr))) {
                         $conditionsMet = false;
                         break;
@@ -203,6 +210,8 @@ class erLhcoreClassGenericBotActionConditions {
                     }
                 }
             }
+
+            erLhcoreClassGenericBotWorkflow::$triggerNameDebug[] = $conditionsDebug;
 
             if ($conditionsMet == true) {
 

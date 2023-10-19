@@ -32,6 +32,12 @@ if (isset($_GET['ua'])) {
     $uarguments = false;
 }
 
+// Override language by user settings
+if (isset($_GET['lang']) && in_array((string)$_GET['lang'],erConfigClassLhConfig::getInstance()->getSetting( 'site', 'available_site_access' ))) {
+    $settings = erConfigClassLhConfig::getInstance()->getSetting( 'site_access_options', (string)$_GET['lang']);
+    $_SERVER['HTTP_ACCEPT_LANGUAGE'] = $settings['content_language'];
+}
+
 $proactiveInviteActive = erLhcoreClassModelChatConfig::fetch('pro_active_invite')->current_value;
 
 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chatcheckoperatormessage', array('proactive_active' => & $proactiveInviteActive));
@@ -127,7 +133,7 @@ if (isset($reopen_chat)) {
                 $replaceStyleArray = array();
 
                 for ($i = 1; $i < 5; $i++) {
-                    $replaceStyleArray['{proactive_img_' . $i . '}'] = erLhcoreClassModelChatConfig::fetch('explicit_http_mode')->current_value . '//' . $_SERVER['HTTP_HOST'] . $userInstance->invitation->{'design_data_img_' . $i . '_url'};
+                    $replaceStyleArray['{proactive_img_' . $i . '}'] = erLhcoreClassSystem::getHost() . $userInstance->invitation->{'design_data_img_' . $i . '_url'};
                 }
 
                 $contentCSS = str_replace(array_keys($replaceStyleArray), array_values($replaceStyleArray), $userInstance->invitation->design_data_array['mobile_style']);

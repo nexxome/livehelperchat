@@ -18,7 +18,12 @@ class erLhcoreClassUser{
        $options->idKey = 'lhc_ezcAuth_id';
        $options->timestampKey = 'lhc_ezcAuth_timestamp';
 
+       $sessionCookieName = erConfigClassLhConfig::getInstance()->getSetting( 'site', 'php_session_cookie_name', false );
+
        $this->session = new ezcAuthenticationSession($options);
+       if (!empty($sessionCookieName) && $sessionCookieName !== false){
+           $this->session->setSessionName($sessionCookieName);
+       }
        $this->session->start();
 
        $this->credentials = new ezcAuthenticationPasswordCredentials( $this->session->load(), null );
@@ -61,7 +66,7 @@ class erLhcoreClassUser{
               // Check that session is valid
               if (self::$oneLoginPerAccount == true || erConfigClassLhConfig::getInstance()->getSetting( 'site', 'one_login_per_account', false ) == true) {              
                   $sesid = $this->getUserData(true)->session_id;             
-                  if ($sesid != $_COOKIE['PHPSESSID'] && $sesid != '') {
+                  if ($sesid != $_COOKIE[!empty($sessionCookieName) && $sessionCookieName !== false ? $sessionCookieName : 'PHPSESSID'] && $sesid != '') {
                       $this->authenticated = false;
                       $this->logout();
                       $_SESSION['logout_reason'] = 1;
@@ -78,7 +83,9 @@ class erLhcoreClassUser{
         session_regenerate_id(true);
 
 		$this->session->destroy();
-       
+
+        $sessionCookieName = erConfigClassLhConfig::getInstance()->getSetting( 'site', 'php_session_cookie_name', false );
+
 		$user = erLhcoreClassModelUser::findOne(array(
 			'filterlor' => array(
 				'username' => array($username),
@@ -144,7 +151,7 @@ class erLhcoreClassUser{
 
 
                 // Limit number per of logins under same user
-                if ((self::$oneLoginPerAccount == true || $cfgSite->getSetting( 'site', 'one_login_per_account', false ) == true) && $_COOKIE['PHPSESSID'] !='') {
+                if ((self::$oneLoginPerAccount == true || $cfgSite->getSetting( 'site', 'one_login_per_account', false ) == true) && $_COOKIE[!empty($sessionCookieName) && $sessionCookieName !== false ? $sessionCookieName : 'PHPSESSID'] !='') {
                     $db = ezcDbInstance::get();
                     $stmt = $db->prepare('UPDATE lh_users SET session_id = :session_id WHERE id = :id');
                     $stmt->bindValue(':session_id',session_id(),PDO::PARAM_STR);
@@ -214,6 +221,7 @@ class erLhcoreClassUser{
 	   		$this->filter->registerFetchData(array('id','username','email','disabled','cache_version'));
 	   		$this->authentication->addFilter( $this->filter );
 
+            $sessionCookieName = erConfigClassLhConfig::getInstance()->getSetting( 'site', 'php_session_cookie_name', false );
 	   		$this->authentication->session = $this->session;
 
 	   		if ( !$this->authentication->run() ) {
@@ -242,7 +250,7 @@ class erLhcoreClassUser{
    					$cfgSite = erConfigClassLhConfig::getInstance();
    					
    					// Limit number per of logins under same user
-   					if ((self::$oneLoginPerAccount == true || $cfgSite->getSetting( 'site', 'one_login_per_account', false ) == true) && $_COOKIE['PHPSESSID'] !='') {
+   					if ((self::$oneLoginPerAccount == true || $cfgSite->getSetting( 'site', 'one_login_per_account', false ) == true) && $_COOKIE[!empty($sessionCookieName) && $sessionCookieName !== false ? $sessionCookieName : 'PHPSESSID'] !='') {
    					    $db = ezcDbInstance::get();
    					    $stmt = $db->prepare('UPDATE lh_users SET session_id = :session_id WHERE id = :id');
    					    $stmt->bindValue(':session_id',session_id(),PDO::PARAM_STR);

@@ -5,7 +5,145 @@
  * */
 
 class erLhcoreClassUserValidator {
-	
+
+    public static function validateDepartmentAssignment(& $userDep) {
+        $definition = array(
+            'exc_indv_autoasign' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
+            'ro' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'int', ['min_range' => 0, 'max_range' => 1]
+            ),
+            'chat_max_priority' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'int'
+            ),
+            'chat_min_priority' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'int'
+            ),
+            'assign_priority' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'int'
+            )
+        );
+
+        $form = new ezcInputForm( INPUT_POST, $definition );
+
+        $Errors = [];
+
+        if ( $form->hasValidData( 'exc_indv_autoasign' ) && $form->exc_indv_autoasign == true ) {
+            $userDep->exc_indv_autoasign = 1;
+        } else {
+            $userDep->exc_indv_autoasign = 0;
+        }
+
+        if ($form->hasValidData( 'ro' )) {
+            if ($userDep instanceof erLhcoreClassModelDepartamentGroupUser) {
+                $userDep->read_only = $form->ro;
+            } else {
+                $userDep->ro = $form->ro;
+            }
+        } else {
+            $Errors[] = 'Invalid Read Only value';
+        }
+
+        if ( $form->hasValidData( 'chat_max_priority' )) {
+            $userDep->chat_max_priority = $form->chat_max_priority;
+        } else {
+            $Errors[] = 'Invalid chat_max_priority';
+        }
+
+        if ( $form->hasValidData( 'chat_min_priority' )) {
+            $userDep->chat_min_priority = $form->chat_min_priority;
+        } else {
+            $Errors[] = 'Invalid chat_max_priority';
+        }
+
+        if ( $form->hasValidData( 'assign_priority' )) {
+            $userDep->assign_priority = $form->assign_priority;
+        } else {
+            $Errors[] = 'Invalid assign_priority';
+        }
+
+        return $Errors;
+    }
+
+    public static function validateAliasDepartment(& $userDepAlias, $params = array())
+    {
+        $definition = array(
+            'alias_nick' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'avataralias_dep' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
+            'alias_photo_delete' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            )
+        );
+
+        $form = new ezcInputForm( INPUT_POST, $definition );
+        $Errors = [];
+
+        if ( $form->hasValidData( 'alias_nick' )) {
+            $userDepAlias->nick = $form->alias_nick;
+        }
+
+        if ( $form->hasValidData( 'avataralias_dep' )) {
+            $userDepAlias->avatar = $form->avataralias_dep;
+        }
+
+        if ( $form->hasValidData( 'alias_photo_delete' ) && $form->alias_photo_delete == true) {
+            $userDepAlias->removeFile();
+        }
+
+        // We want ID always
+        $userDepAlias->saveThis();
+
+        if ( isset($_FILES["alias_photo"]) && is_uploaded_file($_FILES["alias_photo"]["tmp_name"]) && $_FILES["alias_photo"]["error"] == 0 && erLhcoreClassImageConverter::isPhoto('alias_photo') ) {
+
+            $Errors = array();
+
+            $dir = 'var/userphoto/' . date('Y') . 'yna/' . date('m') . '/' . date('d') .'/' . $userDepAlias->id . '/';
+
+            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.edit.photo_path', array('dir' => & $dir, 'storage_id' => $userDepAlias->id));
+
+            $response = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.edit.photo_store', array('file_post_variable' => 'alias_photo', 'dir' => & $dir, 'storage_id' => $userDepAlias->id));
+
+            // There was no callbacks
+            if ($response === false) {
+                erLhcoreClassFileUpload::mkdirRecursive( $dir );
+                $file = qqFileUploader::upload($_FILES,'alias_photo',$dir);
+            } else {
+                $file = $response['data'];
+            }
+
+            if ( !empty($file["errors"]) ) {
+
+                foreach ($file["errors"] as $err) {
+                    $Errors[] = $err;
+                }
+
+            } else {
+                $userDepAlias->removeFile();
+                $userDepAlias->filename	= $file["data"]["filename"];
+                $userDepAlias->filepath	= $file["data"]["dir"];
+
+                $response = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.edit.photo_resize_150', array('mime_type' => $file["data"]['mime_type'], 'user' => $userDepAlias));
+
+                if ($response === false) {
+                    if ($file["data"]['mime_type'] != 'image/svg+xml') {
+                        erLhcoreClassImageConverter::getInstance()->converter->transform( 'photow_150', $userDepAlias->file_path_server, $userDepAlias->file_path_server );
+                    }
+                    chmod($userDepAlias->file_path_server, 0644);
+                }
+            }
+        }
+
+        // Save always
+        $userDepAlias->saveThis();
+
+        return $Errors;
+    }
+
 	public static function validateUser(& $userData, $params = array()) {
 		
 		$definition = array (
@@ -354,14 +492,32 @@ class erLhcoreClassUserValidator {
             'exclude_autoasign' => new ezcInputFormDefinitionElement(
 				ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
 			),
+            'remove_closed_chats' => new ezcInputFormDefinitionElement(
+				ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+			),
+            'remove_closed_chats_remote' => new ezcInputFormDefinitionElement(
+				ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+			),
             'auto_uppercase' => new ezcInputFormDefinitionElement(
 				ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
 			),
             'auto_join_private' => new ezcInputFormDefinitionElement(
 				ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
 			),
+            'auto_preload' => new ezcInputFormDefinitionElement(
+				ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+			),
+            'no_scroll_bottom' => new ezcInputFormDefinitionElement(
+				ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+			),
+            'chat_text_rows' => new ezcInputFormDefinitionElement(
+				ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 2, 'max_range' => 50)
+			),
             'maximumChats' => new ezcInputFormDefinitionElement(
 				ezcInputFormDefinitionElement::OPTIONAL, 'int'
+			),
+            'remove_close_timeout' => new ezcInputFormDefinitionElement(
+				ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 5, 'max_range' => 60)
 			),
 		);
 	
@@ -381,12 +537,42 @@ class erLhcoreClassUserValidator {
             $result['auto_uppercase'] = 0;
 		}
 
+		if ( $form->hasValidData( 'no_scroll_bottom' ) && $form->no_scroll_bottom == true ) {
+            $result['no_scroll_bottom'] = 1;
+		} else {
+            $result['no_scroll_bottom'] = 0;
+		}
+
+		if ($form->hasValidData( 'chat_text_rows' )) {
+            $result['chat_text_rows'] = $form->chat_text_rows;
+		} else {
+            $result['chat_text_rows'] = 2;
+		}
+
+		if ( $form->hasValidData( 'auto_preload' ) && $form->auto_preload == true ) {
+            $result['auto_preload'] = 1;
+		} else {
+            $result['auto_preload'] = 0;
+		}
+
 		if ( $form->hasValidData( 'autoAccept' ) && $form->autoAccept == true ) {
             $result['auto_accept'] = 1;
 		} else {
             $result['auto_accept'] = 0;
 		}
-		
+
+		if ( $form->hasValidData( 'remove_closed_chats' ) && $form->remove_closed_chats == true ) {
+            $result['remove_closed_chats'] = 1;
+		} else {
+            $result['remove_closed_chats'] = 0;
+		}
+
+		if ( $form->hasValidData( 'remove_closed_chats_remote' ) && $form->remove_closed_chats_remote == true ) {
+            $result['remove_closed_chats_remote'] = 1;
+		} else {
+            $result['remove_closed_chats_remote'] = 0;
+		}
+
 		if ( $form->hasValidData( 'auto_join_private' ) && $form->auto_join_private == true ) {
             $result['auto_join_private'] = 1;
 		} else {
@@ -403,6 +589,12 @@ class erLhcoreClassUserValidator {
             $result['max_chats'] = $form->maximumChats;
 		} else {
             $result['max_chats'] = 0;
+		}
+        
+		if ( $form->hasValidData( 'remove_close_timeout' )) {
+            $result['remove_close_timeout'] = $form->remove_close_timeout;
+		} else {
+            $result['remove_close_timeout'] = 5;
 		}
 	
 		return $result;
@@ -471,14 +663,22 @@ class erLhcoreClassUserValidator {
 		if (isset($params['show_all_pending'])) {
 			$paramsPending = self::validateShowAllPendingOption();
             $params = array_merge($params,$paramsPending);
+
+            $paramsNotifications = erLhcoreClassUserValidator::validateNotifications();
+            $params = array_merge($params,$paramsNotifications);
 		}
 
         $userData->auto_accept = $params['auto_accept'];
         $userData->max_active_chats = $params['max_chats'];
+        $userData->exclude_autoasign = $params['exclude_autoasign'];
         $userData->pswd_updated = time();
-        
+
 		erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.new_user', array('userData' => & $userData, 'errors' => & $Errors));
-		
+
+        if ($userData->time_zone == '') {
+            $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('user/validator','Please choose a user Time Zone!');
+        }
+
 		return $Errors;
 	}
 
@@ -590,19 +790,21 @@ class erLhcoreClassUserValidator {
 	        ),
             'show_alert_transfer' => new ezcInputFormDefinitionElement(
 	            ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
-	        )
+	        ),
+            'hide_quick_notifications' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
 	    );
 	    
 	    $form = new ezcInputForm( INPUT_POST, $definition );
-	    
-	    $Errors = array();
-	    
+
 	    $data['show_alert_chat'] = ( $form->hasValidData( 'show_alert_chat' ) && $form->show_alert_chat == true ) ? 1 : 0;
 	    $data['sn_off'] = ( $form->hasValidData( 'sn_off' ) && $form->sn_off == true ) ? 1 : 0;
 	    $data['ownntfonly'] = ( $form->hasValidData( 'ownntfonly' ) && $form->ownntfonly == true ) ? 1 : 0;
 	    $data['trackactivity'] = ( $form->hasValidData( 'trackactivity' ) && $form->trackactivity == true ) ? 1 : 0;
 	    $data['trackactivitytimeout'] = ( $form->hasValidData( 'trackactivitytimeout' )) ? (int)$form->trackactivitytimeout : -1;
 	    $data['show_alert_transfer'] = ( $form->hasValidData( 'show_alert_transfer' ) && $form->show_alert_transfer == true) ? (int)$form->show_alert_transfer : 0;
+	    $data['hide_quick_notifications'] = ( $form->hasValidData( 'hide_quick_notifications' ) && $form->hide_quick_notifications == true) ? (int)$form->hide_quick_notifications : 0;
 
 	    return $data;
 	}
@@ -612,6 +814,10 @@ class erLhcoreClassUserValidator {
 	    $globalDepartament = array();
 
         $attr = isset($params['read_only']) && $params['read_only'] == true ?  'UserDepartamentGroupRead' : 'UserDepartamentGroup';
+
+        if (isset($params['exclude_auto']) && $params['exclude_auto'] == true) {
+            $attr = 'UserDepartamentGroupAutoExc';
+        }
 
         if ($params['edit_params']['groups']['edit_all'] == true) {
 
@@ -641,6 +847,10 @@ class erLhcoreClassUserValidator {
                 $globalDepartament = $params['edit_params']['groups']['remote_id_read_all'];
             } else {
                 $globalDepartament = $params['edit_params']['groups']['remote_id_write_all'];
+            }
+
+            if (isset($params['exclude_auto']) && $params['exclude_auto'] == true) {
+                $globalDepartament = $params['edit_params']['groups']['remote_id_auto_assign_all'];
             }
         }
 
@@ -831,23 +1041,26 @@ class erLhcoreClassUserValidator {
             $userData->hide_online = 0;
         }
 
-        if (erLhcoreClassUser::instance()->hasAccessTo('lhuser', 'change_core_attributes') ) {
+        if (erLhcoreClassUser::instance()->hasAccessTo('lhuser', 'change_password') ) {
 
-            if ( $form->hasValidData( 'Password' ) && $form->hasValidData( 'Password1' ) ) {
+            if ($form->hasValidData('Password') && $form->hasValidData('Password1')) {
                 $userData->password_temp_1 = $form->Password;
                 $userData->password_temp_2 = $form->Password1;
             }
 
-            if ( $form->hasInputField( 'Password' ) && (!$form->hasInputField( 'Password1' ) || $form->Password != $form->Password1 ) ) {
-                $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('user/validator','Passwords mismatch');
+            if ($form->hasInputField('Password') && (!$form->hasInputField('Password1') || $form->Password != $form->Password1)) {
+                $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('user/validator', 'Passwords mismatch');
             } else {
-                if ($form->hasInputField( 'Password' ) && $form->hasInputField( 'Password1' ) && $form->Password != '' && $form->Password1 != '') {
+                if ($form->hasInputField('Password') && $form->hasInputField('Password1') && $form->Password != '' && $form->Password1 != '') {
                     $userData->setPassword($form->Password);
                     $userData->password_front = $form->Password;
                 }
             }
-            self::validatePassword($userData,$Errors);
+            
+            self::validatePassword($userData, $Errors);
+        }
 
+        if (erLhcoreClassUser::instance()->hasAccessTo('lhuser', 'change_core_attributes') ) {
             if ( !$form->hasValidData( 'Email' ) ) {
                 $Errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('user/validator','Wrong email address');
             } else {
@@ -1188,6 +1401,10 @@ class erLhcoreClassUserValidator {
                 $departmentEditParams['groups']['remote_id_read_all'] = erLhcoreClassModelDepartamentGroupUser::getUserGroupsIds(
                     $UserData->id,
                     true
+                );
+
+                $departmentEditParams['groups']['remote_id_auto_assign_all'] = erLhcoreClassModelDepartamentGroupUser::getUserGroupsExcAutoassignIds(
+                    $UserData->id
                 );
             }
 

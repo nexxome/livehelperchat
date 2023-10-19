@@ -2,6 +2,10 @@
 
 header ( 'content-type: application/json; charset=utf-8' );
 
+session_write_close();
+
+$startTimeRequest = microtime();
+
 $search = erLhAbstractModelSavedSearch::fetch($Params['user_parameters']['id']);
 $totalRecords = 0;
 $content = '';
@@ -33,6 +37,9 @@ if ($search->scope == 'chat') {
     $tpl->set('pages',$pages);
     $filter = array_merge_recursive($filterSearch, array('limit' => $pages->items_per_page, 'offset' => $pages->low));
     $items = erLhcoreClassModelChat::getList($filter);
+    $iconsAdditional = erLhAbstractModelChatColumn::getList(array('ignore_fields' => array('position','conditions','column_identifier','enabled'), 'sort' => false, 'filter' => array('icon_mode' => 1, 'enabled' => 1, 'chat_enabled' => 1)));
+    erLhcoreClassChat::prefillGetAttributes($items, array(), array(), array('additional_columns' => $iconsAdditional, 'do_not_clean' => true));
+    $tpl->set('icons_additional',$iconsAdditional);
     $tpl->set('items', $items);
     $tpl->set('list_mode', $Params['user_parameters_unordered']['mode'] == 'list');
 
@@ -52,6 +59,8 @@ if ($search->scope == 'chat') {
 }
 
 echo json_encode(['body' => $content, 'view_id' => $search->id, 'total_records' => (int)$totalRecords]);
+
+erLhcoreClassModule::logSlowRequest($startTimeRequest, microtime(), $currentUser->getUserID(), ['loadview' => $Params['user_parameters']['id']]);
 
 exit;
 

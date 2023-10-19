@@ -27,8 +27,8 @@ class erLhcoreClassSearchHandler
 
         $inputParams = new stdClass();
         $inputFrom = new stdClass();
-        
-        $form = new erLhcoreClassInputForm(INPUT_GET, $definition, null, $uparams, isset($params['use_override']) ? $params['use_override'] : false);
+
+        $form = new erLhcoreClassInputForm((isset($params['use_post']) && $params['use_post'] === true ? INPUT_POST : INPUT_GET), $definition, null, $uparams, isset($params['use_override']) ? $params['use_override'] : false);
         $Errors = array();
         
         foreach ($fields as $key => $field) {
@@ -157,6 +157,17 @@ class erLhcoreClassSearchHandler
                                 $minutes = 0;
                             }
 
+                            if (isset($_GET[$key.'_seconds'])){
+                                $seconds = isset($_GET[$key.'_seconds']) && is_numeric($_GET[$key.'_seconds']) ? (int)$_GET[$key.'_seconds'] : 0;
+                                $inputFrom->{$key.'_seconds'} = (isset($_GET[$key.'_seconds']) && is_numeric($_GET[$key.'_seconds'])) ? (int)$_GET[$key.'_seconds'] : null;
+                            } elseif (isset($uparams[$key.'_seconds']) && is_numeric($uparams[$key.'_seconds'])) {
+                                $seconds = $uparams[$key.'_seconds'];
+                                $inputFrom->{$key.'_seconds'} = (int)$uparams[$key.'_seconds'];
+                            } else {
+                                $inputFrom->{$key.'_seconds'} = null;
+                                $seconds = 0;
+                            }
+
                             $hours = $hours - ($dateTime->getOffset() / 60 / 60);
 
                             if ($hours < 0) {
@@ -219,7 +230,13 @@ class erLhcoreClassSearchHandler
                                     $seconds = 0;
                                 }
 
-                                $filter[$filterType][$field['filter_table_field']] = $dateFormated + $hours + $minutes + $seconds;
+                                $valueFilter = $dateFormated + $hours + $minutes + $seconds;
+
+                                if (isset($field['datetype_sub']) && $field['datetype_sub'] == 'mysql_ts') {
+                                    $valueFilter = date('\'Y-m-d H:i:s\'',$valueFilter);
+                                }
+
+                                $filter[$filterType][$field['filter_table_field']] = $valueFilter;
                             }
                             
                         } else {
@@ -324,7 +341,13 @@ class erLhcoreClassSearchHandler
                                         $seconds = 0;
                                     }
 
-                                    $filter[$filterType][$field['filter_table_field']] = $dateFormated + $hours + $minutes + $seconds;
+                                    $valueFilter = $dateFormated + $hours + $minutes + $seconds;
+
+                                    if (isset($field['datetype_sub']) && $field['datetype_sub'] == 'mysql_ts') {
+                                        $valueFilter = date('\'Y-m-d H:i:s\'',$valueFilter);
+                                    }
+
+                                    $filter[$filterType][$field['filter_table_field']] = $valueFilter;
                                 }
                             } else {
                                 $filter[$filterType][$field['filter_table_field']] = $inputParams->$key;
@@ -340,6 +363,8 @@ class erLhcoreClassSearchHandler
                         
                         $mapObject = call_user_func($field['class'] . '::fetch', $inputParams->$key);
                         $filter['filter'][$mapObject->field] = $mapObject->status;
+                    } elseif ($field['filter_type'] == 'likeright') {
+                        $filter['filterlikeright'][$field['filter_table_field']] = $inputParams->$key;
                     } elseif ($field['filter_type'] == 'like') {
                         $filter['filterlike'][$field['filter_table_field']] = $inputParams->$key;
                     } elseif ($field['filter_type'] == 'filterkeyword') {
@@ -609,6 +634,11 @@ class erLhcoreClassSearchHandler
                 $dirtySVG = file_get_contents($destination_dir . $fileNamePhysic);
                 $cleanSVG = $sanitizer->sanitize($dirtySVG);
                 file_put_contents($destination_dir . $fileNamePhysic, $cleanSVG);
+            } elseif (in_array($extension,['jpg','jpeg','png','gif'])){
+                erLhcoreClassFileUploadAdmin::removeExif($destination_dir . $fileNamePhysic, $destination_dir . $fileNamePhysic . '_exif');
+                unlink($destination_dir . $fileNamePhysic);
+                rename($destination_dir . $fileNamePhysic . '_exif', $destination_dir . $fileNamePhysic);
+                chmod($destination_dir . $fileNamePhysic, 0644);
             }
 
             return $fileNamePhysic;
@@ -631,6 +661,11 @@ class erLhcoreClassSearchHandler
             $dirtySVG = file_get_contents($destination_dir . $fileNamePhysic);
             $cleanSVG = $sanitizer->sanitize($dirtySVG);
             file_put_contents($destination_dir . $fileNamePhysic, $cleanSVG);
+        } elseif (in_array($extension,['jpg','jpeg','png','gif'])) {
+            erLhcoreClassFileUploadAdmin::removeExif($destination_dir . $fileNamePhysic, $destination_dir . $fileNamePhysic . '_exif');
+            unlink($destination_dir . $fileNamePhysic);
+            rename($destination_dir . $fileNamePhysic . '_exif', $destination_dir . $fileNamePhysic);
+            chmod($destination_dir . $fileNamePhysic, 0644);
         }
 
         return $fileNamePhysic;

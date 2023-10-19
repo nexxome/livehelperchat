@@ -7,7 +7,7 @@ $ViewList = array();
 
 $ViewList['configuration'] = array(
     'params' => array(),
-    'uparams' => array(),
+    'uparams' => array('csfr','action','id'),
     'functions' => array( 'use' ),
 );
 
@@ -29,6 +29,7 @@ $ViewList['logjserror'] = array(
 );
 
 $FunctionList['use'] = array('explain' => 'Allow operator to configure audit module');
-$FunctionList['logrecord'] = array('explain' => 'Allow operator to preview log record');
+$FunctionList['log_preview'] = array('explain' => 'Allow operator to preview log record');
+$FunctionList['see_system'] = array('explain' => 'Allow operator to see system status');
 
 ?>

@@ -27,6 +27,9 @@
 // @ini_set('session.cookie_samesite', 'None');
 // @ini_set('session.cookie_secure', true);
 
+// Uncomment if you are using composer dependencies
+// require_once 'lib/vendor/autoload.php';
+
 require_once "ezcomponents/Base/src/base.php"; // dependent on installation method, see below
 
 ezcBase::addClassRepository( './','./lib/autoloads');
@@ -76,6 +79,8 @@ try {
     include_once('design/defaulttheme/tpl/lhkernel/fatal_error.tpl.php');
 
     erLhcoreClassLog::write(print_r($e,true));
+
+    erLhcoreClassModule::logException($e);
 }
 
 

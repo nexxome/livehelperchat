@@ -42,7 +42,7 @@ class erLhcoreClassLHCBotWorker
                         'category' => 'missing_event',
                         'line' => __LINE__,
                         'file' => __FILE__,
-                        'object_id' => $event->id
+                        'object_id' => $this->args['event_id']
                     )
                 );
 
@@ -93,7 +93,7 @@ class erLhcoreClassLHCBotWorker
 
                     $params['chat'] = $chat;
 
-                    $response = erLhcoreClassGenericBotActionRestapi::makeRequest($restAPI->configuration_array['host'], $method, array('action' => $action, 'rest_api_method_params' => $action['content']['rest_api_method_params'], 'chat' => $chat, 'params' => $params));
+                    $response = erLhcoreClassGenericBotActionRestapi::makeRequest($restAPI->configuration_array['host'], $method, array('rest_api' => $restAPI, 'action' => $action, 'rest_api_method_params' => $action['content']['rest_api_method_params'], 'chat' => $chat, 'params' => $params));
 
                     $event->removeThis();
 
@@ -146,6 +146,22 @@ class erLhcoreClassLHCBotWorker
 
                             if ($msgLast instanceof erLhcoreClassModelmsg) {
                                 erLhcoreClassChatWebhookIncoming::sendBotResponse($chat, $msgLast, ['init' => true]);
+                            }
+
+                            $chatVariables = $chat->chat_variables_array;
+
+                            // Log executed triggers if required
+                            if (!empty(erLhcoreClassGenericBotWorkflow::$triggerNameDebug) && isset($chatVariables['gbot_debug']) && $chatVariables['gbot_debug'] == 1) {
+                                erLhcoreClassLog::write(json_encode(erLhcoreClassGenericBotWorkflow::$triggerNameDebug,JSON_PRETTY_PRINT),
+                                    ezcLog::SUCCESS_AUDIT,
+                                    array(
+                                        'source' => 'lhc',
+                                        'category' => 'bot',
+                                        'line' => 0,
+                                        'file' => 'lhgenericbotworker.php',
+                                        'object_id' => $chat->id
+                                    )
+                                );
                             }
 
                             return;
@@ -210,6 +226,22 @@ class erLhcoreClassLHCBotWorker
 
                         if ($msgLast instanceof erLhcoreClassModelmsg) {
                             erLhcoreClassChatWebhookIncoming::sendBotResponse($chat, $msgLast, ['init' => true]);
+                        }
+
+                        $chatVariables = $chat->chat_variables_array;
+
+                        // Log executed triggers if required
+                        if (!empty(erLhcoreClassGenericBotWorkflow::$triggerNameDebug) && isset($chatVariables['gbot_debug']) && $chatVariables['gbot_debug'] == 1) {
+                            erLhcoreClassLog::write(json_encode(erLhcoreClassGenericBotWorkflow::$triggerNameDebug,JSON_PRETTY_PRINT),
+                                ezcLog::SUCCESS_AUDIT,
+                                array(
+                                    'source' => 'lhc',
+                                    'category' => 'bot',
+                                    'line' => 0,
+                                    'file' => 'lhgenericbotworker.php',
+                                    'object_id' => $chat->id
+                                )
+                            );
                         }
 
                         return;

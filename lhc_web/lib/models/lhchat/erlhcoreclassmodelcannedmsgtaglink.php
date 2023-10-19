@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhcoreClassModelCannedMsgTagLink
 {
     use erLhcoreClassDBTrait;
@@ -68,13 +68,13 @@ class erLhcoreClassModelCannedMsgTagLink
 
         $cannedMessagesAll = erLhcoreClassModelCannedMsg::getCannedMessages($paramsExecution['chat']->dep_id, $paramsExecution['user']->id, array('id' => $cannedMessagesIds));
 
-        if (count($cannedMessagesAll) > 50) {
+        if (count($cannedMessagesAll) > 100) {
             // Preserve keys
             $cannedMessageShirked = [];
 
             $counter = 0;
             foreach ($cannedMessagesAll as $cannedMessage) {
-                if ($counter >= 50) {
+                if ($counter >= 100) {
                     break;
                 }
                 $cannedMessageShirked[$cannedMessage->id] = $cannedMessage;
@@ -104,6 +104,7 @@ class erLhcoreClassModelCannedMsgTagLink
             }
         }
 
+        \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'canned_replace', 'replace_array' => & $replaceArray, 'chat' => $chat, 'user' => $user));
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.workflow.canned_message_replace', array(
             'chat' => $chat,
             'replace_array' => & $replaceArray,
@@ -134,14 +135,22 @@ class erLhcoreClassModelCannedMsgTagLink
         if (!empty($replaceCustomArgs)) {
 
             $identifiers = [];
+            $identifiersApplied = [];
+
             foreach ($replaceCustomArgs as $replaceArg) {
                 $identifiers[] = str_replace(['{','}'],'', $replaceArg);
             }
 
-            $replaceRules = erLhcoreClassModelCannedMsgReplace::getList(array('limit' => false, 'filterin' => array('identifier' => $identifiers)));
+            $replaceRules = erLhcoreClassModelCannedMsgReplace::getList(array(
+                'sort' => 'repetitiveness DESC', // Default translation will be the last one if more than one same identifier is found
+                'limit' => false,
+                'filterin' => array('identifier' => $identifiers)));
 
             foreach ($replaceRules as $replaceRule) {
-                $replaceArray['{' . $replaceRule->identifier . '}'] = $replaceRule->getValueReplace(['chat' => $chat, 'user' => $user]);
+                if ($replaceRule->is_active && !in_array($replaceRule->identifier,$identifiersApplied)) {
+                    $replaceArray['{' . $replaceRule->identifier . '}'] = $replaceRule->getValueReplace(['chat' => $chat, 'user' => $user]);
+                    $identifiersApplied[] = $replaceRule->identifier;
+                }
             }
         }
 

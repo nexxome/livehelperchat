@@ -48,6 +48,10 @@ class erLhcoreClassGenericBotActionText {
             }
         }
 
+        if (isset($action['content']['reactions']) && !empty($action['content']['reactions'])) {
+            $metaMessage['content']['reactions']['content'] = erLhcoreClassGenericBotWorkflow::translateMessage($action['content']['reactions'], array('chat' => $chat, 'args' => $params));
+        }
+
         if (isset($action['content']['quick_replies']) && !empty($action['content']['quick_replies']))
         {
 
@@ -160,6 +164,21 @@ class erLhcoreClassGenericBotActionText {
             $msg->meta_msg = erLhcoreClassGenericBotWorkflow::translateMessage($msg->meta_msg, array('chat' => $chat, 'args' => $params));
         }
 
+        // Automatic translations
+        if (isset($action['content']['attr_options']['auto_translate']) && $action['content']['attr_options']['auto_translate'] == true && $chat->dep_id > 0) {
+            $department = erLhcoreClassModelDepartament::fetch($chat->dep_id,true);
+            if ($department instanceof erLhcoreClassModelDepartament) {
+                $configurationDep = $department->bot_configuration_array;
+                if (isset($configurationDep['bot_tr_id']) && $configurationDep['bot_tr_id'] > 0) {
+                    $translationGroup = erLhcoreClassModelGenericBotTrGroup::fetch($configurationDep['bot_tr_id']);
+                    if ($translationGroup instanceof erLhcoreClassModelGenericBotTrGroup && $translationGroup->use_translation_service == 1 && $translationGroup->bot_lang != '') {
+                        erLhcoreClassTranslate::translateBotMessage($chat, $msg, $translationGroup);
+                    }
+                }
+            }
+        }
+
+
         $msg->chat_id = $chat->id;
 
         if (isset($params['override_nick']) && !empty($params['override_nick'])) {
@@ -170,7 +189,11 @@ class erLhcoreClassGenericBotActionText {
 
         $msg->user_id = isset($params['override_user_id']) && $params['override_user_id'] > 0 ? (int)$params['override_user_id'] : -2;
 
-        $msg->time = time() + 1;
+        $msg->time = time();
+
+        if (erLhcoreClassGenericBotWorkflow::$setBotFlow === false) {
+            $msg->time += 1;
+        }
 
         // Perhaps this message should be saved as a system message
         if (isset($action['content']['attr_options']['as_system']) && $action['content']['attr_options']['as_system'] == true)

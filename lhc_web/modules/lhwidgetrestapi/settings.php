@@ -50,7 +50,7 @@ $departmentUpdated = $department;
 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('widgetrestapi.settings_department_verify', array('department' => & $departmentUpdated));
 
 $outputResponse = array(
-    'isOnline' => erLhcoreClassChat::isOnline($departmentUpdated, false, array(
+    'isOnline' => !(isset($_GET['off']) && $_GET['off'] === 'true') && erLhcoreClassChat::isOnline($departmentUpdated, false, array(
         'online_timeout' => (int) erLhcoreClassModelChatConfig::fetch('sync_sound_settings')->data['online_timeout'],
         'ignore_user_status' => (int)erLhcoreClassModelChatConfig::fetch('ignore_user_status')->current_value
     )),
@@ -67,14 +67,35 @@ if ( $ignorable_ip == '' || !erLhcoreClassIPDetect::isIgnored(erLhcoreClassIPDet
 
     $jsVars = array();
 
+    $mapFieldsToPrefill = [
+        'lhc.email' => 'Email',
+        'lhc.nick' => 'Username',
+        'lhc.phone' => 'Phone',
+        'lhc.question' => 'Question',
+    ];
+
     // Additional javascript variables
     if (is_array($department) && !empty($department)) {
-        foreach (erLhAbstractModelChatVariable::getList(array('ignore_fields' => array('dep_id','var_name','var_identifier','type'), 'customfilter' => array('dep_id = 0 OR dep_id IN (' . implode(',',$department) .')'))) as $jsVar) {
-            $jsVars[] = array('id' => $jsVar->id,'var' => $jsVar->js_variable);
+        foreach (erLhAbstractModelChatVariable::getList(array('ignore_fields' => array('dep_id','var_name'), 'customfilter' => array('dep_id = 0 OR dep_id IN (' . implode(',',$department) .')'))) as $jsVar) {
+            $itemVar = array('id' => $jsVar->id,'var' => $jsVar->js_variable);
+            if (key_exists($jsVar->var_identifier,$mapFieldsToPrefill)) {
+                $itemVar['type'] = $mapFieldsToPrefill[$jsVar->var_identifier];
+            }
+            if ($jsVar->type == 5) {
+                $itemVar['cookie'] = true;
+            }
+            $jsVars[] = $itemVar;
         }
     } else {
-        foreach (erLhAbstractModelChatVariable::getList(array('ignore_fields' => array('dep_id','var_name','var_identifier','type'), 'filter' => array('dep_id' => 0))) as $jsVar) {
-            $jsVars[] = array('id' => $jsVar->id, 'var' => $jsVar->js_variable);
+        foreach (erLhAbstractModelChatVariable::getList(array('ignore_fields' => array('dep_id','var_name'), 'filter' => array('dep_id' => 0))) as $jsVar) {
+            $itemVar =  array('id' => $jsVar->id, 'var' => $jsVar->js_variable);
+            if (key_exists($jsVar->var_identifier,$mapFieldsToPrefill)) {
+                $itemVar['type'] = $mapFieldsToPrefill[$jsVar->var_identifier];
+            }
+            if ($jsVar->type == 5) {
+                $itemVar['cookie'] = true;
+            }
+            $jsVars[] = $itemVar;
         }
     }
 
@@ -131,16 +152,90 @@ if ( $ignorable_ip == '' || !erLhcoreClassIPDetect::isIgnored(erLhcoreClassIPDet
     }
 }
 
-if (($themeId = erLhcoreClassChat::extractTheme()) !== false) {
-    $outputResponse['theme'] = $themeId;
-} else {
-    $defaultTheme = erLhcoreClassModelChatConfig::fetch('default_theme_id')->current_value;
-    if ($defaultTheme > 0) {
-        $outputResponse['theme'] = (int)$defaultTheme;
+$themeArray = [];
+
+if (isset($_GET['theme'])) {
+    $themeArray = explode(',', $_GET['theme']);
+}
+
+$setTheme = false;
+
+if (count($themeArray) > 1 && isset($userInstance) && $userInstance !== false) {
+    $userAttributes = $userInstance->online_attr_system_array;
+    if (isset($userAttributes['lhc_theme']) && in_array($userAttributes['lhc_theme'],$themeArray) && isset($userAttributes['lhc_theme_exp']) && $userAttributes['lhc_theme_exp'] > time()) {
+        $_GET['theme'] = $userAttributes['lhc_theme'];
+    } else {
+        $setTheme = true;
+        $_GET['theme'] = $themeArray[array_rand($themeArray)];
+    }
+} elseif (count($themeArray) > 1) {
+    $_GET['theme'] = $themeArray[array_rand($themeArray)];
+}
+
+$startDataDepartment = false;
+
+if (is_array($department) && !empty($department) && count($department) == 1) {
+    $dep_id = $department[0];
+    $startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('customfilter' => array("((`dep_ids` != '' AND JSON_CONTAINS(`dep_ids`,'" . (int)$dep_id . "','$')) OR department_id = " . (int)$dep_id . ")" )));
+    if ($startDataDepartment instanceof erLhcoreClassModelChatStartSettings) {
+        $startDataFields = $startDataDepartment->data_array;
     }
 }
 
+if (($themeId = erLhcoreClassChat::extractTheme()) !== false) {
+    $outputResponse['theme'] = $themeId;
+} else {
+
+    if (isset($dep_id) && $dep_id > 0) {
+        $departmentObject = erLhcoreClassModelDepartament::fetch($dep_id);
+        if (is_object($departmentObject)) {
+
+            if (isset($departmentObject->bot_configuration_array['theme_ind']) && $departmentObject->bot_configuration_array['theme_ind'] != 0) {
+                $outputResponse['theme'] = explode(',', $departmentObject->bot_configuration_array['theme_ind']);
+            }
+            
+            if (!isset($outputResponse['theme']) && isset($departmentObject->bot_configuration_array['theme_default']) && $departmentObject->bot_configuration_array['theme_default'] != 0) {
+                $outputResponse['theme'] = explode(',', $departmentObject->bot_configuration_array['theme_default']);
+            }
+
+            if (isset($outputResponse['theme']) && count($outputResponse['theme']) > 1 && isset($userInstance) && $userInstance !== false) {
+                $userAttributes = $userInstance->online_attr_system_array;
+                if (isset($userAttributes['lhc_theme']) && in_array($userAttributes['lhc_theme'],$outputResponse['theme']) && isset($userAttributes['lhc_theme_exp']) && $userAttributes['lhc_theme_exp'] > time()) {
+                    $outputResponse['theme'] = $userAttributes['lhc_theme'];
+                } else {
+                    $setTheme = true;
+                    $outputResponse['theme'] = $outputResponse['theme'][array_rand($outputResponse['theme'])];
+                }
+            } elseif (isset($outputResponse['theme'])) {
+                $outputResponse['theme'] = $outputResponse['theme'][array_rand($outputResponse['theme'])];
+            }
+        }
+    }
+
+    if (!isset($outputResponse['theme'])) {
+        $defaultTheme = erLhcoreClassModelChatConfig::fetch('default_theme_id')->current_value;
+        if ($defaultTheme != '0' && $defaultTheme != '') {
+            $themeArray = explode(',', $defaultTheme);
+            if (count($themeArray) > 1 && isset($userInstance) && $userInstance !== false) {
+                $userAttributes = $userInstance->online_attr_system_array;
+                if (isset($userAttributes['lhc_theme']) && in_array($userAttributes['lhc_theme'],$themeArray) && isset($userAttributes['lhc_theme_exp']) && $userAttributes['lhc_theme_exp'] > time()) {
+                    $outputResponse['theme']  = $userAttributes['lhc_theme'];
+                } else {
+                    $setTheme = true;
+                    $outputResponse['theme']  = $themeArray[array_rand($themeArray)];
+                }
+            } else {
+                $outputResponse['theme']  = $themeArray[array_rand($themeArray)];
+            }
+        }
+    }
+}
+
+$host = erLhcoreClassSystem::getHost();
+
 $pageCSS = false;
+
+$outputResponse['chat_ui']['status_delay'] = 0;
 
 if (isset($outputResponse['theme'])) {
     $theme = erLhAbstractModelWidgetTheme::fetch($outputResponse['theme']);
@@ -149,16 +244,28 @@ if (isset($outputResponse['theme'])) {
 
         $outputResponse['theme'] = $theme->alias != '' ? $theme->alias : $theme->id;
 
+        if ($setTheme === true && isset($theme->bot_configuration_array['theme_expires']) && (int)$theme->bot_configuration_array['theme_expires'] > 0 && isset($userInstance) && $userInstance !== false) {
+            $userAttributes['lhc_theme'] = $outputResponse['theme'];
+            $userAttributes['lhc_theme_exp'] = time() + $theme->bot_configuration_array['theme_expires'];
+            $userInstance->online_attr_system_array = $userAttributes;
+            $userInstance->online_attr_system = json_encode($userAttributes);
+            $userInstance->updateThis(['update' => ['online_attr_system']]);
+        }
+
         if (isset($theme->bot_configuration_array['wwidth']) && $theme->bot_configuration_array['wwidth'] > 0) {
-            $outputResponse['chat_ui']['wwidth'] = $theme->bot_configuration_array['wwidth'];
+            $outputResponse['chat_ui']['wwidth'] = (int)$theme->bot_configuration_array['wwidth'];
+        }
+
+        if ($theme->show_status_delay > 0) {
+            $outputResponse['chat_ui']['status_delay'] = (int)$theme->show_status_delay * 1000;
         }
 
         if (isset($theme->bot_configuration_array['wheight']) && $theme->bot_configuration_array['wheight'] > 0) {
-            $outputResponse['chat_ui']['wheight'] = $theme->bot_configuration_array['wheight'];
+            $outputResponse['chat_ui']['wheight'] = (int)$theme->bot_configuration_array['wheight'];
         }
 
         if (isset($theme->bot_configuration_array['fscreen_embed']) && $theme->bot_configuration_array['fscreen_embed'] == 1) {
-            $outputResponse['chat_ui']['fscreen'] = $theme->bot_configuration_array['fscreen_embed'];
+            $outputResponse['chat_ui']['fscreen'] = (int)$theme->bot_configuration_array['fscreen_embed'];
         }
 
         if (isset($theme->bot_configuration_array['wright']) && is_numeric($theme->bot_configuration_array['wright'])) {
@@ -236,6 +343,29 @@ if (isset($outputResponse['theme'])) {
         }
 
         $outputResponse['chat_ui']['sound_enabled'] = (isset($theme->bot_configuration_array['disable_sound']) && $theme->bot_configuration_array['disable_sound'] == 1) ? 0 : 1;
+
+        $fontsPreload = [];
+        $cssPreload = [];
+        if ($theme->custom_widget_css != '') {
+            $fontFilesExternal = [];
+            preg_match_all('/url\("([\/_:a-zA-Z0-9.-]+).woff2"\)/is',$theme->custom_widget_css, $fontFilesExternal);
+            if (!empty($fontFilesExternal[1])) {
+                foreach ($fontFilesExternal[1] as $fontToPreload) {
+                    $fontsPreload[] = strpos($fontToPreload,'http') === 0 ?  $fontToPreload . '.woff2' : $host . $fontToPreload . '.woff2';
+                }
+            }
+            $fontFilesExternal = [];
+            preg_match_all('/url\("([\/_:a-zA-Z0-9.-;?@&=]+)(display=swap|.css)"\)/is',$theme->custom_widget_css, $fontFilesExternal);
+            if (!empty($fontFilesExternal[1])) {
+                foreach ($fontFilesExternal[2] as $indexFont => $fontToPreload) {
+                    if ($fontToPreload == 'display=swap') {
+                        $cssPreload[] = $fontFilesExternal[1][$indexFont] . 'display=swap';
+                    } else {
+                        $cssPreload[] = strpos($fontFilesExternal[1][$indexFont],'http') === 0 ? $fontFilesExternal[1][$indexFont]  . '.css' :  $host . $fontFilesExternal[1][$indexFont]  . '.css';
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -267,15 +397,7 @@ if (($domain = erLhcoreClassModelChatConfig::fetch('track_domain')->current_valu
     $outputResponse['domain'] = $domain;
 }
 
-$startDataDepartment = false;
 
-if (is_array($department) && !empty($department) && count($department) == 1) {
-    $dep_id = $department[0];
-    $startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('filter' => array('department_id' => $dep_id)));
-    if ($startDataDepartment instanceof erLhcoreClassModelChatStartSettings) {
-        $startDataFields = $startDataDepartment->data_array;
-    }
-}
 
 if ($startDataDepartment === false) {
     $startData = erLhcoreClassModelChatConfig::fetch('start_chat_data');
@@ -317,8 +439,8 @@ if ($disableNeedHelp === false && ((isset($theme) && $theme instanceof erLhAbstr
     $outputResponse['nh']['html'] = '<div class="container-fluid overflow-auto fade-in p-3 pb-4 {dev_type}" >
 <div class="shadow rounded bg-white nh-background">
     <div class="p-2" id="start-chat-btn" style="cursor: pointer">
-        ' . ($nhCloseVisible === false ? '' : '<button type="button" id="close-need-help-btn" class="close position-absolute" style="' . ($configInstance->getDirLanguage('dir_language') == 'ltr' ? 'right' : 'left') . ':30px;top:25px;" aria-label="Close">
-          <span class="px-1" aria-hidden="true">&times;</span>
+        ' . ($nhCloseVisible === false ? '' : '<button type="button" id="close-need-help-btn" class="btn-close position-absolute" style="' . ($configInstance->getDirLanguage('dir_language') == 'ltr' ? 'right' : 'left') . ':30px;top:25px;" aria-label="Close">
+          
         </button>') . '
         <div class="d-flex">
           <div class="p-1"><img style="min-width: 50px;" alt="Customer service" class="img-fluid rounded-circle" src="{{need_help_image_url}}"/></div>
@@ -353,9 +475,9 @@ if ($disableNeedHelp === false && ((isset($theme) && $theme instanceof erLhAbstr
 
         if ($theme->need_help_image_url === false) {
             if ((isset($theme->bot_configuration_array['nh_avatar']) && $theme->bot_configuration_array['nh_avatar'] != '')) {
-                $replaceVars['replace'][8] = erLhcoreClassModelChatConfig::fetch('explicit_http_mode')->current_value . '//' . $_SERVER['HTTP_HOST'] .erLhcoreClassDesign::baseurldirect('widgetrestapi/avatar') . '/' . $theme->bot_configuration_array['nh_avatar'];
+                $replaceVars['replace'][8] = erLhcoreClassSystem::getHost() .erLhcoreClassDesign::baseurldirect('widgetrestapi/avatar') . '/' . $theme->bot_configuration_array['nh_avatar'];
             } else {
-                $replaceVars['replace'][8] = erLhcoreClassModelChatConfig::fetch('explicit_http_mode')->current_value . '//' . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::design('images/general/operator.png');
+                $replaceVars['replace'][8] = erLhcoreClassSystem::getHost() . erLhcoreClassDesign::design('images/general/operator.png');
             }
         }
 
@@ -363,7 +485,7 @@ if ($disableNeedHelp === false && ((isset($theme) && $theme instanceof erLhAbstr
         $replaceVars['search'][] = '{{need_help_body}}';
 
         $replaceVars['replace'][] = $theme->need_help_header != '' ? $theme->need_help_header : $translationInstance->getTranslation('chat/getstatus', 'Need help?');
-        $replaceVars['replace'][] = $theme->need_help_text != '' ? $theme->need_help_text : $translationInstance->getTranslation('chat/getstatus', 'Our staff are ready to help!');
+        $replaceVars['replace'][] = $theme->need_help_text != '' ? $theme->need_help_text : $translationInstance->getTranslation('chat/getstatus', 'Our staff are always ready to help!');
     } else {
         $replaceVars = array(
             'search' => array(
@@ -372,9 +494,9 @@ if ($disableNeedHelp === false && ((isset($theme) && $theme instanceof erLhAbstr
                 '{{need_help_body}}',
             ),
             'replace' => array(
-                '//' . $_SERVER['HTTP_HOST'] . erLhcoreClassDesign::design('images/general/operator.png'),
+                erLhcoreClassSystem::getHost() . erLhcoreClassDesign::design('images/general/operator.png'),
                 $translationInstance->getTranslation('chat/getstatus', 'Need help?'),
-                $translationInstance->getTranslation('chat/getstatus', 'Our staff are ready to help!')
+                $translationInstance->getTranslation('chat/getstatus', 'Our staff are always ready to help!')
             )
         );
     }
@@ -408,10 +530,10 @@ if (isset($startDataFields['lazy_load']) && $startDataFields['lazy_load'] == tru
 $ts = time();
 
 // Wrapper version
-$outputResponse['wv'] = 195;
+$outputResponse['wv'] = 217;
 
 // React APP versions
-$outputResponse['v'] = 240;
+$outputResponse['v'] = 314;
 
 $outputResponse['hash'] = sha1(erLhcoreClassIPDetect::getIP() . $ts . erConfigClassLhConfig::getInstance()->getSetting( 'site', 'secrethash' ));
 $outputResponse['hash_ts'] = $ts;
@@ -480,33 +602,33 @@ if (isset($gaOptions['ga_enabled']) && $gaOptions['ga_enabled'] == true) {
     }
 }
 
-$host = erLhcoreClassModelChatConfig::fetch('explicit_http_mode')->current_value;
-
-if ($host == '') {
-    $host = erLhcoreClassBBCode::getHost();
-} else {
-    $host .= '//' . $_SERVER['HTTP_HOST'];
-}
-
 $outputResponse['static'] = array(
     'screenshot' =>  $host . erLhcoreClassDesign::design('js/html2canvas.min.js'). '?v=' . $outputResponse['v'],
     'app' => $host . ((isset($_GET['ie']) && $_GET['ie'] == 'true') ? erLhcoreClassDesign::design('js/widgetv2/react.app.ie.js') . '?v=' . $outputResponse['v'] : erLhcoreClassDesign::design('js/widgetv2/react.app.js') . '?v=' . $outputResponse['v']),
-    'vendor' => $host . ((isset($_GET['ie']) && $_GET['ie'] == 'true') ? erLhcoreClassDesign::design('js/widgetv2/vendor.ie.js') . '?v=a2' : erLhcoreClassDesign::design('js/widgetv2/vendor.js') . '?v=a2'),
+    'vendor' => $host . ((isset($_GET['ie']) && $_GET['ie'] == 'true') ? erLhcoreClassDesign::design('js/widgetv2/vendor.ie.js') . '?v=a3' : erLhcoreClassDesign::design('js/widgetv2/vendor.js') . '?v=a3'),
     'widget_css' => $host . (erConfigClassLhConfig::getInstance()->getDirLanguage('dir_language') == 'ltr' ? erLhcoreClassDesign::designCSS('css/widgetv2/bootstrap.min.css;css/widgetv2/widget.css;css/widgetv2/widget_override.css') : erLhcoreClassDesign::designCSS('css/widgetv2/bootstrap.min.rtl.css;css/widgetv2/widget.css;css/widgetv2/widget_rtl.css;css/widgetv2/widget_override_rtl.css')),
     'dir' => erConfigClassLhConfig::getInstance()->getDirLanguage('dir_language'),
     'cl' => erConfigClassLhConfig::getInstance()->getDirLanguage('content_language'),
     'widget_mobile_css' => $host . erLhcoreClassDesign::designCSS('css/widgetv2/widget_mobile.css;css/widgetv2/widget_mobile_override.css'),
     'embed_css' => $host . erLhcoreClassDesign::designCSS('css/widgetv2/embed.css;css/widgetv2/embed_override.css'),
     'status_css' => $host . erLhcoreClassDesign::designCSS('css/widgetv2/status.css;css/widgetv2/status_override.css'),
-    'font_status' => $host . erLhcoreClassDesign::design('fonts/MaterialIcons-lhc-v4.woff2'),
+    'font_status' => $host . erLhcoreClassDesign::design('fonts/MaterialIcons-lhc-v6.woff2'),
     'chunk_js' => $host . erLhcoreClassDesign::design('js/widgetv2'),
     'page_css' => $pageCSS,
     'ex_js' => [],
     'ex_cb_js' => []
 );
 
+if (isset($fontsPreload) && !empty($fontsPreload)) {
+    $outputResponse['static']['font_preload'] = $fontsPreload;
+}
+
+if (isset($cssPreload) && !empty($cssPreload)) {
+    $outputResponse['static']['css_preload'] = $cssPreload;
+}
+
 $outputResponse['chunks_location'] = $host . erLhcoreClassDesign::design('js/widgetv2');
-$outputResponse['domain_lhc'] = $_SERVER['HTTP_HOST'];
+$outputResponse['domain_lhc'] = str_replace(['http://','https://'],'',$host);
 
 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('widgetrestapi.settings', array('output' => & $outputResponse));
 

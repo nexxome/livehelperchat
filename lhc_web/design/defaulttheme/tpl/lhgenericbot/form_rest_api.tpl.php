@@ -13,9 +13,23 @@
     <input type="text" class="form-control" name="configuration" ng-model="lhcrestapi.host" value="" />
 </div>
 
+<div class="form-group">
+    <label><input type="checkbox" ng-model="lhcrestapi.ecache" value="on"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Enable cache');?></label>
+
+    <?php if ($item->id > 0) : ?>
+    <br>
+    <button name="ClearCacheAction" value="clear_cache" class="btn btn-xs btn-warning"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Clear cache');?> (<?php echo erLhcoreClassModelGenericBotRestAPICache::getCount(['filter' => ['rest_api_id' => $item->id]])?>)</button>
+    <?php endif; ?>
+
+    <p><small><i><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','We will cache unique request and responses to speed up processing.');?></i></small></p>
+</div>
+
 <input type="hidden" name="configuration" value="{{lhcrestapi.getJSON()}}" />
 
-<button class="btn btn-secondary" ng-click="lhcrestapi.addParameter()" type="button"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Add request');?></button>
+
+<button class="btn btn-secondary btn-sm" ng-click="lhcrestapi.addParameter()" type="button"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Add request');?></button>
+
+<span><a href="#" onclick="lhc.revealModal({'url':WWW_DIR_JAVASCRIPT+'genericbot/help/cannedreplacerules?rest_api=1'});"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Explore');?></a> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','possible chat attributes directly.');?></span>
 
 <div ng-repeat="param in lhcrestapi.parameters" class="mt-2">
 
@@ -53,13 +67,14 @@
         </div>
     </div>
     <ul class="nav nav-tabs mb-2" role="tablist" >
-        <li role="presentation" class="nav-item"><a class="nav-link active" href="#params-rest-{{$index}}" aria-controls="params" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Params');?></a></li>
-        <li role="presentation" class="nav-item"><a class="nav-link" href="#authorization-rest-{{$index}}" aria-controls="authorization" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Authorization');?></a></li>
-        <li role="presentation" class="nav-item"><a class="nav-link" href="#headers-rest-{{$index}}" aria-controls="headers" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Headers');?></a></li>
-        <li role="presentation" class="nav-item"><a class="nav-link" href="#body-rest-{{$index}}" aria-controls="headers" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Body');?></a></li>
-        <li role="presentation" class="nav-item"><a class="nav-link" href="#userparams-rest-{{$index}}" aria-controls="headers" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','User parameters');?></a></li>
-        <li role="presentation" class="nav-item"><a class="nav-link" href="#outputrest-rest-{{$index}}" aria-controls="headers" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Output parsing');?></a></li>
-        <li role="presentation" class="nav-item"><a class="nav-link" href="#conditions-rest-{{$index}}" aria-controls="headers" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Conditions');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link active" href="#params-rest-{{$index}}" aria-controls="params" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Params');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#authorization-rest-{{$index}}" aria-controls="authorization" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Authorization');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#headers-rest-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Headers');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#body-rest-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Body');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#userparams-rest-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','User parameters');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#outputrest-rest-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Output parsing');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#conditions-rest-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Conditions');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#remote-msg-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Remote Message ID');?></a></li>
     </ul>
 
     <!-- Tab panes -->
@@ -223,6 +238,10 @@
                     <option value="form-data-urlencoded"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','x-www-form-urlencoded (Use this to send post parameters encoded in URL)')?></option>
                 </select>
             </div>
+
+            <label><input <?php if (!function_exists('pspell_new')) : ?>disabled="disabled"<?php endif; ?> type="checkbox" value="on" ng-model="param.check_word">&nbsp;<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Check for word syntax if only one word is send.')?>
+                <p><small><i>You have to have <span class="badge bg-secondary">aspel</span> php extension installed. Also appropriate dictionary is required.</i></small></p>
+            </label>
 
             <div ng-if="param.body_request_type == 'raw'">
                 <div class="form-group">
@@ -405,7 +424,17 @@
                         <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_meta" placeholder="response:msg">
                     </div>
 
-                    <h5><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Conditions')?></h5>
+                    <h6><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Custom event')?></h6>
+
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-text">chat.genericbot_rest_api_method.</div>
+                        <input type="text" class="form-control" ng-model="paramOutput.method_name" placeholder="method_name">
+                        <input type="text" class="form-control" ng-model="paramOutput.method_name_args" placeholder="<?php echo htmlspecialchars('E.g {"method":1}')?>">
+                    </div>
+
+                    <p><small><i><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','This event will be dispatched and extension can listen to it. E.g you want additionally log response data.')?></i></small></p>
+
+                    <h6 class="mt-2"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Conditions')?></h6>
 
                     <div class="row">
 
@@ -470,6 +499,10 @@
                     </div>
                 </div>
 
+        </div>
+        <div role="tabpanel" class="tab-pane" id="remote-msg-{{$index}}">
+            <p><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','If you want to add custom data within each send message to its meta_data attribute you can provide response path here')?></p>
+            <input type="text" class="form-control form-control-sm" ng-model="param.remote_message_id" placeholder="messages:0:id" value="" />
         </div>
     </div>
 </div>

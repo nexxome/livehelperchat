@@ -1,5 +1,5 @@
 <?php
-$modalHeaderClass = 'pt-1 pb-1 pl-2 pr-2';
+$modalHeaderClass = 'pt-1 pb-1 ps-2 pe-2';
 $modalHeaderTitle = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Save search');
 $modalSize = 'md';
 $modalBodyClass = 'p-1';
@@ -25,23 +25,28 @@ $appendPrintExportURL = '';
                     <div class="col-6">
                         <div class="form-group">
                             <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Name')?></label>
-                            <input required maxlength="100" class="form-control" type="text" ng-non-bindable name="name" value="<?php echo htmlspecialchars($item->name)?>" />
+                            <input required maxlength="100" class="form-control form-control-sm" type="text" ng-non-bindable name="name" value="<?php echo htmlspecialchars($item->name)?>" />
                         </div>
                     </div>
                     <div class="col-6">
                         <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Include records from the past')?></label>
-                        <input type="number" required min="30" class="form-control" placeholder="days" name="days" value="<?php echo htmlspecialchars($item->days)?>" />
+                        <input type="number" required min="30" class="form-control form-control-sm" placeholder="days" name="days" value="<?php echo htmlspecialchars($item->days)?>" />
                     </div>
                     <div class="col-12">
                         <div class="form-group">
                             <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','The higher number the higher in the views list it will appear')?></label>
-                            <input required maxlength="100" class="form-control" type="text" ng-non-bindable name="position" value="<?php echo htmlspecialchars($item->position)?>" />
+                            <input required maxlength="100" class="form-control form-control-sm" type="text" ng-non-bindable name="position" value="<?php echo htmlspecialchars($item->position)?>" />
                         </div>
                     </div>
                     <div class="col-12">
                         <label><input type="checkbox" name="passive" value="on" <?php if ($item->passive == 1) : ?>checked="checked"<?php endif;?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Passive, number of matching records will not be updated in the background.')?></label>
                     </div>
-
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Description of your view')?></label>
+                            <textarea name="description" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Put description for your own purposes.')?>" class="form-control form-control-sm"></textarea>
+                        </div>
+                    </div>
                 </div>
             </div>
             <input type="hidden" name="export_action" value="doExport">
@@ -51,7 +56,7 @@ $appendPrintExportURL = '';
             <?php if (!(isset($updated) && $updated == true)) : ?>
             <button type="submit" name="XLS" class="btn btn-primary btn-sm"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Save')?></button>
             <?php endif; ?>
-            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Close')?></button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Close')?></button>
         </div>
 
     </form>

@@ -1,7 +1,33 @@
-<div class="form-group">		
-<label><?php echo $fields['name']['trans'];?></label>
-<?php echo erLhcoreClassAbstract::renderInput('name', $fields['name'], $object)?>
+<div class="row">
+    <div class="col-6">
+        <div class="form-group">
+            <label><?php echo $fields['name']['trans'];?></label>
+            <?php echo erLhcoreClassAbstract::renderInput('name', $fields['name'], $object)?>
+        </div>
+    </div>
+    <div class="col-6">
+        <label><?php echo $fields['parent_id']['trans'];?><a href="#" onclick="lhc.revealModal({'url':WWW_DIR_JAVASCRIPT+'genericbot/help/parentinvitation'});" class="material-icons text-muted">help</a>
+        </label>
+        <?php echo erLhcoreClassRenderHelper::renderMultiDropdown( array (
+            'input_name'     => 'AbstractInput_parent_id',
+            'optional_field' => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconvmb', 'Choose a parent invitation'),
+            'selected_id'    => [$object->parent_id],
+            'data_prop'      => 'data-limit="1"',
+            'css_class'      => 'form-control',
+            'type'           => 'radio',
+            'display_name'   => 'name',
+            'no_selector'    => true,
+            'list_function_params' => ($object->id > 0 ? array('limit' => false,'filternot' => ['id' => $object->id]) : ['limit' => false]),
+            'list_function'  => 'erLhAbstractModelProactiveChatInvitation::getList',
+        )); ?>
+    </div>
+    <script>
+        $(function() {
+            $('.btn-block-department').makeDropdown();
+        });
+    </script>
 </div>
+
 
 <div class="form-group">
 <label><?php echo erLhcoreClassAbstract::renderInput('disabled', $fields['disabled'], $object)?> <?php echo $fields['disabled']['trans'];?></label>
@@ -90,15 +116,15 @@
 </div>
 
 <div class="form-group">		
-<label><?php echo erLhcoreClassAbstract::renderInput('requires_email', $fields['requires_email'], $object)?><?php echo $fields['requires_email']['trans'];?></label>
+<label><?php echo erLhcoreClassAbstract::renderInput('requires_email', $fields['requires_email'], $object)?> <?php echo $fields['requires_email']['trans'];?></label>
 </div>
 
 <div class="form-group">		
-<label><?php echo erLhcoreClassAbstract::renderInput('requires_username', $fields['requires_username'], $object)?><?php echo $fields['requires_username']['trans'];?></label>
+<label><?php echo erLhcoreClassAbstract::renderInput('requires_username', $fields['requires_username'], $object)?> <?php echo $fields['requires_username']['trans'];?></label>
 </div>
 
 <div class="form-group">		
-<label><?php echo erLhcoreClassAbstract::renderInput('requires_phone', $fields['requires_phone'], $object)?><?php echo $fields['requires_phone']['trans'];?></label>
+<label><?php echo erLhcoreClassAbstract::renderInput('requires_phone', $fields['requires_phone'], $object)?> <?php echo $fields['requires_phone']['trans'];?></label>
 </div>
 
 <div class="form-group">
@@ -106,23 +132,34 @@
 <?php echo erLhcoreClassAbstract::renderInput('show_on_mobile', $fields['show_on_mobile'], $object)?>
 </div>
 
-<div class="form-group">		
-<label><?php echo erLhcoreClassAbstract::renderInput('show_everytime', $fields['show_everytime'], $object)?><?php echo $fields['show_everytime']['trans'];?></label>
-</div>
-
-<div class="form-group">
-<label><?php echo erLhcoreClassAbstract::renderInput('show_after_chat', $fields['show_after_chat'], $object)?><?php echo $fields['show_after_chat']['trans'];?></label>
-</div>
-
 <div class="row">
+
     <div class="col-6">
         <div class="form-group">
-            <label><?php echo erLhcoreClassAbstract::renderInput('show_random_operator', $fields['show_random_operator'], $object)?><?php echo $fields['show_random_operator']['trans'];?></label>
+            <label><?php echo erLhcoreClassAbstract::renderInput('show_everytime', $fields['show_everytime'], $object)?> <?php echo $fields['show_everytime']['trans'];?></label>
+        </div>
+    </div>
+
+    <div class="col-6">
+        <div class="form-group">
+            <label><?php echo erLhcoreClassAbstract::renderInput('show_after_chat', $fields['show_after_chat'], $object)?> <?php echo $fields['show_after_chat']['trans'];?></label>
+        </div>
+    </div>
+
+    <div class="col-6">
+        <div class="form-group">
+            <label><?php echo erLhcoreClassAbstract::renderInput('lock_department', $fields['lock_department'], $object)?> <?php echo $fields['lock_department']['trans'];?></label>
+        </div>
+    </div>
+
+    <div class="col-6">
+        <div class="form-group">
+            <label><?php echo erLhcoreClassAbstract::renderInput('show_random_operator', $fields['show_random_operator'], $object)?> <?php echo $fields['show_random_operator']['trans'];?></label>
         </div>
     </div>
     <div class="col-6">
         <div class="form-group">
-            <label><?php echo erLhcoreClassAbstract::renderInput('assign_to_randomop', $fields['assign_to_randomop'], $object)?><?php echo $fields['assign_to_randomop']['trans'];?></label>
+            <label><?php echo erLhcoreClassAbstract::renderInput('assign_to_randomop', $fields['assign_to_randomop'], $object)?> <?php echo $fields['assign_to_randomop']['trans'];?></label>
         </div>
     </div>
 </div>
@@ -138,7 +175,10 @@
 </div>
 
 <div class="form-group">		
-<label><?php echo $fields['tag']['trans'];?></label>
+<label>
+    <?php echo $fields['tag']['trans'];?>
+    <a href="#" onclick="lhc.revealModal({'url':WWW_DIR_JAVASCRIPT+'genericbot/help/invitationtag'});" class="material-icons text-muted">help</a>
+</label>
 <?php echo erLhcoreClassAbstract::renderInput('tag', $fields['tag'], $object)?>
 </div>
 
@@ -146,10 +186,10 @@
 <div class="form-group">
 
     <div class="d-flex">
-        <div class="d-inline pr-2">
+        <div class="d-inline pe-2">
             <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Department');?></label>
         </div>
-        <div class="d-inline pr-2">
+        <div class="d-inline pe-2">
             <?php
             $params = array (
                 'input_name'     => 'cannedDepartmentGroup',
@@ -220,7 +260,16 @@
 <?php $translatableItem = array('identifier' => 'message_returning_nick'); ?>
 <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
-<div class="form-group">
-<label><?php echo $fields['autoresponder_id']['trans'];?></label>
-<?php echo erLhcoreClassAbstract::renderInput('autoresponder_id', $fields['autoresponder_id'], $object)?>
+<div class="row">
+    <div class="col-6">
+        <div class="form-group">
+            <label><?php echo $fields['autoresponder_id']['trans'];?></label>
+            <?php echo erLhcoreClassAbstract::renderInput('autoresponder_id', $fields['autoresponder_id'], $object)?>
+        </div>
+    </div>
+    <div class="col-6">
+         <label><?php echo erLhcoreClassAbstract::renderInput('use_default_autoresponder', $fields['use_default_autoresponder'], $object)?> <?php echo $fields['use_default_autoresponder']['trans'];?></label>
+         <div><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','If you do not select a custom or default auto-responder, proactive chats will not have an auto-responder assigned.');?></div>
+    </div>
 </div>
+

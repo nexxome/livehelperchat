@@ -25,6 +25,16 @@ $inputData->priority = is_numeric($Params['user_parameters_unordered']['priority
 $inputData->only_bot_online = isset($_POST['onlyBotOnline']) ? (int)$_POST['onlyBotOnline'] : 0;
 $inputData->vid = isset($requestPayload['vid']) && $requestPayload['vid'] != '' ? (string)$requestPayload['vid'] : '';
 
+$_POST['URLRefer'] = isset($requestPayload['fields']['URLRefer']) ? $requestPayload['fields']['URLRefer'] : '';
+
+if (is_array($_POST['URLRefer'])) {
+    if (isset($_POST['URLRefer']['href'])){
+        $_POST['URLRefer'] = (string)$_POST['URLRefer']['href'];
+    } else {
+        $_POST['URLRefer'] = '';
+    }
+}
+
 if (is_array($Params['user_parameters_unordered']['department']) && count($Params['user_parameters_unordered']['department']) == 1) {
     $parametersDepartment = erLhcoreClassChat::extractDepartment($Params['user_parameters_unordered']['department']);
     $Params['user_parameters_unordered']['department'] = $parametersDepartment['system'];
@@ -33,7 +43,7 @@ if (is_array($Params['user_parameters_unordered']['department']) && count($Param
     $inputData->departament_id = 0;
 }
 
-if (is_numeric($inputData->departament_id) && $inputData->departament_id > 0 && ($startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('filter' => array('department_id' => $inputData->departament_id)))) !== false) {
+if (is_numeric($inputData->departament_id) && $inputData->departament_id > 0 && ($startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('customfilter' => array("((`dep_ids` != '' AND JSON_CONTAINS(`dep_ids`,'" . (int)$inputData->departament_id . "','$')) OR department_id = " . (int)$inputData->departament_id . ")" )))) !== false) {
     $startDataFields = $startDataDepartment->data_array;
 } else {
     // Start chat field options
@@ -96,20 +106,42 @@ if (empty($Errors)) {
         'chat' => $chat,
         'prefill' => array('chatprefill' => isset($chatPrefill) ? $chatPrefill : false)));
 
-    erLhcoreClassChatValidator::saveOfflineRequest(array('chat' => & $chat, 'input_data' => $inputData, 'question' => (isset($inputData->question) ? $inputData->question : '')));
+    try {
+        $db = ezcDbInstance::get();
+        $db->beginTransaction();
 
-    // Assign chat to user
-    if ( erLhcoreClassModelChatConfig::fetch('track_online_visitors')->current_value == 1 && is_numeric($chat->id)) {
-        // To track online users
-        $userInstance = erLhcoreClassModelChatOnlineUser::handleRequest(array('vid' => $inputData->vid));
-        
-        if ($userInstance !== false) {
-            $userInstance->chat_id = $chat->id;
-            $userInstance->dep_id = $chat->dep_id;
-            $userInstance->saveThis();
-            $chat->online_user_id = $userInstance->id;
-            $chat->saveThis();
+        $requestSaved = erLhcoreClassChatValidator::saveOfflineRequest(array('chat' => & $chat, 'input_data' => $inputData, 'question' => (isset($inputData->question) ? $inputData->question : '')));
+
+        // Assign chat to user
+        if ( erLhcoreClassModelChatConfig::fetch('track_online_visitors')->current_value == 1 && is_numeric($chat->id)) {
+            // To track online users
+            $userInstance = erLhcoreClassModelChatOnlineUser::handleRequest(array(
+                'vid' => $inputData->vid,
+                'message_seen_timeout' => erLhcoreClassModelChatConfig::fetch('message_seen_timeout')->current_value,
+            ));
+
+            if ($userInstance !== false) {
+                $userInstance->chat_id = $chat->id;
+                $userInstance->dep_id = $chat->dep_id;
+                $userInstance->saveThis();
+                $chat->online_user_id = $userInstance->id;
+                $chat->saveThis();
+            }
         }
+
+        $db->commit();
+
+        // Remove out of transaction scope
+        // Same as start chat workflow
+        if ($requestSaved === true) {
+            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_offline_request_saved', array(
+                'chat' =>  & $chat
+            ));
+        }
+
+    } catch (Exception $e) {
+        $db->rollback();
+        throw $e;
     }
 
     $outputResponse = array (

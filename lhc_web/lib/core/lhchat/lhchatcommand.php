@@ -56,7 +56,7 @@ class erLhcoreClassChatCommand
         $URL = array_shift($paramsURL);
 
         if (is_numeric($URL)) {
-            $URL =  (erLhcoreClassSystem::$httpsMode == true ? 'https:' : 'http:') . '//' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '') . erLhcoreClassDesign::baseurldirect('form/formwidget') . '/' . $URL;
+            $URL = erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurldirect('form/formwidget') . '/' . $URL;
         }
 
         // Store as message to visitor
@@ -102,20 +102,33 @@ class erLhcoreClassChatCommand
 
             if ($command instanceof erLhcoreClassModelGenericBotCommand) {
 
+                if ($command->sub_command != '') {
+                    $commandData['argument'] = trim($command->sub_command . ' '.$commandData['argument']);
+                }
+
                 $trigger = $command->trigger;
 
                 $ignore = false;
+                $update_status = false;
+
+                $responseData = [];
 
                 if ($trigger instanceof erLhcoreClassModelGenericBotTrigger) {
 
                     $ignore = strpos($commandData['argument'],'--silent') !== false;
+                    $update_status = strpos($commandData['argument'],'--update_status') !== false;
 
                     if ($ignore == true) {
                         $commandData['argument'] = trim(str_replace('--silent','',$commandData['argument']));
                     }
 
+                    if ($update_status == true) {
+                        $commandData['argument'] = trim(str_replace('--update_status','',$commandData['argument']));
+                    }
+
                     $argumentsTrigger = array(
-                        'msg' => $commandData['argument'], 
+                        'msg' => $commandData['argument'],
+                        'chat' => $params['chat'],
                         'caller_user_id' => $params['user']->id,
                         'caller_user_class' => get_class($params['user']));
 
@@ -124,7 +137,7 @@ class erLhcoreClassChatCommand
                         $argumentsTrigger['arg_'.($indexArgument + 1)] = trim($argumentValue);                       // For {args.arg_3} to work
                     }
 
-                    erLhcoreClassGenericBotWorkflow::processTrigger($params['chat'], $trigger, false, array('args' => $argumentsTrigger));
+                    $responseData['last_message'] = erLhcoreClassGenericBotWorkflow::processTrigger($params['chat'], $trigger, false, array('args' => $argumentsTrigger));
 
                     $response = '"' . $trigger->name . '"' . ' ' . erTranslationClassLhTranslation::getInstance()->getTranslation('chat/chatcommand', 'was executed');
 
@@ -132,13 +145,22 @@ class erLhcoreClassChatCommand
                     $response = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/chatcommand', 'Assigned trigger could not be found');
                 }
 
-                return array(
+                $responseData = array_merge(array(
                     'ignore' => $ignore,
                     'processed' => true,
                     'process_status' => '',
                     'raw_message' => $commandData['command'] . ' || ' . $response
-                );
+                ),$responseData);
 
+                if ($update_status == true) {
+                    $responseData['custom_args']['update_status'] = true;
+                }
+
+                if ($command->info_msg != '') {
+                    $responseData['info'] = $command->info_msg;
+                }
+
+                return $responseData;
 
             } else {
                 $commandResponse = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.customcommand', array('command' => $commandData['command'], 'argument' => $commandData['argument'], 'params' => $params));
@@ -217,6 +239,7 @@ class erLhcoreClassChatCommand
             $msg->time = time();
             $msg->name_support = $params['user']->name_support;
 
+            \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'msg', 'msg' => & $msg, 'chat' => & $params['chat']));
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_msg_admin_saved', array('msg' => & $msg, 'chat' => & $params['chat']));
 
             $msg->saveThis();
@@ -251,6 +274,7 @@ class erLhcoreClassChatCommand
             $msg->time = time();
             $msg->name_support = $params['user']->name_support;
 
+            \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'msg', 'msg' => & $msg, 'chat' => & $params['chat']));
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_msg_admin_saved',array('msg' => & $msg, 'chat' => & $params['chat']));
 
             $msg->saveThis();
@@ -282,8 +306,8 @@ class erLhcoreClassChatCommand
 
         if ($params['argument'] != '') {
             $defaultHoldMessage = $params['argument'];
-        } else if ($params['chat']->auto_responder !== false && $params['chat']->auto_responder->auto_responder !== false && $params['chat']->auto_responder->auto_responder->wait_timeout_hold != '') {
-            $defaultHoldMessage = $params['chat']->auto_responder->auto_responder->wait_timeout_hold;
+        } else if ($params['chat']->auto_responder !== false && $params['chat']->auto_responder->auto_responder !== false && $params['chat']->auto_responder->auto_responder->wait_timeout_hold_translated != '') {
+            $defaultHoldMessage = $params['chat']->auto_responder->auto_responder->wait_timeout_hold_translated;
         } else {
             $defaultHoldMessage = '';
         }
@@ -291,12 +315,13 @@ class erLhcoreClassChatCommand
         if ($defaultHoldMessage != '') {
             // Store as message to visitor
             $msg = new erLhcoreClassModelmsg();
-            $msg->msg = $defaultHoldMessage;
+            $msg->msg = erLhcoreClassGenericBotWorkflow::translateMessage(trim($defaultHoldMessage), array('chat' => $params['chat']));
             $msg->chat_id = $params['chat']->id;
             $msg->user_id = $params['user']->id;
             $msg->time = time();
             $msg->name_support = $params['user']->name_support;
 
+            \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'msg', 'msg' => & $msg, 'chat' => & $params['chat']));
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_msg_admin_saved',array('msg' => & $msg, 'chat' => & $params['chat']));
 
             $msg->saveThis();
@@ -536,12 +561,19 @@ class erLhcoreClassChatCommand
 
     public static function blockUser($params)
     {
-        erLhcoreClassModelChatBlockedUser::blockChat(array('user' => $params['user'], 'chat' => $params['chat']));
+        if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','allowblockusers')) {
+            erLhcoreClassModelChatBlockedUser::blockChat(array('user' => $params['user'], 'chat' => $params['chat']));
+            return array(
+                'processed' => true,
+                'process_status' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/chatcommand', 'User was blocked!')
+            );
+        } else {
+            return array(
+                'processed' => true,
+                'process_status' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/chatcommand', 'You do not have permission to block user!')
+            );
+        }
 
-        return array(
-            'processed' => true,
-            'process_status' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/chatcommand', 'User was blocked!')
-        );
     }
     
     public static function info($params)
@@ -615,10 +647,18 @@ class erLhcoreClassChatCommand
 
             $params['chat']->updateThis(array('update' => array('operation_admin')));
 
-            return array(
+            $responseData = array(
                 'processed' => true,
                 'process_status' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/chatcommand', 'Chat was closed!')
             );
+
+            $ignore = strpos($params['argument'],'--silent') !== false;
+
+            if ($ignore == true) {
+                $responseData['ignore'] = true;
+            }
+
+            return $responseData;
         }
     }
     

@@ -10,15 +10,20 @@
     <div role="tabpanel" class="tab-pane active" id="cannedmsg">
         <?php include(erLhcoreClassDesign::designtpl('lhchat/cannedmsg/search_panel.tpl.php')); ?>
         <br/>
+        <form action="<?php echo $input->form_action . $inputAppend?>" method="post">
         <table class="table table-sm" cellpadding="0" cellspacing="0" ng-non-bindable>
             <thead>
             <tr>
+                <th width="1%">
+                    <input type="checkbox" onclick="$('.canned-item-id').prop('checked',$(this).is(':checked'))">
+                </th>
                 <th><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Title/Message');?></th>
                 <th><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Department');?></th>
                 <th><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','User');?></th>
                 <th><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Delay');?></th>
                 <th><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Position');?></th>
                 <th><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Auto send');?></th>
+                <th width="1%"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Updated at');?></th>
                 <?php include(erLhcoreClassDesign::designtpl('lhchat/cannedmsg/custom_column_multiinclude.tpl.php'));?>
                 <th width="1%">&nbsp;</th>
                 <th width="1%">&nbsp;</th>
@@ -26,6 +31,9 @@
             </thead>
             <?php foreach ($items as $item) : ?>
                 <tr class="<?php $item->disabled == 1 ? print 'text-muted' : ''?>">
+                    <td>
+                        <input class="canned-item-id" type="checkbox" name="canned_id[]" value="<?php echo $item->id?>">
+                    </td>
                     <td title="<?php echo htmlspecialchars($item->unique_id)?>">
                         <?php if ($item->disabled == 1) : ?><i class="text-danger material-icons">block</i><?php endif; ?>
                         <?php echo nl2br(htmlspecialchars($item->title != '' ? $item->title : $item->msg))?>
@@ -41,6 +49,7 @@
                     <td><?php echo $item->delay?></td>
                     <td><?php echo $item->position?></td>
                     <td><?php echo $item->auto_send?></td>
+                    <td nowrap="nowrap" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Created at');?> - <?php echo $item->created_at_front?>"><?php echo $item->updated_at_front?></td>
                     <?php include(erLhcoreClassDesign::designtpl('lhchat/cannedmsg/custom_column_content_multiinclude.tpl.php'));?>
                     <td nowrap>
 
@@ -68,9 +77,19 @@
             <?php include(erLhcoreClassDesign::designtpl('lhkernel/paginator.tpl.php')); ?>
         <?php endif;?>
 
-        <?php if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','administratecannedmsg')) : ?>
-            <a class="btn btn-secondary" href="<?php echo erLhcoreClassDesign::baseurl('chat/newcannedmsg')?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','New canned message');?></a>
-        <?php endif; ?>
+        <div class="btn-group" role="group" aria-label="...">
+            <?php if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','administratecannedmsg')) : ?>
+                <a class="btn btn-sm btn-secondary" href="<?php echo erLhcoreClassDesign::baseurl('chat/newcannedmsg')?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','New canned message');?></a>
+                <button type="submit" onclick="return confirm('<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('kernel/message','Are you sure?');?>')" name="DeleteSelected" class="btn btn-sm btn-danger"><span class="material-icons">delete</span><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/cannedmsg','Delete selected');?></button>
+                <?php if ($pages->items_total > 0) : $appendPrintExportURL = '';?>
+                    <button type="button" onclick="return lhc.revealModal({'title' : 'Delete all', 'height':350, backdrop:true, 'url':'<?php echo $pages->serverURL?>/(export)/4?<?php echo $appendPrintExportURL?>'})" class="btn btn-danger btn-sm"><span class="material-icons">delete_sweep</span><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Delete all items')?> (<?php echo $pages->items_total?>)</button>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
+
+        <?php include(erLhcoreClassDesign::designtpl('lhkernel/csfr_token.tpl.php'));?>
+
+        </form>
 
     </div>
     <?php endif; ?>

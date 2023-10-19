@@ -63,6 +63,7 @@ class erLhcoreClassChat {
 			'uagent',
 			'user_tz_identifier',
 			'invitation_id',
+			'theme_id',
 	);
 
 	public static $limitMessages = 50;
@@ -72,7 +73,7 @@ class erLhcoreClassChat {
      */
     public static function getPendingChats($limit = 50, $offset = 0, $filterAdditional = array(), $filterAdditionalMainAttr = array(), $limitationDepartment = array())
     {
-    	$limitation = self::getDepartmentLimitation('lh_chat',$limitationDepartment);
+    	$limitation = self::getDepartmentLimitation('lh_chat', $limitationDepartment);
 
     	// Does not have any assigned department
     	if ($limitation === false) { return array(); }
@@ -143,7 +144,7 @@ class erLhcoreClassChat {
             $subjectIds = json_decode(erLhcoreClassModelUserSetting::getSetting('subject_id', $filterString), true);
         }
 
-        $limitation = self::getDepartmentLimitation();
+        $limitation = self::getDepartmentLimitation('lh_chat', ['check_list_permissions' => true]);
 
         // Does not have any assigned department
         if ($limitation === false) {
@@ -547,18 +548,44 @@ class erLhcoreClassChat {
     	    $userData = $params['user'];
     	    $userId = $userData->id;
     	}
-    	
-    	
+
+        $limitationPermission = true;
+
+        if (isset($params['check_list_permissions'])) {
+            if (!erLhcoreClassUser::instance()->hasAccessTo('lhchat','list_all_chats')) {
+                $limitationPermission = false;
+                if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','list_my_chats')) {
+                    $limitationPermission = '(`user_id` = ' . (int)erLhcoreClassUser::instance()->getUserID() . ')';
+                    if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','list_pending_chats')) {
+                        $limitationPermission = '(`user_id` = ' . (int)erLhcoreClassUser::instance()->getUserID() . ' OR (`user_id` = 0 AND `status` = 0))';
+                    }
+                }
+            }
+        }
+
     	if ( $userData->all_departments == 0 )
     	{
     		$userDepartaments = erLhcoreClassUserDep::getUserDepartaments($userId, $userData->cache_version);
+
+            if (isset($params['explicit']) && $params['explicit'] === true && in_array(-1,$userDepartaments)) {
+                unset($userDepartaments[array_search(-1, $userDepartaments)]);
+            }
 
     		if (count($userDepartaments) == 0) return false;
 
     		$LimitationDepartament = '('.$tableName.'.dep_id IN ('.implode(',',$userDepartaments).'))';
 
+            if ($limitationPermission === false) {
+                return false;
+            } elseif ($limitationPermission !== true) {
+                $LimitationDepartament = '(' . $LimitationDepartament . ' AND ' . $limitationPermission . ')';
+            }
+
     		return $LimitationDepartament;
-    	}
+
+    	} elseif ($limitationPermission !== true) {
+            return $limitationPermission;
+        }
 
     	return true;
     }
@@ -566,7 +593,7 @@ class erLhcoreClassChat {
     // Get's unread messages from users
     public static function getUnreadMessagesChats($limit = 10, $offset = 0, $filterAdditional = array()) {
 
-    	$limitation = self::getDepartmentLimitation();
+    	$limitation = self::getDepartmentLimitation('lh_chat', ['check_list_permissions' => true]);
 
     	// Does not have any assigned department
     	if ($limitation === false) {
@@ -625,7 +652,7 @@ class erLhcoreClassChat {
 
     public static function getActiveChats($limit = 50, $offset = 0, $filterAdditional = array())
     {
-    	$limitation = self::getDepartmentLimitation();
+    	$limitation = self::getDepartmentLimitation('lh_chat', ['check_list_permissions' => true]);
 
     	// Does not have any assigned department
     	if ($limitation === false) { return array(); }
@@ -651,7 +678,7 @@ class erLhcoreClassChat {
 
     public static function getActiveChatsCount($filterAdditional = array())
     {
-    	$limitation = self::getDepartmentLimitation();
+    	$limitation = self::getDepartmentLimitation('lh_chat', ['check_list_permissions' => true]);
 
     	// Does not have any assigned department
     	if ($limitation === false) { return 0; }
@@ -673,7 +700,7 @@ class erLhcoreClassChat {
 
     public static function getClosedChats($limit = 50, $offset = 0, $filterAdditional = array())
     {
-    	$limitation = self::getDepartmentLimitation();
+    	$limitation = self::getDepartmentLimitation('lh_chat', ['check_list_permissions' => true]);
 
     	// Does not have any assigned department
     	if ($limitation === false) { return array(); }
@@ -1069,7 +1096,7 @@ class erLhcoreClassChat {
 
        if (!erLhcoreClassUser::instance()->hasAccessTo('lhchat','allowtransfertoanyuser')){
 	       // User can see online only his department users
-	       $limitation = self::getDepartmentLimitation('lh_userdep');
+	       $limitation = self::getDepartmentLimitation('lh_userdep', array('explicit' => true));
 
 	       // Does not have any assigned department
 	       if ($limitation === false) { return array(); }
@@ -1077,9 +1104,23 @@ class erLhcoreClassChat {
 	       if ($limitation !== true) {
 	       		$limitationSQL = ' AND '.$limitation;
 	       }
+       } else {
+           $limitation = erLhcoreClassUser::instance()->hasAccessTo('lhchat','allowtransfertoanyuser', true);
+           if ($limitation !== true) {
+               $limitationParams = json_decode($limitation, true);
+               if (isset($limitationParams['group'])) {
+                   erLhcoreClassChat::validateFilterIn($limitationParams['group']);
+                   $userIDValid = erLhcoreClassModelGroupUser::getCount(['filterin' => ['group_id' => $limitationParams['group']]],false,'user_id', 'user_id', false, true, true);
+                   if (!empty($userIDValid)) {
+                       $NotUser .= " AND `lh_users`.`id` IN(" . implode(',',$userIDValid) . ')';
+                   } else {
+                       return [];
+                   }
+               }
+           }
        }
 
-       $SQL = 'SELECT lh_users.* FROM lh_users INNER JOIN lh_userdep ON lh_userdep.user_id = lh_users.id WHERE (`lh_userdep`.`last_activity` > :last_activity OR `lh_userdep`.`always_on` = 1) '.$NotUser.$limitationSQL.$onlyOnline.$sameDepartment.' GROUP BY lh_users.id';
+       $SQL = 'SELECT lh_users.* FROM lh_users INNER JOIN lh_userdep ON lh_userdep.user_id = lh_users.id WHERE (`lh_userdep`.`last_activity` > :last_activity OR `lh_userdep`.`always_on` = 1) '.$NotUser.$limitationSQL.$onlyOnline.$sameDepartment.' GROUP BY `lh_users`.`id`';
        $stmt = $db->prepare($SQL);
        $stmt->bindValue(':last_activity',(time()-$isOnlineUser),PDO::PARAM_INT);
 
@@ -1092,7 +1133,7 @@ class erLhcoreClassChat {
        }
 
        $stmt->execute();
-       $rows = $stmt->fetchAll();
+       $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
        return $rows;
     }
 
@@ -1320,9 +1361,9 @@ class erLhcoreClassChat {
 
 	    $y = floor($seconds / (86400*365.25));
 	    $d = floor(($seconds - ($y*(86400*365.25))) / 86400);
-	    $h = gmdate('H', $seconds);
-	    $m = gmdate('i', $seconds);
-	    $s = gmdate('s', $seconds);
+	    $h = gmdate('H', (int)$seconds);
+	    $m = gmdate('i', (int)$seconds);
+	    $s = gmdate('s', (int)$seconds);
 
 	    $parts = array();
         $hasYears = false;
@@ -1502,6 +1543,10 @@ class erLhcoreClassChat {
            $group_id_by_group[$key] = $depIds;
        }
 
+       if (empty($group_id_by_group[$key])) {
+           return [-1];
+       }
+       
        return $group_id_by_group[$key];
    }
 
@@ -1593,7 +1638,14 @@ class erLhcoreClassChat {
    			};
 
             if (isset($params['additional_columns']) && is_array($params['additional_columns']) && !empty($params['additional_columns'])) {
+
                 foreach ($params['additional_columns'] as $column) {
+
+                    // Translatable title
+                    if (strpos($column->column_name,'{args.') !== false) {
+                        $object->{'cc_' . $column->id . '_tt'} = erLhcoreClassGenericBotWorkflow::translateMessage($column->column_name, array('chat' => $object, 'args' => ['chat' => $object]));
+                    }
+
                     if (strpos($column->variable,'additional_data.') !== false) {
                         $additionalDataArray = $object->additional_data_array;
                         if (is_array($additionalDataArray)) {
@@ -1627,12 +1679,18 @@ class erLhcoreClassChat {
                         if (isset($variableValue) && $variableValue != '') {
                             $object->{'cc_'.$column->id} = $variableValue;
                         }
+                    } elseif (strpos($column->variable,'{args.') !== false) {
+                        foreach (explode('||',$column->variable) as $variableValue) {
+                            $variableValueReplaced = erLhcoreClassGenericBotWorkflow::translateMessage($variableValue, array('chat' => $object, 'args' => ['chat' => $object]));
+                            $object->{'cc_' . $column->id} = $variableValueReplaced;
+                            if ($variableValueReplaced != '') {
+                                break;
+                            }
+                        }
+
                     }
-
-
                 }
             }
-
 
    			foreach ($attrRemove as $attr) {
    				$object->{$attr} = null;
@@ -2001,47 +2059,6 @@ class erLhcoreClassChat {
        }
    }
 
-   public static function getChatDurationToUpdateChatID($chat) {
-
-       $sql = 'SELECT lh_msg.time, lh_msg.user_id FROM lh_msg WHERE lh_msg.chat_id = :chat_id AND lh_msg.user_id != -1 ORDER BY id ASC';
-       $db = ezcDbInstance::get();
-       $stmt = $db->prepare($sql, array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
-       $stmt->bindValue(':chat_id',$chat->id);
-       $stmt->execute();
-
-       $timeout_user = erLhcoreClassModelChatConfig::fetch('cduration_timeout_user')->current_value;
-       $timeout_operator = erLhcoreClassModelChatConfig::fetch('cduration_timeout_operator')->current_value;
-
-       $params = array(
-           'timeout_user' => ($timeout_user > 0 ? $timeout_user : 4)*60,// How long operator can wait for message from visitor before delay between messages are ignored
-           'timeout_operator' => ($timeout_operator > 0 ? $timeout_operator : 10)*60
-       );
-
-       $previousMessage = null;
-       $timeToAdd = 0;
-       while ($row = $stmt->fetch(PDO::FETCH_ASSOC, PDO::FETCH_ORI_NEXT)) {
-           if ($previousMessage === null) {
-               $previousMessage = $row;
-               continue;
-           }
-
-           if ($row['user_id'] == 0) {
-               $timeout = $params['timeout_user'];
-           } else {
-               $timeout = $params['timeout_operator'];
-           }
-
-           $diff = $row['time'] - $previousMessage['time'];
-
-           if ($diff < $timeout && $diff > 0) {
-               $timeToAdd += $diff;
-           }
-           $previousMessage = $row;
-       }
-
-   	   	return $timeToAdd;
-   }
-   
    /**
     * @see https://github.com/LiveHelperChat/livehelperchat/pull/809
     *
@@ -2143,7 +2160,7 @@ class erLhcoreClassChat {
         }
    }
 
-   public static function extractDepartment($departments) {
+   public static function extractDepartment($departments, $logInvalidRequest = true) {
 
        $hasInvalidDepartment = false;
 
@@ -2171,7 +2188,7 @@ class erLhcoreClassChat {
            }
        }
 
-       if ($hasInvalidDepartment == true) {
+       if ($hasInvalidDepartment == true && $logInvalidRequest == true) {
            $response = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.extract_department', array('departments' => $departments));
            $referrer = print_r($departments, true) . "\n";
            $messageLog = $referrer . erLhcoreClassIPDetect::getIP();
@@ -2201,7 +2218,7 @@ class erLhcoreClassChat {
            if (is_numeric($themeId)) {
                $theme = erLhAbstractModelWidgetTheme::fetch($themeId);
                // Don't expose existing theme
-               if ($checkAlias == true && $theme->alias != '') {
+               if ($checkAlias == true && $theme instanceof erLhAbstractModelWidgetTheme && $theme->alias != '') {
                    return false;
                }
            } else {

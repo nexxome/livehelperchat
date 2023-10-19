@@ -79,7 +79,8 @@ class erLhcoreClassGenericBotActionCommand {
 
                 // We do not have to set this
                 // Because it triggers auto responder of not replying
-                // $chat->last_op_msg_time = time();
+                // Since 4.29 it will not trigger as we have a check for that now
+                $chat->last_op_msg_time = time();
                 $chat->updateThis();
 
                 // We have to reset auto responder
@@ -243,8 +244,335 @@ class erLhcoreClassGenericBotActionCommand {
 
                 $chat->additional_data = json_encode($variablesArray);
                 $chat->additional_data_array = $variablesArray;
-                $chat->updateThis(array('update' => array('additional_data')));
+
+                if (isset($action['content']['update_right_column']) && $action['content']['update_right_column'] == true) {
+                    $chat->operation_admin .= "lhinst.updateVoteStatus(".$chat->id.");";
+                }
+
+                $chat->updateThis(array('update' => array('additional_data','operation_admin')));
+
+
             }
+
+        } elseif ($action['content']['command'] == 'messageaggregation') {
+
+            $filterOR = [];
+            $all = false;
+
+            // All messages
+            if (isset($action['content']['msg_type_all']) && $action['content']['msg_type_all'] == 1) {
+                $all = true;
+            // All visitor messages
+            } elseif (isset($action['content']['msg_type_vis']) && $action['content']['msg_type_vis'] == 1) {
+                $filterOR[] = '(user_id = 0)';
+            }
+
+            // Bot messages
+            if (isset($action['content']['msg_type_bot']) && $action['content']['msg_type_bot'] == 1) {
+                $filterOR[] = '(user_id = -2)';
+            }
+
+            // Operator messages
+            if (isset($action['content']['msg_type_op']) && $action['content']['msg_type_op'] == 1) {
+                $filterOR[] = '(user_id > 0)';
+            }
+
+            // Visitor messages with a bot
+            if (isset($action['content']['msg_type_vis_bot']) && $action['content']['msg_type_vis_bot'] == 1) {
+                $filterOR[] = '(user_id = 0 AND `time` <= ' . (int)$chat->pnd_time . ')';
+            }
+
+            // Visitor messages with an operator
+            if (isset($action['content']['msg_type_vis_op']) && $action['content']['msg_type_vis_op'] == 1) {
+                $filterOR[] = '(user_id = 0 AND `time` > ' . (int)$chat->pnd_time . ')';
+            }
+
+            if (!empty($filterOR)) {
+                $messages = erLhcoreClassModelmsg::getList(array('ignore_fields' => ['msg', 'chat_id'], 'limit' => false, 'customfilter' => array( ' (' . implode(' OR ', $filterOR) . ') ' ), 'filter' => array('chat_id' => $chat->id)));
+            } elseif ($all === true) {
+                $messages = erLhcoreClassModelmsg::getList(array('ignore_fields' => ['msg', 'chat_id'], 'limit' => false, 'filternot' => array( 'user_id' => -1), 'filter' => array('chat_id' => $chat->id)));
+            }
+
+            if (
+                !isset($messages) ||
+                (!isset($action['content']['payload']) || empty($action['content']['payload'])) ||
+                (!isset($action['content']['payload_arg_type']) || empty($action['content']['payload_arg_type']))
+            ) {
+                return;
+            }
+
+            if (isset($action['content']['payload_include_number']) && $action['content']['payload_include_number'] != '') {
+                if (strpos($action['content']['payload_include_number'],'f') !== false) {
+                    $percentage = (int)str_replace('f','',$action['content']['payload_include_number']);
+                    $messages = array_slice($messages,0,ceil(count($messages) * ($percentage/100)));
+                } else {
+                    $percentage = (int)str_replace('l','',$action['content']['payload_include_number']);
+                    $messages = array_slice($messages,ceil(count($messages) * ($percentage/100)));
+                }
+            }
+
+            if (empty($messages)) {
+                return;
+            }
+
+            // Chat variable as Group field
+            $chatVariableName = $action['content']['payload'];
+
+            // Group value field (sentiment_value)
+            $chatVariableValue = isset($action['content']['payload_cond_field']) ? $action['content']['payload_cond_field'] : '';
+
+            /*
+             * Messages attributes
+             * */
+            // Group field (sentiment)
+            $messagesGroupField = isset($action['content']['payload_arg_field']) ? $action['content']['payload_arg_field'] : '';
+
+            // Group value field (sentiment_value)
+            $messagesGroupFieldValue = isset($action['content']['payload_arg_val']) ? $action['content']['payload_arg_val'] : '';
+
+            // Group method
+            $groupMethod = $action['content']['payload_arg_type'];
+
+            $db = ezcDbInstance::get();
+
+            try {
+
+                $db->beginTransaction();
+                $chat->syncAndLock();
+
+                $variablesArray = [];
+
+                if (!empty($chat->chat_variables)) {
+                    $variablesArray = json_decode($chat->chat_variables,true);
+                }
+
+                if (!is_array($variablesArray)) {
+                    $variablesArray = array();
+                }
+
+                $updateRequired = false;
+
+                if (isset($variablesArray[$chatVariableName])) {
+                    unset($variablesArray[$chatVariableName]);
+                    $updateRequired = true;
+                }
+
+                if ($groupMethod == 'count') {
+                    $variablesArray[$chatVariableName] = count($messages);
+
+                    $chat->chat_variables = json_encode($variablesArray);
+                    $chat->chat_variables_array = $variablesArray;
+                    $chat->updateThis(['update' => ['chat_variables']]);
+
+                    $updateRequired = false;
+
+                } else if ($groupMethod == 'ratio' && isset($action['content']['payload_arg_val_sum'])) {
+
+                    $messagesGroupFieldAll = $action['content']['payload_arg_val_sum'];
+                    $messagesGroupFieldValueScore = isset($action['content']['payload_arg_val_field']) ? (string)$action['content']['payload_arg_val_field'] : '';
+                    $messagesThresholdValue = isset($action['content']['payload_arg_val_trshl']) ? (double)$action['content']['payload_arg_val_trshl'] : 0;
+
+                    $counterTotal = 0;
+                    $counterRequired = 0;
+                    foreach ($messages as $message) {
+                        $messageVariables = $message->meta_msg_array;
+
+                        if (isset($messageVariables[$messagesGroupField]) && in_array($messageVariables[$messagesGroupField],explode(',',$messagesGroupFieldValue))) {
+                            if ($messagesGroupFieldValueScore == '' || (isset($messageVariables[$messagesGroupFieldValueScore]) && $messageVariables[$messagesGroupFieldValueScore] > $messagesThresholdValue)) {
+                                $counterRequired++;
+                            }
+                        }
+
+                        if (isset($messageVariables[$messagesGroupField]) && in_array($messageVariables[$messagesGroupField],explode(',',$messagesGroupFieldAll))) {
+                            if ($messagesGroupFieldValueScore == '' || (isset($messageVariables[$messagesGroupFieldValueScore]) && $messageVariables[$messagesGroupFieldValueScore] > $messagesThresholdValue)) {
+                                $counterTotal++;
+                            }
+                        }
+                    }
+
+                    if ($counterTotal > 0) {
+                        $variablesArray[$chatVariableName] = round($counterRequired/$counterTotal,4);
+                    }
+
+                    $chat->chat_variables = json_encode($variablesArray);
+                    $chat->chat_variables_array = $variablesArray;
+                    $chat->updateThis(['update' => ['chat_variables']]);
+
+                    $updateRequired = false;
+
+                } else if ($groupMethod == 'count_filter') {
+
+                    $counter = 0;
+                    foreach ($messages as $message) {
+                        $messageVariables = $message->meta_msg_array;
+                        if (isset($messageVariables[$messagesGroupField]) && in_array($messageVariables[$messagesGroupField],explode(',',$messagesGroupFieldValue))) {
+                            $counter++;
+                        }
+                    }
+
+                    $variablesArray[$chatVariableName] = $counter;
+                    $chat->chat_variables = json_encode($variablesArray);
+                    $chat->chat_variables_array = $variablesArray;
+                    $chat->updateThis(['update' => ['chat_variables']]);
+
+                    $updateRequired = false;
+
+                } else if (in_array($groupMethod, ['avg','sum','max','min','count_max','sum_avg'])) {
+
+                    if (isset($variablesArray[$chatVariableValue])) {
+                        unset($variablesArray[$chatVariableValue]);
+                    }
+
+                    $groupedFields = [];
+
+                    $messagesGroupFieldAll = isset($action['content']['payload_arg_val_sum']) && !empty($action['content']['payload_arg_val_sum']) ? explode(',',$action['content']['payload_arg_val_sum']) : [];
+                    $messagesThresholdValue = isset($action['content']['payload_arg_val_trshl']) && !empty($action['content']['payload_arg_val_trshl']) ? (double)$action['content']['payload_arg_val_trshl'] : 0;
+
+                    foreach ($messages as $message) {
+                        $messageVariables = $message->meta_msg_array;
+                        if (isset($messageVariables[$messagesGroupField])) {
+                            if (empty($messagesGroupFieldAll) || in_array($messageVariables[$messagesGroupField],$messagesGroupFieldAll)) {
+                                if ($messageVariables[$messagesGroupFieldValue] > $messagesThresholdValue) {
+                                    $groupedFields[$messageVariables[$messagesGroupField]][] = $messageVariables[$messagesGroupFieldValue];
+                                }
+                            }
+                        }
+                    }
+
+                    $highestScore = 0;
+
+                    foreach ($groupedFields as $sentiment => $values) {
+
+                        $avgScore = 0;
+                        $avgScoreVal = 0;
+
+                        if ($groupMethod == 'avg') {
+                            $avgScoreVal = $avgScore = array_sum($values) / count($values);
+                        } else if ($groupMethod == 'sum_avg') {
+                            $avgScore = array_sum($values);
+                            $avgScoreVal = array_sum($values) / count($values);
+                        } else if ($groupMethod == 'count_max') {
+                            $avgScoreVal = $avgScore = count($values);
+                        } else if ($groupMethod == 'max') {
+                            $avgScoreVal = $avgScore = max($values);
+                        } else if ($groupMethod == 'min') {
+                            $avgScoreVal = $avgScore = min($values);
+                        } else if ($groupMethod == 'sum') {
+                            $avgScoreVal = $avgScore = array_sum($values);
+                        }
+
+                        if ($avgScore > $highestScore) {
+                            $highestScore = $avgScore;
+                            $variablesArray[$chatVariableName] = $sentiment;
+                            $variablesArray[$chatVariableValue] = $avgScoreVal;
+                        }
+                    }
+
+                    // Update chat variables array
+                    $chat->chat_variables = json_encode($variablesArray);
+                    $chat->chat_variables_array = $variablesArray;
+                    $chat->updateThis(['update' => ['chat_variables']]);
+
+                    $updateRequired = false;
+                }
+
+                if ($updateRequired === true) {
+                    $chat->chat_variables = json_encode($variablesArray);
+                    $chat->chat_variables_array = $variablesArray;
+                    $chat->updateThis(['update' => ['chat_variables']]);
+                }
+
+                $db->commit();
+
+            } catch (Exception $e) {
+                $db->rollback();
+                throw $e;
+            }
+
+        } elseif ($action['content']['command'] == 'messageattribute') { // Main message attribute
+
+            $action['content']['payload_arg'] = isset($params['replace_array']) ? @str_replace(array_keys($params['replace_array']),array_values($params['replace_array']),$action['content']['payload_arg']) : $action['content']['payload_arg'];
+
+            if (isset($params['msg']) && is_object($params['msg'])) {
+
+                $db = ezcDbInstance::get();
+
+                try {
+                    $db->beginTransaction();
+
+                    $params['msg']->syncAndLock();
+
+                    $contentPayload = erLhcoreClassGenericBotWorkflow::translateMessage($action['content']['payload_arg'], array('chat' => $chat, 'args' => $params));
+
+                    if ($action['content']['payload'] == 'meta_msg') {
+                        $meta_msg_array = $params['msg']->meta_msg_array;
+                        $meta_msg_array = array_merge_recursive($meta_msg_array, json_decode($contentPayload,true));
+                        $params['msg']->meta_msg_array = $meta_msg_array;
+                        $params['msg']->meta_msg = json_encode($meta_msg_array);
+                    } else {
+                        $params['msg']->{$action['content']['payload']} = $contentPayload;
+                    }
+
+                    if (in_array($action['content']['payload'],['msg','meta_msg','time','chat_id','user_id','name_support'])) {
+                        $params['msg']->updateThis(['update' => [$action['content']['payload']]]);
+                    }
+
+                    $db->commit();
+                } catch (Exception $e) {
+                    $db->rollback();
+                    throw $e;
+                }
+
+                if ($action['content']['payload'] == 'msg') {
+                    $chat->operation .= "lhinst.updateMessageRow({$params['msg']->id});\n";
+                    $chat->updateThis(['update' => ['operation']]);
+                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.message_updated', array('msg' => & $params['msg'], 'chat' => & $chat));
+                }
+
+            }
+
+        } elseif ($action['content']['command'] == 'metamsg') { // Meta message attribute
+
+            if (isset($params['msg']) && is_object($params['msg'])) {
+
+                $db = ezcDbInstance::get();
+
+                try {
+                    $db->beginTransaction();
+
+                    $params['msg']->syncAndLock();
+
+                    $variablesArray = (array)$params['msg']->__get('meta_msg_array');
+
+                    if (isset($params['replace_array']) && is_array($params['replace_array'])) {
+                        $variablesAppend = @str_replace(array_keys($params['replace_array']),array_values($params['replace_array']),$action['content']['payload']);
+                    } else {
+                        $variablesAppend = $action['content']['payload'];
+                    }
+
+                    $variablesAppend = json_decode(erLhcoreClassGenericBotWorkflow::translateMessage($variablesAppend, array('as_json' => true, 'chat' => $chat, 'args' => $params)), true);
+
+                    if (is_array($variablesAppend)) {
+                        foreach ($variablesAppend as $key => $value) {
+                            if (isset($value)) {
+                                $variablesArray[$key] = $value;
+                            } elseif (isset($variablesArray[$key])) {
+                                unset($variablesArray[$key]);
+                            }
+                        }
+                    }
+
+                    $params['msg']->meta_msg = json_encode($variablesArray);
+                    $params['msg']->meta_msg_array = $variablesArray;
+                    $params['msg']->updateThis(['update' => ['meta_msg']]);
+
+                    $db->commit();
+                } catch (Exception $e) {
+                    $db->rollback();
+                    throw $e;
+                }
+            }
+
 
         } elseif ($action['content']['command'] == 'chatvariable') {
 
@@ -276,6 +604,11 @@ class erLhcoreClassGenericBotActionCommand {
 
                 $chat->chat_variables = json_encode($variablesArray);
                 $chat->chat_variables_array = $variablesArray;
+
+                if (isset($action['content']['update_right_column']) && $action['content']['update_right_column'] == true) {
+                    $chat->operation_admin .= "lhinst.updateVoteStatus(".$chat->id.");";
+                }
+
                 $chat->saveThis();
 
         } elseif ($action['content']['command'] == 'setchatattribute') {
@@ -339,6 +672,24 @@ class erLhcoreClassGenericBotActionCommand {
                 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.data_changed', array('chat' => & $chat));
 
         } elseif ($action['content']['command'] == 'setdepartment') {
+
+            // Brand support
+            if (!is_numeric($action['content']['payload'])) {
+
+                $brandMember = \LiveHelperChat\Models\Brand\BrandMember::findOne(['filter' => ['dep_id' => $chat->dep_id]]);
+
+                if (!is_object($brandMember)) {
+                    return;
+                }
+
+                $destinationBrandMember = \LiveHelperChat\Models\Brand\BrandMember::findOne(['filter' => ['brand_id' => $brandMember->brand_id, 'role' => $action['content']['payload']]]);
+
+                if (!is_object($destinationBrandMember)) {
+                    return;
+                }
+
+                $action['content']['payload'] = $destinationBrandMember->dep_id;
+            }
 
             // Department was changed
             if ($chat->dep_id != $action['content']['payload']) {
@@ -438,15 +789,23 @@ class erLhcoreClassGenericBotActionCommand {
             
         } elseif ($action['content']['command'] == 'setsubject') {
 
+            $payloadProcessed = $action['content']['payload'];
+
+            if (isset($params['replace_array']) && is_array($params['replace_array'])) {
+                $payloadProcessed = @str_replace(array_keys($params['replace_array']),array_values($params['replace_array']),$payloadProcessed);
+            }
+
+            $payloadProcessed = erLhcoreClassGenericBotWorkflow::translateMessage($payloadProcessed, array('chat' => $chat, 'args' => $params));
+
             $remove = isset($action['content']['remove_subject']) && $action['content']['remove_subject'] == true;
-            if ($remove == true && is_numeric($action['content']['payload'])) {
-                $subjectChat = erLhAbstractModelSubjectChat::findOne(array('filter' => array('subject_id' => (int)$action['content']['payload'], 'chat_id' => $chat->id)));
+            if ($remove == true && is_numeric($payloadProcessed)) {
+                $subjectChat = erLhAbstractModelSubjectChat::findOne(array('filter' => array('subject_id' => (int)$payloadProcessed, 'chat_id' => $chat->id)));
                 if ($subjectChat instanceof erLhAbstractModelSubjectChat) {
                     $subjectChat->removeThis();
-                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.subject_remove',array( 'init' => 'bot', 'subject_id' => (int)$action['content']['payload'], 'chat' => & $chat));
+                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.subject_remove',array( 'init' => 'bot', 'subject_id' => (int)$payloadProcessed, 'chat' => & $chat));
                 }
-            } else if (is_numeric($action['content']['payload']) && ($subject = erLhAbstractModelSubject::fetch((int)$action['content']['payload'])) instanceof erLhAbstractModelSubject) {
-                $subjectChat = erLhAbstractModelSubjectChat::findOne(array('filter' => array( 'subject_id' => (int)$action['content']['payload'], 'chat_id' => $chat->id)));
+            } else if (is_numeric($payloadProcessed) && ($subject = erLhAbstractModelSubject::fetch((int)$payloadProcessed)) instanceof erLhAbstractModelSubject) {
+                $subjectChat = erLhAbstractModelSubjectChat::findOne(array('filter' => array( 'subject_id' => (int)$payloadProcessed, 'chat_id' => $chat->id)));
                 if (!($subjectChat instanceof erLhAbstractModelSubjectChat)) {
                     $subjectChat = new erLhAbstractModelSubjectChat();
                     $subjectChat->subject_id = $subject->id;

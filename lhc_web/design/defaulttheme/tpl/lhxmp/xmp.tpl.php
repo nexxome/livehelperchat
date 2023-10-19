@@ -40,8 +40,8 @@
 <div role="tabpanel">
 	<!-- Nav tabs -->
 	<ul class="nav nav-tabs" role="tablist">
-		<li role="presentation" class="nav-item"><a class="nav-link <?php if ( (isset($xmp_data['use_standard_xmp']) && $xmp_data['use_standard_xmp'] == '0') || !isset($xmp_data['use_standard_xmp']) ) : ?>active<?php endif;?>" href="#xmp" aria-controls="xmp" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','XMPP');?></a></li>
-		<li role="presentation" class="nav-item"><a class="nav-link <?php if (isset($xmp_data['use_standard_xmp']) && $xmp_data['use_standard_xmp'] == '1' ) : ?>active<?php endif;?>" href="#gtalk" aria-controls="gtalk" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','GTalk');?></a></li>
+		<li role="presentation" class="nav-item"><a class="nav-link <?php if ( (isset($xmp_data['use_standard_xmp']) && $xmp_data['use_standard_xmp'] == '0') || !isset($xmp_data['use_standard_xmp']) ) : ?>active<?php endif;?>" href="#xmp" aria-controls="xmp" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','XMPP');?></a></li>
+		<li role="presentation" class="nav-item"><a class="nav-link <?php if (isset($xmp_data['use_standard_xmp']) && $xmp_data['use_standard_xmp'] == '1' ) : ?>active<?php endif;?>" href="#gtalk" aria-controls="gtalk" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','GTalk');?></a></li>
 	</ul>
 
 	<!-- Tab panes -->
@@ -109,7 +109,7 @@
 		        <label><input type="radio" name="use_standard_xmp" value="1" <?php isset($xmp_data['use_standard_xmp']) && ($xmp_data['use_standard_xmp'] == '1') ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','Use GTalk for messaging'); ?></label>
 				<h4><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','Information for your google app')?></h4>	
 				<label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','Redirect URL, this url you will have to enter in your google app configuration')?></label>
-				<input class="form-control" type="text" value="<?php echo htmlspecialchars(erLhcoreClassXMP::getBaseHost().$_SERVER['HTTP_HOST'])?><?php echo erLhcoreClassDesign::baseurl('xmp/configuration')?>/(gtalkoauth)/true" />
+				<input class="form-control" type="text" value="<?php echo htmlspecialchars(erLhcoreClassSystem::getHost())?><?php echo erLhcoreClassDesign::baseurl('xmp/configuration')?>/(gtalkoauth)/true" />
 				
 				
 				<h4><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','Enter your app information bellow')?></h4>						
@@ -132,7 +132,7 @@
 			    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','Please enter to what gmail address test message should be send?');?></label>
 			    <input class="form-control" type="text" name="test_recipients_gtalk" value="<?php (isset($test_gmail_email) && $test_gmail_email != '') ? print htmlspecialchars($test_gmail_email) : print '' ?>" />
 				</div>			
-				<input type="submit" class="btn btn-primary float-right" name="StoreXMPGTalkSendeMessage" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','This message will be send to test e-mail'); ?>" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','Send test message'); ?>" />
+				<input type="submit" class="btn btn-primary float-end" name="StoreXMPGTalkSendeMessage" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','This message will be send to test e-mail'); ?>" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/xmpp','Send test message'); ?>" />
 				<?php endif;?>
 									
 				<div class="btn-group" role="group" aria-label="...">

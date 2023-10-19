@@ -27,29 +27,27 @@ class NodeTriggerActionMail extends Component {
             <div>
                 <div className="d-flex flex-row">
                     <div>
-                        <div className="btn-group float-left" role="group" aria-label="Trigger actions">
+                        <div className="btn-group float-start" role="group" aria-label="Trigger actions">
                             <button disabled="disabled" className="btn btn-sm btn-info">{this.props.id + 1}</button>
-                            {this.props.isFirst == false && <button className="btn btn-secondary btn-sm" onClick={(e) => this.props.upField(this.props.id)}><i className="material-icons mr-0">keyboard_arrow_up</i></button>}
-                            {this.props.isLast == false && <button className="btn btn-secondary btn-sm" onClick={(e) => this.props.downField(this.props.id)}><i className="material-icons mr-0">keyboard_arrow_down</i></button>}
+                            {this.props.isFirst == false && <button className="btn btn-secondary btn-sm" onClick={(e) => this.props.upField(this.props.id)}><i className="material-icons me-0">keyboard_arrow_up</i></button>}
+                            {this.props.isLast == false && <button className="btn btn-secondary btn-sm" onClick={(e) => this.props.downField(this.props.id)}><i className="material-icons me-0">keyboard_arrow_down</i></button>}
                         </div>
                     </div>
                     <div className="flex-grow-1 px-2">
                         <NodeTriggerActionType onChange={this.changeType} type={this.props.action.get('type')} />
                     </div>
-                    <div className="pr-2">
+                    <div className="pe-2">
                         <div className="input-group input-group-sm">
-                            <div className="input-group-prepend">
-                                <span className="input-group-text" id="basic-addon1"><span className="material-icons">vpn_key</span></span>
-                            </div>
+                            <span className="input-group-text" id="basic-addon1"><span className="material-icons">vpn_key</span></span>
                             <input type="text" className="form-control" readOnly="true" value={this.props.action.getIn(['_id'])} title="Action ID"/>
                         </div>
                     </div>
-                    <div className="pr-2 pt-1 text-nowrap">
+                    <div className="pe-2 pt-1 text-nowrap">
                         <label className="form-check-label" title="Response will not be executed. Usefull for a quick testing."><input onChange={(e) => this.props.onChangeContent({id : this.props.id, 'path' : ['skip_resp'], value : e.target.checked})} defaultChecked={this.props.action.getIn(['skip_resp'])} type="checkbox"/> Skip</label>
                     </div>
                     <div>
-                        <button onClick={this.removeAction} type="button" className="btn btn-danger btn-sm float-right">
-                            <i className="material-icons mr-0">delete</i>
+                        <button onClick={this.removeAction} type="button" className="btn btn-danger btn-sm float-end">
+                            <i className="material-icons me-0">delete</i>
                         </button>
                     </div>
                 </div>
@@ -101,6 +99,20 @@ class NodeTriggerActionMail extends Component {
                         <div className="form-group">
                             <label>BCC Recipient</label>
                             <input type="text" className="form-control form-control-sm" onChange={(e) => this.onchangeAttr({'path' : ['mail_options','bcc_recipient'], 'value' : e.target.value})} defaultValue={this.props.action.getIn(['content','mail_options','bcc_recipient'])} />
+                        </div>
+                    </div>
+
+                    <div className="col-6">
+                        <div className="form-group">
+                            <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['mail_options','do_not_import'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','mail_options','do_not_import'])} /> Do not import send e-mail.</label>
+                            <p><small>This e-mail will be ignored and not imported to system.</small></p>
+                        </div>
+                    </div>
+
+                    <div className="col-6">
+                        <div className="form-group">
+                            <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['mail_options','copy_send'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','mail_options','copy_send'])} /> Create a copy in a send folder</label>
+                            <p><small>If send e-mails copies are not created automatically in a send folder, this will create a copy manually.</small></p>
                         </div>
                     </div>
 

@@ -1,4 +1,14 @@
-<textarea required class="form-control form-group" name="Message" id="sendMessageContent" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Type your message to the user');?>"><?php if (isset($visitor)) : ?><?php echo htmlspecialchars($visitor->operator_message) ?><?php endif; ?></textarea>
+<div class="row">
+    <div class="<?php if (!(isset($sendNoticeParams['mode']) && $sendNoticeParams['mode'] == 'mass')) : ?>col-12<?php else : ?>col-8<?php endif; ?>">
+        <textarea required class="form-control form-group" name="Message" id="sendMessageContent" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Type your message to the user');?>"><?php if (isset($visitor)) : ?><?php echo htmlspecialchars($visitor->operator_message) ?><?php endif; ?></textarea>
+    </div>
+    <?php if (isset($sendNoticeParams['mode']) && $sendNoticeParams['mode'] == 'mass') : ?>
+    <div class="col-4">
+        <textarea class="form-control form-group" id="sendToUsernames" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','You can paste usernames separated by a new line.');?>" name="SendToUsernames"></textarea>
+    </div>
+    <?php endif;?>
+</div>
+
 
 <div class="row">
     <div class="col-6">
@@ -12,7 +22,20 @@
 <?php include(erLhcoreClassDesign::designtpl('lhchat/onlineusers/send_order.tpl.php'));?>
 
 <div class="form-group">
-    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Invitation expire time, after that period of time invitation will be hidden');?></label>
+    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Invitation expire time, after that period of time invitation will be hidden.');?><?php if (isset($visitor->online_attr_system_array['lhcinv_exp']) && $visitor->online_attr_system_array['lhcinv_exp'] > 0) : ?>&nbsp;<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Last sent invitation expires in');?><br/><span class="badge bg-secondary"><?php echo erLhcoreClassChat::formatSeconds( (int)$visitor->online_attr_system_array['lhcinv_exp'] - time());?></span><?php endif;?>
+
+        <?php if (isset($visitor) && $visitor->message_seen == 1) : ?>
+            <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','last invitation was seen');?> <span class="badge bg-success"><?php echo erLhcoreClassChat::formatSeconds( time() - (int)$visitor->message_seen_ts);?></span> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','ago');?>.
+        <?php endif; ?>
+
+        <?php if (isset($visitor) && $visitor->has_message_from_operator) : ?>
+            <span class="badge bg-success"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','has active invitation');?></span>
+        <?php else : ?>
+            <span class="badge bg-warning"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','do not have any active invitation');?></span>
+        <?php endif; ?>
+
+    </label>
+
     <select class="form-control form-control-sm" name="InvitationExpire">
         <option value=""><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Permanent (visitor has to close invitation)');?></option>
         <option value="60">1 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','minute');?></option>
@@ -31,9 +54,9 @@
 <ul class="nav nav-tabs mb-2" role="tablist">
     <?php foreach ($sendMessageOrder as $inviteType => $inviteOption) : ?>
         <?php if ($inviteType == 'invite') : ?>
-            <li role="presentation" class="nav-item" ><a class="<?php if ($inviteOption['active'] === true) :?>active<?php endif;?> nav-link" href="#panel1" aria-controls="panel1" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Invitation')?></a></li>
+            <li role="presentation" class="nav-item" ><a class="<?php if ($inviteOption['active'] === true) :?>active<?php endif;?> nav-link" href="#panel1" aria-controls="panel1" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Invitation')?></a></li>
         <?php elseif ($inviteType == 'chat') : ?>
-            <li role="presentation" class="nav-item" ><a class="<?php if ($inviteOption['active'] === true) :?>active<?php endif;?> nav-link" href="#panel2" aria-controls="panel2" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Chat')?></a></li>
+            <li role="presentation" class="nav-item" ><a class="<?php if ($inviteOption['active'] === true) :?>active<?php endif;?> nav-link" href="#panel2" aria-controls="panel2" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Chat')?></a></li>
         <?php endif; ?>
     <?php endforeach; ?>
 </ul>
@@ -62,8 +85,13 @@
                 <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Canned message')?></label>
                 <select class="form-control form-control-sm" onchange="$('#sendMessageContent').val(($(this).val() > 0) ? $(this).find(':selected').text() : '');">
                     <option value=""><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Select a canned message')?></option>
-                    <?php foreach (erLhcoreClassModelCannedMsg::getCannedMessages(0,erLhcoreClassUser::instance()->getUserID()) as $item) : ?>
-                        <option value="<?php echo $item->id?>"><?php echo htmlspecialchars(str_replace('{nick}', (isset($chat) ? $chat->nick : ''), $item->msg))?></option>
+                    <?php
+
+                    $grouped = erLhcoreClassModelCannedMsg::groupItems(erLhcoreClassModelCannedMsg::getCannedMessages((isset($visitor) ? $visitor->dep_id : 0), erLhcoreClassUser::instance()->getUserID()), (isset($visitor) ? $visitor : null), erLhcoreClassUser::instance()->getUserData(true));
+                    $itemsCanned = ezcQuery::arrayFlatten($grouped);
+
+                    foreach ($itemsCanned as $item) : ?>
+                        <option value="<?php echo $item->id?>"><?php echo htmlspecialchars($item->msg_to_user)?></option>
                     <?php endforeach;?>
                 </select>
             </div>
@@ -72,9 +100,9 @@
         <input type="hidden" id="id_SendMessage" name="SendMessage" value="1" />
         <hr>
         <?php if (!(isset($sendNoticeParams['mode']) && $sendNoticeParams['mode'] == 'mass')) : ?>
-            <input type="submit" class="btn btn-secondary btn-sm" name="SendMessage" onclick="$('#id_SendMessage').val(1)" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Send the message');?>" />
+            <input type="submit" class="btn btn-secondary btn-sm modal-submit-disable" name="SendMessage" onclick="$('#id_SendMessage').val(1)" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Send the message');?>" />
         <?php else : ?>
-            <button type="submit" class="btn btn-secondary btn-sm" onclick="$('#id_SendMessage').val(1)" name="updateBotSettings"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Send message to')?> (<span id="mass-receiver-count"></span>) <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','visitors')?></button>
+            <button type="submit" class="btn btn-secondary btn-sm modal-submit-disable" onclick="$('#id_SendMessage').val(1)" name="updateBotSettings"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Send message to')?> (<span id="mass-receiver-count"></span>) <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','visitors')?></button>
         <?php endif;?>
 
     </div>
@@ -125,9 +153,9 @@
         </div>
 
         <?php if (!(isset($sendNoticeParams['mode']) && $sendNoticeParams['mode'] == 'mass')) : ?>
-            <input type="submit" class="btn btn-sm btn-secondary" name="SendMessageStart" onclick="$('#id_SendMessage').val(2)" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Send the message and start a chat');?>" />
+            <input type="submit" class="btn btn-sm btn-secondary modal-submit-disable" name="SendMessageStart" onclick="$('#id_SendMessage').val(2)" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/sendnotice','Send the message and start a chat');?>" />
         <?php else : ?>
-            <button type="submit" class="btn btn-secondary btn-sm" onclick="$('#id_SendMessage').val(2)" name="updateBotSettings"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Send the message and start a chat')?> (<span id="mass-receiver-count-chat"></span>) <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','visitors')?></button>
+            <button type="submit" class="btn btn-secondary btn-sm modal-submit-disable" onclick="$('#id_SendMessage').val(2)" name="updateBotSettings"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Send the message and start a chat')?> (<span id="mass-receiver-count-chat"></span>) <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','visitors')?></button>
         <?php endif; ?>
 
     </div>

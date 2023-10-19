@@ -1,14 +1,20 @@
-import React, { PureComponent } from 'react';
+import React, { PureComponent, Suspense } from 'react';
 import parse, { domToReact } from 'html-react-parser';
 import { connect } from "react-redux";
 import { updateTriggerClicked, subscribeNotifications, parseScript } from "../actions/chatActions";
 import { withTranslation } from 'react-i18next';
 import { helperFunctions } from "../lib/helperFunctions";
+import ChatModal from './ChatModal';
+const InlineSurvey = React.lazy(() => import('./InlineSurvey'));
+const InlineIframe = React.lazy(() => import('./InlineIframe'));
+
 
 class ChatMessage extends PureComponent {
 
     state = {
-        jsExecuted : false
+        jsExecuted : false,
+        moreReactions : false,
+        reactToMessageId : 0
     }
 
     constructor(props) {
@@ -20,8 +26,30 @@ class ChatMessage extends PureComponent {
         this.delayData = [];
     }
 
+    getDirectInnerText(element) {
+        var childNodes = element.childNodes;
+        var result = '';
+
+        for (var i = 0; i < childNodes.length; i++) {
+            if(childNodes[i].nodeType == 3) {
+                result += childNodes[i].data.trim();
+            }
+        }
+
+        return result;
+    }
+
     addLoader(attrs, element) {
-        if (!attrs["data-no-change"] && attrs.type == 'button') {
+
+        if (this.props.printButton == true && !attrs["data-no-msg"] && (attrs.type == 'button' || element.tagName === 'A')) {
+            if (element.tagName !== 'A') {
+                this.removeMetaMessage(attrs['data-id'], 0);
+            }
+
+            this.props.dispatch({type: "ADD_MSG_TO_STORE", data: this.getDirectInnerText(element)});
+        }
+
+        if (!attrs['data-keep'] && !attrs["data-no-change"] && attrs.type == 'button' && element) {
             element.setAttribute("disabled","disabled");
             element.innerHTML = "<i class=\"material-icons lhc-spin\">&#xf113;</i>" + element.innerHTML;
         }
@@ -80,6 +108,15 @@ class ChatMessage extends PureComponent {
                     this.removeMetaMessage(attrs['data-id']);
                 }, 500);
 
+            } else if (attrs.onclick.indexOf('lhinst.moreReactions') !== -1) {
+                this.setState({moreReactions : true, reactToMessageId: attrs['data-id']});
+                e.stopPropagation();
+            } else if (attrs.onclick.indexOf('lhinst.reactionsToolbar') !== -1) {
+                this.props.setReactingTo(attrs['data-id'] != this.props.reactToMessageId ? attrs['data-id'] : 0);
+                e.stopPropagation();
+            } else if (attrs.onclick.indexOf('lhinst.reactionsClicked') !== -1) {
+                this.updateTriggerClicked({type:'/(type)/reactions' + (this.props.themeId ? '/(theme)/' + this.props.themeId : '')}, attrs, e.target);
+                this.props.setReactingTo(0);
             } else if (attrs.onclick.indexOf('lhinst.buttonClicked') !== -1) {
                 this.updateTriggerClicked({type:''}, attrs, e.target);
             } else if (attrs.onclick.indexOf('lhinst.startVoiceCall') !== -1) {
@@ -117,7 +154,6 @@ class ChatMessage extends PureComponent {
                 console.log('Unknown click event: ' + attrs.onclick);
             }
         }
-
         e.preventDefault();
 
         // Why did we previously auto focused on button click?
@@ -127,7 +163,7 @@ class ChatMessage extends PureComponent {
         }*/
     }
 
-    removeMetaMessage(messageId) {
+    removeMetaMessage(messageId, timeout) {
         setTimeout(() => {
             var block = document.getElementById('msg-' + messageId);
             if (block) {
@@ -137,27 +173,60 @@ class ChatMessage extends PureComponent {
                     x[i].parentNode.removeChild(x[i]);
                 }
             }
-        },500);
+        },typeof timeout === 'undefined' ? 500 : timeout);
     }
 
     updateTriggerClicked(paramsType, attrs, target) {
-        this.props.dispatch(updateTriggerClicked(paramsType, {payload: attrs['data-payload'], id : attrs['data-id'], processed : (typeof attrs['data-keep'] === 'undefined')})).then((data) => {
+        this.props.dispatch(updateTriggerClicked(paramsType, {"payload-id": (typeof attrs['data-identifier'] === 'undefined' ? null : attrs['data-identifier']) ,payload: attrs['data-payload'], id : attrs['data-id'], processed : (typeof attrs['data-keep'] === 'undefined')})).then((data) => {
             if (!attrs['data-keep']) {
                 this.removeMetaMessage(attrs['data-id']);
             }
 
+            if (data.data.message_id_first && data.data.message_id_first > 0) {
+                this.props.dispatch({type: "UPDATE_SCROLL_TO_MESSAGE", data: data.data.message_id_first});
+            }
+            
             if (data.data.t) {
                 helperFunctions.sendMessageParent('botTrigger', [{'trigger' : data.data.t}]);
             }
 
-            this.props.updateMessages();
-            this.props.updateStatus();
+            if (data.data.update_message) {
+                this.props.updateMessage(attrs['data-id'], this);
+            } else {
+                this.props.updateMessages();
+                this.props.updateStatus();
+            }
         });
     }
 
     imageLoaded(attrs) {
         if (this.props.scrollBottom) {
             this.props.scrollBottom(true, true);
+        }
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (this.props.reactToMessageId != 0) {
+
+            var elm = document.getElementById('reactions-toolbar-'+this.props.reactToMessageId);
+            var elmMessage = document.getElementById('msg-'+this.props.reactToMessageId);
+
+            if (!elm || !elmMessage) {
+                return;
+            }
+
+            // Only half of the width goes to the right
+            var halfWidth = elm.clientWidth / 2;
+
+            var messageMaxWidth = elmMessage.offsetWidth;
+
+            var offsetContainer = elm.parentNode.offsetLeft;
+
+            if ((offsetContainer + halfWidth) > messageMaxWidth) {
+                elm.style.right = '-'+ (halfWidth - 10) +'px';
+            } else if (offsetContainer < halfWidth - 30) {
+                elm.style.left = (halfWidth - 30) +'px';
+            }
         }
     }
 
@@ -213,18 +282,26 @@ class ChatMessage extends PureComponent {
         var messages = parse(this.props.msg['msg'], {
 
             replace: domNode => {
-                if (domNode.attribs) {
 
+                if (domNode.attribs) {
+                    
                     var cloneAttr = Object.assign({}, domNode.attribs);
 
                     if (domNode.attribs.class) {
                         domNode.attribs.className = domNode.attribs.class;
 
+                        if (domNode.attribs.className.indexOf('message-row') !== -1 && parseInt(this.props.reactToMessageId) == parseInt(domNode.attribs.id.replace("msg-",""))){
+                            domNode.attribs.className += ' current-reacting-to';
+                        }
+
+                        domNode.attribs.className += ' fade-in-fast';
+
+                        if (domNode.attribs.className.indexOf('message-row') !== -1) {
+                            domNode.attribs.className += ' index-row-' + this.props.id;
+                        }
+
                         // Animate only if it's not first sync call
                         if (domNode.attribs.className.indexOf('message-row') !== -1 && this.props.id > 0) {
-
-                            domNode.attribs.className += ' fade-in-fast';
-
                             if (this.props.msg['msop'] > 0 && this.props.msg['msop'] != this.props.msg['lmsop'] && operatorChanged == false) {
                                 domNode.attribs.className += ' operator-changes';
                                 operatorChanged = true;
@@ -279,6 +356,10 @@ class ChatMessage extends PureComponent {
                             return <select {...domNode.attribs} onChange={(e) => this.abstractClick(cloneAttr, e)} >{domToReact(domNode.children)}</select>
                         }
 
+                    } else if (domNode.name && domNode.name === 'inlineiframe') {
+                        return <Suspense fallback="..."><InlineIframe {...domNode.attribs} updateMessage={(id) => this.props.updateMessage(id, this) }/></Suspense>;
+                    } else if (domNode.name && domNode.name === 'inlinesurvey') {
+                        return <Suspense fallback="..."><InlineSurvey {...domNode.attribs} surveyOptions={domNode.children} /></Suspense>;
                     } else if (domNode.name && domNode.name === 'input') {
 
                         if (domNode.attribs.type && domNode.attribs.type == 'checkbox' && cloneAttr.onchange) {
@@ -325,7 +406,7 @@ class ChatMessage extends PureComponent {
             }
         });
 
-        return <React.Fragment>{this.props.hasNew == true && this.props.id == this.props.newId && <div id="scroll-to-message" className="message-admin border-bottom new-msg-holder border-danger text-center"><span className="new-msg bg-danger text-white d-inline-block fs12 rounded-top">{this.props.newTitle}</span></div>}{messages}</React.Fragment>
+        return <React.Fragment>{this.state.moreReactions && <ChatModal setReaction={(attrs) => {this.updateTriggerClicked({type:'/(type)/reactions' + (this.props.themeId ? '/(theme)/' + this.props.themeId : '')}, JSON.parse(attrs), null);this.setState({moreReactions : false});this.props.setReactingTo(0);}} confirmClose={(e) => {this.setState({moreReactions : false})}} cancelClose={(e) => {this.setState({moreReactions : false})}} toggle={(e) => {this.setState({moreReactions : false})}} dataUrl={"/chat/reacttomessagemodal/"+this.state.reactToMessageId + (this.props.themeId ? '/(theme)/' + this.props.themeId : '') } />}{this.props.hasNew == true && this.props.id == this.props.newId && <div id="scroll-to-message" className="message-admin border-bottom new-msg-holder border-danger text-center"><span className="new-msg bg-danger text-white d-inline-block fs12 rounded-top">{this.props.newTitle}</span></div>}{messages}</React.Fragment>
     }
 }
 

@@ -19,22 +19,22 @@ class ChatModal extends PureComponent {
         .then((response) => {
             this.setState({'body' : response.data});
             var container = document.getElementById('dialog-content');
-            var bsn = require("bootstrap.native/dist/bootstrap-native-v4");
-            var tabs = container.querySelectorAll('[data-toggle="tab"]');
+            var bsn = require("bootstrap.native/dist/components/tab-native");
+            var tabs = container.querySelectorAll('[data-bs-toggle="tab"]');
 
             if (tabs.length > 0) {
                 var activeTab = 0;
-                Array.prototype.forEach.call(tabs, function(element){ new bsn.Tab( element) });
+                Array.prototype.forEach.call(tabs, function(element){element.tabItem = new bsn( element) });
 
                 const xwiper = new Xwiper('.tab-content');
                 xwiper.onSwipeLeft(() => {
                     activeTab = activeTab < (tabs.length - 1) ? (activeTab + 1) : 0;
-                    tabs[activeTab].Tab.show();
+                    tabs[activeTab].tabItem.show();
                 });
 
                 xwiper.onSwipeRight(() => {
                     activeTab = activeTab > 0 ? (activeTab - 1) : (tabs.length - 1);
-                    tabs[activeTab].Tab.show();
+                    tabs[activeTab].tabItem.show();
                 });
             }
 
@@ -44,8 +44,9 @@ class ChatModal extends PureComponent {
         })
     }
 
-    dismissModal = () => {
-        this.props.toggle()
+    dismissModal = (e) => {
+        this.props.toggle();
+        e && e.stopPropagation();
     }
 
     generalOnClick = (e) => {
@@ -67,10 +68,11 @@ class ChatModal extends PureComponent {
         this.props.toggle();
     }
 
-    generalDataActionClick = (e) => {
+    generalDataActionClick = (e, event) => {
         if (e['data-action'] && this.props[e['data-action']]) {
-            this.props[e['data-action']]();
+            this.props[e['data-action']](e['data-action-arg'] || null);
         }
+        event && event.stopPropagation();
     }
 
     render() {
@@ -82,7 +84,17 @@ class ChatModal extends PureComponent {
                         replace: domNode => {
 
                             if (domNode.attribs && domNode.attribs.id === 'react-close-modal') {
-                                return <button type="button" className="close float-right" data-dismiss="modal" onClick={this.dismissModal} aria-label="Close"><span aria-hidden="true">&times;</span></button>;
+                                return <button type="button" className="btn-close float-end" data-bs-dismiss="modal" onClick={this.dismissModal} aria-label="Close"></button>;
+                            } else if (domNode.attribs && domNode.attribs.linkaction) {
+
+                                if (domNode.attribs.class) {
+                                    domNode.attribs.className = domNode.attribs.class;
+                                    delete domNode.attribs.class;
+                                }
+                                return (
+                                    <a {...domNode.attribs} onClick={(e) => this.generalDataActionClick(domNode.attribs, e)}>{domToReact(domNode.children)}</a>
+                                );
+
                             } else if (domNode.attribs && domNode.attribs.bbitem) {
                                 if (domNode.attribs.class) {
                                     domNode.attribs.className = domNode.attribs.class;
@@ -98,7 +110,7 @@ class ChatModal extends PureComponent {
                                     delete domNode.attribs.class;
                                 }
 
-                                return (<input {...domNode.attribs} onClick={(e) => this.generalDataActionClick(domNode.attribs)} />);
+                                return (<input {...domNode.attribs} onClick={(e) => this.generalDataActionClick(domNode.attribs, e)} />);
 
                             } else if (domNode.type && domNode.type === 'script') {
                                 if (domNode.children.length > 0)

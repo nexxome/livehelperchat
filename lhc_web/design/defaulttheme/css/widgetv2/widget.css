@@ -2,16 +2,27 @@ body {
     background-color: transparent!important;
 }
 
+:root {
+    --lhc-message-border-radius: 20px;
+    --lhc-message-op-background: #ededed;
+    --lhc-message-vi-background: #3267e4;
+    --lhc-message-padding: 6px 9px;
+}
+
+a {
+    text-decoration: none;
+}
+
 @font-face {
     font-family: 'MaterialIconsLHC';
     font-style: normal;
     font-weight: 400;
-    src: url('../fonts/MaterialIcons-lhc-v4.eot'); /* For IE6-8 */
+    src: url('../fonts/MaterialIcons-lhc-v6.eot'); /* For IE6-8 */
     src: local('MaterialIconsLHC'),
     local('MaterialIconsLHC'),
-    url('../fonts/MaterialIcons-lhc-v4.woff2') format('woff2'),
-    url('../fonts/MaterialIcons-lhc-v4.woff') format('woff'),
-    url('../fonts/MaterialIcons-lhc-v4.ttf') format('truetype');
+    url('../fonts/MaterialIcons-lhc-v6.woff2') format('woff2'),
+    url('../fonts/MaterialIcons-lhc-v6.woff') format('woff'),
+    url('../fonts/MaterialIcons-lhc-v6.ttf') format('truetype');
     font-display: swap;
 }
 
@@ -96,8 +107,12 @@ div.message-row {
 }
 
 .reset-container-margins{
-    margin-left: -15px;
-    margin-right: -15px;
+    margin-left: -12px;
+    margin-right: -12px;
+}
+
+.form-group{
+    padding-bottom: 5px;
 }
 
 .bottom-message{
@@ -131,6 +146,14 @@ div.message-row {
 {
     font-size: 32px;
     color:#343a40;
+}
+
+.header-burger-link{
+    font-size: 14px;
+}
+
+.header-burger-link .material-icons{
+    font-size: 24px;
 }
 
 .action-image,
@@ -204,13 +227,12 @@ textarea[name=ChatMessage]{
 }
 
 .msg-date {
-    color: #171515;
+    color: #89898B;
     font-size:11px;
     line-height:11px;
     margin-top:0px;
     padding:3px;
     border-radius:10px;
-    font-style: italic;
 }
 
 .system-response .msg-date{
@@ -339,18 +361,27 @@ div.message-admin{
     text-align:right;
 }
 
-
 div.message-admin div.msg-body{
     margin-right:0px;
-    background-color: #3267e4;
-    padding:6px 9px;
+    background-color: var(--lhc-message-vi-background);
+    padding: var(--lhc-message-padding);
     margin-top:0px;
     color:#FFF;
-    border-radius:20px;
     margin-bottom:3px;
     display:inline-block;
     text-align: left;
     max-width:85%;
+    position: relative;
+    border-radius: var(--lhc-message-border-radius) var(--lhc-message-border-radius) var(--lhc-message-border-radius) 0px;
+}
+
+div.message-row.message-admin+div.message-row.message-admin div.msg-body {
+    border-top-left-radius: 0px;
+}
+
+div.message-row.message-admin:last-child div.msg-body,
+div.message-row.message-admin:has(+ :not(.message-row.message-admin)) div.msg-body {
+    border-bottom-left-radius: var(--lhc-message-border-radius);
 }
 
 div.message-admin div.msg-body a.link{
@@ -364,21 +395,34 @@ div.message-row-typing div.msg-body {
     border-radius: 3px;
     display: inline-block;
     color:#000!important;
-    border-radius:20px;
+    border-radius:var(--lhc-message-border-radius);
 }
 
 
 div.message-row.response div.msg-body{
-    background-color: #ededed;
-    padding:6px 9px;
+    background-color: var(--lhc-message-op-background);
+    padding:var(--lhc-message-padding);
     margin-top:0px;
-    border-radius:20px;
+    border-radius: var(--lhc-message-border-radius) var(--lhc-message-border-radius) 0px var(--lhc-message-border-radius);
     margin-bottom:3px;
     display:inline-block;
     text-align: left;
     max-width:90%;
 }
 
+div.message-row.response+div.message-row.response div.msg-body{
+    border-top-right-radius: 0px;
+}
+
+div.message-row.response:last-child div.msg-body,
+div.message-row.response:has(+ :not(.message-row.response)) div.msg-body{
+    border-bottom-right-radius: var(--lhc-message-border-radius);
+}
+
+div.message-row.response div.msg-body.sub-message{
+    background-color: transparent;
+    color: #212529;
+}
 
 /**
 * Switch style for frontend visitors
@@ -400,13 +444,21 @@ div.message-row.response div.msg-body{
 }
 
 .bottom-message div.response div.msg-body{
-    background-color: #3267e4;
+    background-color: var(--lhc-message-vi-background);
     color:#FFF;
 }
 
+.reactions-holder,
 .bottom-message div.message-admin div.msg-body{
-    background-color: #ededed;
+    background-color: var(--lhc-message-op-background);
     color:#212529;
+}
+
+/* For reaction icons avoid scrolling up and down if operator is the last message */
+
+.bottom-message div.message-row.response:last-child,
+.bottom-message div.message-row.message-admin:last-child {
+    min-height: 47px;
 }
 
 .bottom-message div.response div.msg-body a.link{
@@ -433,11 +485,133 @@ div.message-row.response div.msg-body{
     position: relative;
 }
 
-.msg-body:hover .hidden-download::after{
+.reaction-item:hover,
+.reaction-item{
+    color:#212529;
+    opacity: 0.4;
+    text-decoration: none;
+    margin: 1px 1px 1px 1px;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.reaction-selected,
+.reaction-item:hover{
+    opacity: 1;
+}
+
+.reactions-holder{
+    display: none;
+    position: absolute;
+    bottom: -18px;
+    z-index:1;
+    text-decoration: none;
+    border-radius:20px;
+    padding: 0px 3px 0px;
+    border:1px solid #fff;
+    margin-left: 50%;
+    white-space: nowrap;
+    /*right: -22px;*/
+}
+
+.reactions-holder-plus {
+    bottom: 0;
+    margin-left: auto;
+    right: -30px;
+    background: none;
+    border: 0;
+    font-size: 18px;
+    top: 5px;
+    cursor: pointer;
+}
+
+/*.reactions-holder-plus-icon:hover {
+    filter: grayscale(0);
+    opacity: 1;
+    text-decoration: none;
+}*/
+
+.reactions-holder-plus-icon:hover{
+    text-decoration: none;
+}
+
+.reactions-holder-plus-icon {
+    filter: grayscale(1);
+    opacity: 0.2;
+    user-select: none;
+}
+
+.reactions-toolbar {
+    display: none;
+    position: absolute;
+    margin-top: -33px;
+    background: white;
+    border-radius: 19px;
+    padding: 2px 5px;
+    box-shadow: 0px 0px 7px grey;
+    z-index: 2;
+}
+
+.current-reacting-to .reactions-toolbar{
+    display: block;
+    transform: translate(0px, 0px) translate(-45%, 0%);
+}
+
+.reactions-modal-expand{
+    transform: rotate(45deg);
+    background: #EBEBECFF;
+    border-radius:15px;
+    width: 23px;
+    height: 23px;
+    padding-top: 3px;
+    padding-left: 2px;
+    font-weight: bold;
+}
+
+.reactions-selected-info{
+    position: absolute;
+    z-index: 1;
+    margin-top: -5px;
+    white-space: nowrap;
+    right:0;
+    user-select: none;
+}
+
+.reactions-selected-info span {
+    box-shadow: 0 0 6px #ababab;
+    border-radius: 8px;
+    font-size: 12px;
+    background-color: #f9f7f7;
+}
+
+.reactions-selected-info span.material-icons{
+    width: 16px;
+    height: 16px;
+    padding-left: 2px;
+    line-height: 1.5;
+}
+
+.message-row.response .reactions-holder {
+    right:0;
+}
+
+.reactions-selected .reaction-item:not(.reaction-selected) {
+    display: none;
+}
+
+.reactions-holder.d-block .reaction-item, /* Remove this rule if you want once selected reaction only selected reaction would be shown */
+.reactions-selected:hover .reaction-item,
+.reactions-selected {
+    display: inline-block;
+}
+
+.msg-body:hover .hidden-download::after,
+.message-admin:hover .reactions-holder
+{
     display: block;
 }
 
-.hidden-download{
+.hidden-download {
     position: absolute;
     right: 5px;
     top: 5px;
@@ -511,7 +685,7 @@ div.message-row.operator-changes .usr-tit{
     overflow:inherit!important;
     height:auto!important;
     margin-right:5px!important;
-    padding:0px 0px!important;
+    /*padding:0px 0px!important;*/
     /*margin-top:-25px!important;*/
     display:block!important;
 }
@@ -553,9 +727,34 @@ div.pending-storage {
     border-right:1px solid #ced4da;
 }
 
-div.message-admin+div.message-admin .msg-date,div.message-row.response+div.message-row.response .msg-date,
-.bottom-message .message-row .msg-date{
+div.bottom-message:not(.show-msg-ts-below) > div.message-admin+div.message-admin .msg-date,
+div.bottom-message:not(.show-msg-ts-below) > div.message-row.response+div.message-row.response .msg-date{
     display:none;
+}
+
+div.show-msg-ts-below > div.message-row.message-admin .msg-date,
+div.show-msg-ts-below > div.message-row.response .msg-date{
+    display: none;
+}
+
+div.show-msg-ts-below > div.message-row.message-admin:has(+ :not(.message-admin)) .msg-date,
+div.show-msg-ts-below > div.message-row.response:has(+ :not(.message-row.response)) .msg-date,
+div.show-msg-ts-below > div.message-row:last-child .msg-date
+{
+    display:block;
+}
+
+.bottom-message:not(.show-msg-ts) .message-row .msg-date{
+    display:none;
+}
+
+#chat-dropdown-options{
+    color: #d3d3d3!important;
+}
+
+#chat-dropdown-options[aria-expanded=true],
+#chat-dropdown-options:hover{
+    color: var(--bs-secondary-color)!important;
 }
 
 .last-user-msg{
@@ -668,6 +867,7 @@ textarea[name=ChatMessage] {
     background: transparent;
     scrollbar-color: #888 transparent;
     scrollbar-width: thin;
+    scroll-padding-bottom: 10px;
 }
 
 .settings {
@@ -774,6 +974,7 @@ textarea[name=ChatMessage] {
     padding: 6px 0;
     text-align: center;
     cursor: pointer;
+    text-decoration: none;
 }
 
 .bot-btn-list > li a:hover{
@@ -794,6 +995,7 @@ textarea[name=ChatMessage] {
     text-align: center;
     font-size: 14px;
     font-weight: 600;
+    text-decoration: none;
 }
 
 .list-group {
@@ -878,17 +1080,20 @@ textarea[name=ChatMessage] {
     outline: none;
 }
 
-.fade-in-fast {
+/* I just don't like how they look so we get rid of this animation.*/
+/*.fade-in-fast {
     animation: fadeIn ease 0.3s;
 }
-
 .fade-in {
     animation: fadeIn ease 1s;
+}*/
+.msg-to-store{
+    opacity:0.3;
 }
 
 @keyframes fadeIn {
     0% {
-        opacity:0;
+        opacity:0.3;
     }
     100% {
         opacity:1;
@@ -955,7 +1160,7 @@ textarea[name=ChatMessage] {
 }
 
 #CSChatMessage.msg-two-line{
-    height:60px;
+    height:56px;
 }
 
 #CSChatMessage.msg-one-line{
@@ -968,15 +1173,14 @@ textarea[name=ChatMessage] {
 }
 
 .bb-list > a.p-1:hover{
-    text-decoration: none;
-    background-color: #eaeaea;
+    background-color: #b2b2b2!important;
 }
 
 .new-msg-holder {
     position: absolute;
     right: 0;
     left: 0;
-    margin-top:-26px;
+    margin-top:-23px;
     border-bottom-style: dashed!important;
 }
 
@@ -991,6 +1195,7 @@ textarea[name=ChatMessage] {
     text-align: center;
     width: 90%;
     margin-left: 5%;
+    z-index: 2;
 }
 
 .btn-bottom-scroll > button{
@@ -1039,4 +1244,8 @@ textarea[name=ChatMessage] {
 
 #widget-header-content:empty{
     background: none!important;
+}
+
+.text-muted-light{
+    color: #d3d3d3;
 }

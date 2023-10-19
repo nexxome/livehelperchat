@@ -6,7 +6,7 @@
  * @desc Main chat survey object
  *
  */
-
+#[\AllowDynamicProperties]
 class erLhAbstractModelSurvey {
 
     use erLhcoreClassDBTrait;
@@ -18,13 +18,16 @@ class erLhAbstractModelSurvey {
     public static $dbSessionHandler = 'erLhcoreClassAbstract::getSession';
     
     public static $dbSortOrder = 'ASC';
-        
+
+    public static $dbDefaultSort = '`identifier` ASC, `id` DESC';
+
 	public function getState()
 	{
 		$stateArray = array (
 			'id'         	           => $this->id,
 			'name'  		           => $this->name,
-			
+			'identifier'  		       => $this->identifier,
+
 			'max_stars_1_title'		   => $this->max_stars_1_title,
 			'max_stars_1'		       => $this->max_stars_1,
 			'max_stars_1_pos'		   => $this->max_stars_1_pos,
@@ -190,6 +193,12 @@ class erLhAbstractModelSurvey {
 	   }
 	}
 
+    public function validateInput($params)
+    {
+        $params['obj'] = & $this;
+        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('abstract.survey_edit_validate', $params);
+    }
+
 	public function beforeRemove()
 	{
 	    $q = ezcDbInstance::get()->createDeleteQuery();
@@ -249,6 +258,60 @@ class erLhAbstractModelSurvey {
     public function beforeSave()
     {
         $this->configuration = json_encode($this->configuration_array);
+    }
+
+    public function dependFooterJs()
+    {
+        return '<script type="text/javascript" src="'.erLhcoreClassDesign::designJS('js/angular.lhc.theme.js').'"></script>';
+    }
+
+    public function translate() {
+
+        $chatLocaleFallback = erConfigClassLhConfig::getInstance()->getDirLanguage('content_language');
+        $chatLocale = erLhcoreClassChatValidator::getVisitorLocale();
+
+        $attributesDirect = array(
+            'feedback_text'
+        );
+
+        $translatableAttributes = array_merge(array(
+            'survey_title'
+        ),$attributesDirect);
+
+        $attributes = $this->configuration_array;
+
+        foreach ($translatableAttributes as $attr) {
+            if (isset($attributes[$attr . '_lang'])) {
+
+                $translated = false;
+
+                if ($chatLocale !== null) {
+                    foreach ($attributes[$attr . '_lang'] as $attrTrans) {
+                        if (in_array($chatLocale, $attrTrans['languages']) && $attrTrans['content'] != '') {
+                            $attributes[$attr] = $attrTrans['content'];
+                            $translated = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($translated == false) {
+                    foreach ($attributes[$attr . '_lang'] as $attrTrans) {
+                        if (in_array($chatLocaleFallback, $attrTrans['languages']) && $attrTrans['content'] != '') {
+                            $attributes[$attr] = $attrTrans['content'];
+                            $translated = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($translated === true && in_array($attr,$attributesDirect)) {
+                    $this->$attr = $attributes[$attr];
+                }
+            }
+        }
+
+        $this->configuration_array = $attributes;
     }
 
    	public $id = null;
@@ -340,6 +403,7 @@ class erLhAbstractModelSurvey {
 	
 	public $feedback_text = '';
 	public $configuration = '';
+	public $identifier = '';
 
 	public $hide_add = false;
 	public $hide_delete = false;

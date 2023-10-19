@@ -10,6 +10,7 @@ export class needhelpWidget{
         this.widgetOpen = false;
         this.invitationOpen = false;
         this.nhOpen = false;
+        this.delayProcessed = false;
 
         this.cont = new UIConstructorIframe((prefix || 'lhc')+'_needhelp_widget_v2', helperFunctions.getAbstractStyle({
             zindex: "2147483639",
@@ -130,6 +131,8 @@ export class needhelpWidget{
 
         setTimeout(() => {
 
+            this.delayProcessed = true;
+
             attributes.widgetStatus.subscribe((data) => {
                 data == true ? (this.widgetOpen = true,this.hide()) : (this.widgetOpen = false,this.show());
             });
@@ -147,9 +150,7 @@ export class needhelpWidget{
                 }
             });
 
-
-
-        }, settings.delay);
+        }, settings.delay + this.attributes['status_delay']);
 
         attributes.eventEmitter.addListener('reloadWidget',() => {
             this.cont.insertCssRemoteFile({onload: () => {this.loadStatus['theme'] = true; this.checkLoadStatus()}, id : "lhc-theme-needhelp", crossOrigin : "anonymous",  href : this.attributes.LHC_API.args.lhc_base_url + '/widgetrestapi/themeneedhelp/' + this.attributes.theme + '?v=' + Date.now()}, true);
@@ -176,7 +177,7 @@ export class needhelpWidget{
 
     show () {
 
-        if (this.hidden == true || this.widgetOpen == true ||  this.invitationOpen == true || this.attributes.onlineStatus.value == false) {
+        if (this.delayProcessed == false || this.hidden == true || this.widgetOpen == true || this.invitationOpen == true || this.attributes.onlineStatus.value == false) {
             return;
         }
 

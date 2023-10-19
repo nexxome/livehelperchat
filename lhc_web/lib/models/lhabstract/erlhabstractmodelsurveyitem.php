@@ -6,7 +6,7 @@
  * @desc Stores surveys themself
  *
  */
-
+#[\AllowDynamicProperties]
 class erLhAbstractModelSurveyItem {
 
     use erLhcoreClassDBTrait;
@@ -29,6 +29,7 @@ class erLhAbstractModelSurveyItem {
 			'dep_id'		=> $this->dep_id,		
 			'status'	    => $this->status,		
 			'ftime'		    => $this->ftime, // Then user was completed by visitor
+			'online_user_id'=> $this->online_user_id
 		);
 
 		for($i = 1; $i <= 5; $i++) {
@@ -132,14 +133,46 @@ class erLhAbstractModelSurveyItem {
 	{
 	    $items = self::getList(array('filter' => array('chat_id' => $chat->id, 'survey_id' => $survey->id)));
 	    
+        foreach ([
+            'max_stars_1_title',
+            'max_stars_2_title',
+            'max_stars_3_title',
+            'max_stars_4_title',
+            'max_stars_5_title',
+            'question_options_1',
+            'question_options_1_items',
+            'question_options_2',
+            'question_options_2_items',
+            'question_options_3',
+            'question_options_3_items',
+            'question_options_4',
+            'question_options_4_items',
+            'question_options_5',
+            'question_options_5_items',
+            'question_plain_1',
+            'question_plain_2',
+            'question_plain_3',
+            'question_plain_4',
+            'question_plain_5'] as $fieldTranslate) {
+            if (isset($survey->{$fieldTranslate}) && $survey->{$fieldTranslate} != '') {
+                $survey->{$fieldTranslate} = erLhcoreClassGenericBotWorkflow::translateMessage($survey->{$fieldTranslate}, array('chat' => $chat));
+            }
+        }
+        
 	    if (!empty($items)){
-	        return array_shift($items);
+            $surveyItem = array_shift($items);
+            if ($surveyItem->online_user_id == 0 && $chat->online_user_id > 0) {
+                $surveyItem->online_user_id = $chat->online_user_id;
+                $surveyItem->updateThis(['update' => ['online_user_id']]);
+            }
+	        return $surveyItem;
 	    } else {
 	        $surveyItem = new self();
 	        $surveyItem->chat_id = $chat->id;
 	        $surveyItem->survey_id = $survey->id;
 	        $surveyItem->user_id = $chat->user_id;
 	        $surveyItem->dep_id = $chat->dep_id;
+            $surveyItem->online_user_id = $chat->online_user_id;
 	        $surveyItem->ftime = time();
 	        return $surveyItem;
 	    }
@@ -153,6 +186,7 @@ class erLhAbstractModelSurveyItem {
 	public $chat_id = NULL;
 	public $user_id = 0;
 	public $ftime = 0;
+	public $online_user_id = 0;
 	public $status = self::STATUS_PERSISTENT;
 	
 	public $hide_add = false;

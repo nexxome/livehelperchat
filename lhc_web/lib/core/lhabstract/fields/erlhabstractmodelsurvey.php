@@ -1,6 +1,14 @@
 <?php 
 
-return array(
+$surveyFields = array(
+    'id' => array(
+        'type' => 'none',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/survey','ID'),
+        'required' => false,
+        'width' => '1',
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
     'name' => array(
         'type' => 'text',
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/survey','Name'),
@@ -9,11 +17,33 @@ return array(
         'validation_definition' => new ezcInputFormDefinitionElement(
             ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
         )),
-    'feedback_text' => array(
+    'identifier' => array(
         'type' => 'text',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/survey','Identifier'),
+        'required' => false,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+    'feedback_text' => array(
+        'type' => 'textarea',
+        'height' => '86px',
+        'main_attr_lang' => 'configuration_array',
+        'translatable' => true,
+        'hidden' => true,
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/survey','Feedback text'),
+        'placeholder' => erTranslationClassLhTranslation::getInstance()->getTranslation('survey/fill','Thank you for your feedback...'),
+        'required' => false,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+    'survey_title' => array(
+        'type' => 'text',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Survey title'),
+        'placeholder' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Please complete this short evaluation survey'),
         'required' => false,
         'hidden' => true,
+        'translatable' => true,
+        'main_attr' => 'configuration_array',
         'validation_definition' => new ezcInputFormDefinitionElement(
             ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
         )),
@@ -21,6 +51,26 @@ return array(
         'type' => 'checkbox',
         'main_attr' => 'configuration_array',
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Disable chat preview'),
+        'required' => false,
+        'hidden' => true,
+        'nginit' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+    'return_on_close' => array(
+        'type' => 'checkbox',
+        'main_attr' => 'configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Allow visitor return to chat even if it was closed.'),
+        'required' => false,
+        'hidden' => true,
+        'nginit' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+    'disable_chat_download' => array(
+        'type' => 'checkbox',
+        'main_attr' => 'configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Disable chat download'),
         'required' => false,
         'hidden' => true,
         'nginit' => true,
@@ -590,4 +640,32 @@ return array(
         )),
 );
 
+for ($i = 1; $i < 5; $i++) {
+
+    $surveyFields['min_stars_question_plain_' . $i] = array(
+        'type' => 'text',
+        'main_attr' => 'configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme',' Required only if stars less or equal to 1 - n'),
+        'required' => false,
+        'hidden' => true,
+        'nginit' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min' => 1)
+        ));
+
+    $surveyFields['star_field_question_plain_' . $i] = array(
+        'type' => 'text',
+        'main_attr' => 'configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Stars field Nr. (1-5)'),
+        'required' => false,
+        'hidden' => true,
+        'nginit' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min' => 1, 'max' => 5)
+        ));
+}
+
+
+
+return $surveyFields;
 ?>

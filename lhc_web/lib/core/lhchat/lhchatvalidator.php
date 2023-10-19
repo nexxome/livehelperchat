@@ -85,7 +85,25 @@ class erLhcoreClassChatValidator {
 		
 		return $Errors;
 	}
-	
+
+    public static function getVisitorLocale() {
+        // Detect user locale
+        if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            $parts = explode(';',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
+            $languages = explode(',',$parts[0]);
+            if (isset($languages[0])) {
+                $partsLanguages = explode('-',$languages[0]);
+                if (count($partsLanguages) >= 2) {
+                    return substr($partsLanguages[0] . '-' . $partsLanguages[1],0,10);
+                } else {
+                    return substr($partsLanguages[0],0,10);
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Custom form fields validation
      */
@@ -294,7 +312,7 @@ class erLhcoreClassChatValidator {
             )
             {
                 if (!($inputForm->only_bot_online == 1 && isset($start_data_fields['name_hidden_bot']) && $start_data_fields['name_hidden_bot'] == true) && !isset($additionalParams['ignore_required'])) {
-                    $Errors['nick'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please enter your name');
+                    $Errors['username'] = $Errors['nick'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please enter your name');
                 }
 
             } elseif ($form->hasValidData( 'Username' )) {
@@ -303,9 +321,11 @@ class erLhcoreClassChatValidator {
 
             if ($form->hasValidData( 'Username' ) && $form->Username != '' && mb_strlen($form->Username) > 100 && !isset($additionalParams['ignore_required']))
             {
-                $Errors['nick'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Maximum 100 characters');
+                $Errors['username'] = $Errors['nick'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Maximum 100 characters');
             }
         }
+
+
 
         if ( isset($validationFields['Email']) ) {
             if ( (!$form->hasValidData( 'Email' ) && $start_data_fields['email_require_option'] == 'required' && !isset($additionalParams['offline'])) || (!$form->hasValidData( 'Email' ) && isset($additionalParams['offline']) && (!isset($start_data_fields['offline_email_require_option']) || $start_data_fields['offline_email_require_option'] == 'required'))) {
@@ -320,12 +340,11 @@ class erLhcoreClassChatValidator {
                 $chat->email = $inputForm->email = isset($_POST['Email']) ? $_POST['Email'] : '';
             }
         }
-        
+
         // Validate question
         if (isset($validationFields['Question'])) {
-
             if ( !$form->hasValidData('keyUpStarted') && (!$form->hasValidData( 'Question' ) || (trim($form->Question) == '' && (($start_data_fields['message_require_option'] == 'required' && !isset($additionalParams['offline'])) || (isset($additionalParams['offline']) && isset($start_data_fields['offline_message_require_option']) && $start_data_fields['offline_message_require_option'] == 'required'))))) {
-                if (!($inputForm->only_bot_online == 1 && isset($start_data_fields['message_hidden_bot']) && $start_data_fields['message_hidden_bot'] == true) && !isset($additionalParams['ignore_required'])) {
+                if (!($inputForm->only_bot_online == 1 && isset($start_data_fields['message_hidden_bot']) && $start_data_fields['message_hidden_bot'] == true) && !isset($additionalParams['ignore_required']) && !isset($additionalParams['bpayload']['payload'])) {
                     $Errors['question'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please enter your message');
                 }
             } elseif ($form->hasValidData( 'Question' )) {
@@ -398,16 +417,20 @@ class erLhcoreClassChatValidator {
 	         	}
          	}
          }
-        
-        if ($form->hasValidData( 'user_timezone' ) && is_numeric($form->user_timezone)) {
-        	$timezone_name = timezone_name_from_abbr('', (int)$form->user_timezone*3600, true);
-        	if ($timezone_name !== false) {
-        		$chat->user_tz_identifier = $timezone_name;
-        	} else {
-        		$chat->user_tz_identifier = '';
-        	}
-        } else if ($form->hasValidData( 'user_timezone' ) && self::isValidTimezoneId2($form->user_timezone)) {
-            $chat->user_tz_identifier = $form->user_timezone;
+
+        if (!(isset($additionalParams['theme']) && $additionalParams['theme'] instanceof erLhAbstractModelWidgetTheme &&
+            isset($additionalParams['theme']->bot_configuration_array['use_system_tz']) &&
+            $additionalParams['theme']->bot_configuration_array['use_system_tz'] == true)) {
+            if ($form->hasValidData( 'user_timezone' ) && is_numeric($form->user_timezone)) {
+                $timezone_name = timezone_name_from_abbr('', (int)$form->user_timezone*3600, true);
+                if ($timezone_name !== false) {
+                    $chat->user_tz_identifier = $timezone_name;
+                } else {
+                    $chat->user_tz_identifier = '';
+                }
+            } else if ($form->hasValidData( 'user_timezone' ) && self::isValidTimezoneId2($form->user_timezone)) {
+                $chat->user_tz_identifier = $form->user_timezone;
+            }
         }
 
         if ($form->hasValidData( 'DepartmentIDDefined' )) {
@@ -457,7 +480,7 @@ class erLhcoreClassChatValidator {
                         $chat->dep_id = $form->DepartamentID;
                     } elseif ($form->hasValidData( 'DepartamentID' ) && $form->DepartamentID == -1) {
                         $chat->dep_id == 0;
-                    
+
                         if (isset($additionalParams['theme']) && $additionalParams['theme'] !== false && $additionalParams['theme']->department_title != '') {
                             $Errors['department'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please choose').' '.htmlspecialchars($additionalParams['theme']->department_title).'!';
                         } else {
@@ -502,12 +525,12 @@ class erLhcoreClassChatValidator {
             }
 
         } else {
-            
+
             if ($form->hasValidData( 'DepartamentID' ) && erLhcoreClassModelDepartament::getCount(array('filter' => array('id' => $form->DepartamentID, 'disabled' => 0))) > 0) {
             	$chat->dep_id = $form->DepartamentID;
             } elseif ($form->hasValidData( 'DepartamentID' ) && $form->DepartamentID == -1) {
                 $chat->dep_id == 0;
-                
+
                 if (isset($additionalParams['theme']) && $additionalParams['theme'] !== false && $additionalParams['theme']->department_title != '') {
                     $Errors['department'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please choose').' '.htmlspecialchars($additionalParams['theme']->department_title).'!';
                 } else {
@@ -541,15 +564,7 @@ class erLhcoreClassChatValidator {
         } elseif ($chat->department !== false) {
            $department = $chat->department;
         }
-        
-        if ($department !== false && $department->department_transfer_id > 0) {
-            if (!(isset($department->bot_configuration_array['off_if_online']) && $department->bot_configuration_array['off_if_online'] == 1 && erLhcoreClassChat::isOnline($chat->dep_id,false, array('exclude_bot' => true, 'exclude_online_hours' => true)) === true)) {
-                $chat->transfer_if_na = 1;
-                $chat->transfer_timeout_ts = time();
-                $chat->transfer_timeout_ac = $department->transfer_timeout;
-            }
-        }
-        
+
         if ($department !== false && $department->inform_unread == 1) {
         	$chat->reinform_timeout = $department->inform_unread_delay;
         }
@@ -634,16 +649,17 @@ class erLhcoreClassChatValidator {
         		}
         		
         		$valueStore = isset($valuesArray[$key]) ? trim($valuesArray[$key]) : '';
-        		
+        		$secure = false;
         		if (isset($inputForm->encattr[$key]) && $inputForm->encattr[$key] == 't' && $valueStore != '') {
         		    try {
         		        $valueStore = self::decryptAdditionalField($valueStore, $chat);
+                        $secure = true;
         		    } catch (Exception $e) {
         		        $Errors[] = $e->getMessage();
         		    }
         		}
         		
-        		$stringParts[] = array('h' => (isset($inputForm->value_types[$key]) && $inputForm->value_types[$key] == 'hidden' ? true : false), 'key' => $name_item, 'value' => $valueStore);
+        		$stringParts[] = array('secure' => $secure, 'h' => (isset($inputForm->value_types[$key]) && $inputForm->value_types[$key] == 'hidden' ? true : false), 'key' => $name_item, 'value' => $valueStore);
         	}
         }
 
@@ -695,16 +711,17 @@ class erLhcoreClassChatValidator {
             		if (isset($valuesArray[$key]) && $valuesArray[$key] != '') {
 
             		    $valueStore = (isset($valuesArray[$key]) ? trim($valuesArray[$key]) : '');
-
+                        $secure = false;
             		    if (isset($inputForm->via_encrypted[$key]) && $inputForm->via_encrypted[$key] == 't' && $valueStore != '') {
             		        try {
             		            $valueStore = self::decryptAdditionalField($valueStore, $chat);
+                                $secure = true;
             		        } catch (Exception $e) {
             		            $valueStore = $e->getMessage();
             		        }
             		    }
 
-            		    $stringParts[] = array('h' => (isset($inputForm->via_hidden[$key]) || $adminField['fieldtype'] == 'hidden'), 'identifier' => (isset($adminField['fieldidentifier'])) ? $adminField['fieldidentifier'] : null, 'key' => $adminField['fieldname'], 'value' => $valueStore);
+            		    $stringParts[] = array('secure' => $secure, 'h' => (isset($inputForm->via_hidden[$key]) || $adminField['fieldtype'] == 'hidden'), 'identifier' => (isset($adminField['fieldidentifier'])) ? $adminField['fieldidentifier'] : null, 'key' => $adminField['fieldname'], 'value' => $valueStore);
             		}
                 }
             }
@@ -742,12 +759,10 @@ class erLhcoreClassChatValidator {
         }
 
         // Detect user locale
-        if(isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-            $parts = explode(';',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
-            $languages = explode(',',$parts[0]);
-            if (isset($languages[0])) {
-                $chat->chat_locale = $languages[0];
-            }
+        $locale = self::getVisitorLocale();
+
+        if ($locale !== null) {
+            $chat->chat_locale = $locale;
         }
 
         // We set custom chat locale only if visitor is not using default siteaccss and default langauge is not english.
@@ -763,43 +778,95 @@ class erLhcoreClassChatValidator {
         if ( $form->hasValidData( 'jsvar' ) && !empty($form->jsvar))
         {
             $inputForm->jsvar = $form->jsvar;
-            foreach (erLhAbstractModelChatVariable::getList(array('customfilter' => array('dep_id = 0 OR dep_id = ' . (int)$chat->dep_id))) as $jsVar) {
-                if (isset($form->jsvar[$jsVar->id]) && !empty($form->jsvar[$jsVar->id])) {
+        }
 
-                    if (strpos($jsVar->var_identifier,'lhc.') !== false) {
-                        $lhcVar = str_replace('lhc.','',$jsVar->var_identifier);
-                        if ($chat->{$lhcVar} != $form->jsvar[$jsVar->id] && $form->jsvar[$jsVar->id] != '') {
-                            $chat->{$lhcVar} = $form->jsvar[$jsVar->id];
-                        }
-                    } else {
+        foreach (erLhAbstractModelChatVariable::getList(array('customfilter' => array('dep_id = 0 OR dep_id = ' . (int)$chat->dep_id))) as $jsVar) {
+            if (($form->hasValidData( 'jsvar' ) && isset($form->jsvar[$jsVar->id]) && !empty($form->jsvar[$jsVar->id])) || ($jsVar->type == 5 && isset($_COOKIE[$jsVar->js_variable]))) {
 
-                        $val = $form->jsvar[$jsVar->id];
-                        if ($jsVar->type == 0) {
-                            $val = (string)$val;
-                        } elseif ($jsVar->type == 1) {
-                            $val = (int)$val;
-                        } elseif ($jsVar->type == 2) {
-                            $val = (float)$val;
-                        } elseif ($jsVar->type == 3) {
-                            try {
-                                $val = self::decryptAdditionalField($val, $chat);
-                            } catch (Exception $e) {
-                                $val = $e->getMessage();
-                            }
-                        }
+                if (strpos($jsVar->var_identifier,'lhc.') !== false) {
+                    $lhcVar = str_replace('lhc.','',$jsVar->var_identifier);
 
-                        if ($jsVar->inv == 1) {
-                            $chatVariables = $chat->chat_variables_array;
-                            $chatVariables[$jsVar->var_identifier] = $val;
-                            $chat->chat_variables_array = $chatVariables;
-                            $chat->chat_variables = json_encode($chatVariables);
-                        } else {
-                            $stringParts[] = array('h' => false, 'identifier' => $jsVar->var_identifier, 'key' => $jsVar->var_name, 'value' => $val);
+                    $val = $form->jsvar[$jsVar->id];
+                    $secure = false;
+                    if ($jsVar->type == 3) {
+                        try {
+                            $val = self::decryptAdditionalField($val, $chat);
+                            $secure = true;
+                        } catch (Exception $e) {
+                            $val = $e->getMessage();
                         }
                     }
 
+                    $chatVariables = $chat->chat_variables_array;
+
+                    if ($secure === true) {
+                        $chatVariables[$lhcVar . '_secure'] = true;
+                        $chat->chat_variables_array = $chatVariables;
+                        $chat->chat_variables = json_encode($chatVariables);
+                    } elseif (isset($chatVariables[$lhcVar . '_secure'])) {
+                        unset($chatVariables[$lhcVar . '_secure']);
+                        $chat->chat_variables_array = $chatVariables;
+                        $chat->chat_variables = json_encode($chatVariables);
+                    }
+
+                    if ($chat->{$lhcVar} != $val && $val != '') {
+                        $chat->{$lhcVar} = $val;
+                    }
+
+                } else {
+                    $secure = false;
+
+                    if ($jsVar->type == 5 && isset($_COOKIE[$jsVar->js_variable])) {
+                        $val = $_COOKIE[$jsVar->js_variable];
+                    } else {
+                        $val = isset($form->jsvar[$jsVar->id]) ? $form->jsvar[$jsVar->id] : "";
+                    }
+
+                    if ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5) {
+                        $val = (string)$val;
+                    } elseif ($jsVar->type == 1) {
+                        $val = (int)$val;
+                    } elseif ($jsVar->type == 2) {
+                        $val = (float)$val;
+                    } elseif ($jsVar->type == 3) {
+                        try {
+                            $val = self::decryptAdditionalField($val, $chat);
+                            $secure = true;
+                        } catch (Exception $e) {
+                            $val = $e->getMessage();
+                        }
+                    }
+
+                    if ($jsVar->inv == 1) {
+                        $chatVariables = $chat->chat_variables_array;
+                        $chatVariables[$jsVar->var_identifier] = $val;
+                        if ($secure === true) {
+                            $chatVariables[$jsVar->var_identifier . '_secure'] = true;
+                        } elseif (isset($chatVariables[$jsVar->var_identifier . '_secure'])) {
+                            unset($chatVariables[$jsVar->var_identifier . '_secure']);
+                        }
+                        $chat->chat_variables_array = $chatVariables;
+                        $chat->chat_variables = json_encode($chatVariables);
+                    } else {
+                        $stringParts[] = array('secure' => $secure, 'h' => false, 'identifier' => $jsVar->var_identifier, 'key' => $jsVar->var_name, 'value' => $val);
+                    }
                 }
+
             }
+        }
+
+        if ($department !== false) {
+            $botData = $department->bot_configuration_array;
+            if (isset($botData['bot_debug']) && $botData['bot_debug'] == true) {
+                $chatVariables = $chat->chat_variables_array;
+                $chatVariables['gbot_debug'] = 1;
+                $chat->chat_variables = json_encode($chatVariables);
+                $chat->chat_variables_array = $chatVariables;
+            }
+        }
+
+        if (isset($additionalParams['theme']) && $additionalParams['theme'] instanceof erLhAbstractModelWidgetTheme) {
+            $chat->theme_id = $additionalParams['theme']->id;
         }
 
         if ( $form->hasValidData( 'tag' ) && !empty($form->tag))
@@ -831,10 +898,26 @@ class erLhcoreClassChatValidator {
 
         if ($priority !== false && $priority['dep_id'] > 0) {
             $chat->dep_id = $priority['dep_id'];
+            $chat->department = $department = erLhcoreClassModelDepartament::fetch($chat->dep_id);
+        }
+
+        if ($department !== false && $department->department_transfer_id > 0) {
+            if (
+                !(isset($department->bot_configuration_array['off_if_online']) && $department->bot_configuration_array['off_if_online'] == 1 && erLhcoreClassChat::isOnline($chat->dep_id,false, array('exclude_bot' => true, 'exclude_online_hours' => true)) === true) &&
+                !(isset($department->bot_configuration_array['transfer_min_priority']) && is_numeric($department->bot_configuration_array['transfer_min_priority']) && (int)$department->bot_configuration_array['transfer_min_priority'] > $chat->priority)
+            ) {
+                $chat->transfer_if_na = 1;
+                $chat->transfer_timeout_ts = time();
+                $chat->transfer_timeout_ac = $department->transfer_timeout;
+            }
         }
 
         if (erLhcoreClassModelChatBlockedUser::isBlocked(array('log_block' => true, 'online_user_id' => $chat->online_user_id, 'country_code' => $chat->country_code, 'ip' => $chat->ip, 'dep_id' => $chat->dep_id, 'nick' => $chat->nick, 'email' => $chat->email))) {
             $Errors['blocked_user'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','At this moment you can contact us via email only. Sorry for the inconveniences.');
+        }
+
+        if (isset($Errors['blocked_user']) && isset($additionalParams['theme']) && $additionalParams['theme'] !== false && isset($additionalParams['theme']->bot_configuration_array['blocked_visitor']) && !empty($additionalParams['theme']->bot_configuration_array['blocked_visitor'])) {
+            $Errors['blocked_user'] = erLhcoreClassBBCode::make_clickable(htmlspecialchars(erLhcoreClassGenericBotWorkflow::translateMessage($additionalParams['theme']->bot_configuration_array['blocked_visitor'], array('chat' => $chat, 'args' => ['chat' => $chat]))));
         }
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.validate_start_chat',array('errors' => & $Errors, 'input_form' => & $inputForm, 'start_data_fields' => & $start_data_fields, 'chat' => & $chat,'additional_params' => & $additionalParams));
@@ -848,24 +931,65 @@ class erLhcoreClassChatValidator {
 
     public static function validateJSVarsVisitor($visitor, $data) {
 
+        $hashData = md5($visitor->online_attr_system . '_' . $visitor->online_attr);
+
         $onlineAttr = $visitor->online_attr_array;
+        $onlineAttrSystem = $visitor->online_attr_system_array;
+        $usernamePrevious = isset($onlineAttrSystem['username']) ? $onlineAttrSystem['username'] : '';
+
+        $variableSet = [];
 
         foreach (erLhAbstractModelChatVariable::getList(array('customfilter' => array('dep_id = 0 OR dep_id = ' . (int)$visitor->dep_id))) as $jsVar) {
 
-            if (isset($onlineAttr[$jsVar->var_identifier]) && $jsVar->persistent == 0) {
+            if (isset($onlineAttr[$jsVar->var_identifier]) && $jsVar->persistent == 0 && !in_array($jsVar->var_identifier,$variableSet)) {
                 unset($onlineAttr[$jsVar->var_identifier]);
+
+                if ($jsVar->var_identifier == 'lhc.nick' && isset($onlineAttrSystem['username'])) {
+                    unset($onlineAttrSystem['username']);
+
+                    if (isset($onlineAttrSystem['username_secure'])) {
+                        unset($onlineAttrSystem['username_secure']);
+                    }
+
+                    $visitor->online_attr_system = json_encode($onlineAttrSystem);
+                    $visitor->online_attr_system_array = $onlineAttrSystem;
+                }
+
+            }
+
+            // Remove variables which should not be kept
+            if (isset($onlineAttrSystem[$jsVar->var_identifier]) && $jsVar->inv == 1 && $jsVar->persistent == 0 && !in_array($jsVar->var_identifier,$variableSet)) {
+                unset($onlineAttrSystem[$jsVar->var_identifier]);
+
+                if (isset($onlineAttrSystem[$jsVar->var_identifier . '_secure'])) {unset($onlineAttrSystem[ $jsVar->var_identifier . '_secure']);};
+
+                if ($jsVar->var_identifier == 'lhc.nick' && isset($onlineAttrSystem['username'])) {
+
+                    unset($onlineAttrSystem['username']);
+
+                    if (isset($onlineAttrSystem['username_secure'])) {unset($onlineAttrSystem['username_secure']);};
+                }
+
+                $visitor->online_attr_system = json_encode($onlineAttrSystem);
+                $visitor->online_attr_system_array = $onlineAttrSystem;
             }
 
             $val = null;
 
             if (isset($data[str_replace('lhc_var.','',$jsVar->js_variable)]) && !empty(str_replace('lhc_var.','',$jsVar->js_variable))) {
                 $val = trim($data[str_replace('lhc_var.','',$jsVar->js_variable)]);
+            } elseif ($jsVar->type == 5 && isset($_COOKIE[$jsVar->js_variable])) {
+                $val = trim($_COOKIE[$jsVar->js_variable]);
             } elseif (isset($data[$jsVar->id]) && !empty($data[$jsVar->id])) {
                 $val = trim($data[$jsVar->id]);
+            } elseif ($jsVar->old_js_id != '' && isset($data['prefill_' . $jsVar->old_js_id]) && !empty($data['prefill_' . $jsVar->old_js_id])) {
+                $val = trim($data['prefill_' . $jsVar->old_js_id]);
             }
 
             if (!empty($val)) {
-                if ($jsVar->type == 0 || $jsVar->type == 4) {
+                $secure = false;
+                $variableSet[] = $jsVar->var_identifier;
+                if ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5) {
                     $val = (string)$val;
                 } elseif ($jsVar->type == 1) {
                     $val = (int)$val;
@@ -874,27 +998,36 @@ class erLhcoreClassChatValidator {
                 } elseif ($jsVar->type == 3) {
                     try {
                         $val = self::decryptAdditionalField($val);
+                        $secure = true;
                     } catch (Exception $e) {
                         $val = $e->getMessage();
                     }
                 }
 
                 if ($jsVar->var_identifier == 'lhc.nick' && $val != '') {
-                    $onlineAttrSystem = $visitor->online_attr_system_array;
                     $onlineAttrSystem['username'] = $val;
+                    if ($secure === true) {
+                        $onlineAttrSystem['username_secure'] = true;
+                    } elseif (isset($onlineAttrSystem['username_secure'])) {
+                        unset($onlineAttrSystem['username_secure']);
+                    }
                     $visitor->online_attr_system = json_encode($onlineAttrSystem);
                     $visitor->online_attr_system_array = $onlineAttrSystem;
                 }
 
                 if ($jsVar->inv == 1) {
                     if ($val != '') {
-                        $onlineAttrSystem = $visitor->online_attr_system_array;
                         $onlineAttrSystem[$jsVar->var_identifier] = $val;
+                        if ($secure === true) {
+                            $onlineAttrSystem[$jsVar->var_identifier . '_secure'] = true;
+                        } elseif (isset($onlineAttrSystem[$jsVar->var_identifier . '_secure'])) {
+                            unset($onlineAttrSystem[$jsVar->var_identifier . '_secure']);
+                        }
                         $visitor->online_attr_system = json_encode($onlineAttrSystem);
                         $visitor->online_attr_system_array = $onlineAttrSystem;
                     }
                 } else {
-                    $onlineAttr[$jsVar->var_identifier] =  array('h' => false, 'identifier' => $jsVar->var_identifier, 'key' => $jsVar->var_name, 'value' => $val);
+                    $onlineAttr[$jsVar->var_identifier] =  array('h' => false, 'secure' => $secure, 'identifier' => $jsVar->var_identifier, 'key' => $jsVar->var_name, 'value' => $val);
                 }
             }
         }
@@ -902,10 +1035,15 @@ class erLhcoreClassChatValidator {
         $visitor->online_attr = json_encode($onlineAttr);
         $visitor->online_attr_array = $onlineAttr;
 
-        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('onlineuser.update_js_vars', array('ou' => & $visitor));
+        $hashChanged = md5($visitor->online_attr_system . '_' . $visitor->online_attr) != $hashData;
+        $usernamePresent = isset($onlineAttrSystem['username']) ? $onlineAttrSystem['username'] : '';
+        
+        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('onlineuser.update_js_vars', array('username_changed' => ($usernamePrevious != $usernamePresent), 'data_changed' => $hashChanged, 'ou' => & $visitor));
 
-        $visitor->saveThis(array('update' => array('online_attr', 'online_attr_system')));
-
+        // Update only if data has changed
+        if ($hashChanged) {
+            $visitor->saveThis(array('update' => array('online_attr', 'online_attr_system')));
+        }
     }
 
     public static function isValidTimezoneId2($tzid) {
@@ -930,11 +1068,14 @@ class erLhcoreClassChatValidator {
 
             $messagesSave = [];
             $logMessage = [];
+            $removeVars = [];
 
             foreach (erLhAbstractModelChatVariable::getList(array('customfilter' => array('dep_id = 0 OR dep_id = ' . (int)$chat->dep_id))) as $jsVar) {
 
                 if (isset($data[str_replace('lhc_var.','',$jsVar->js_variable)]) && !empty(str_replace('lhc_var.','',$jsVar->js_variable))) {
                     $val = trim($data[str_replace('lhc_var.','',$jsVar->js_variable)]);
+                } elseif ($jsVar->type == 5 && isset($_COOKIE[$jsVar->js_variable])) {
+                    $val = $_COOKIE[$jsVar->js_variable];
                 } elseif (isset($data[$jsVar->id]) && !empty($data[$jsVar->id])) {
                     $val = trim($data[$jsVar->id]);
                 } elseif (isset($data[$jsVar->var_identifier]) && $data[$jsVar->var_identifier] != '') {
@@ -943,9 +1084,25 @@ class erLhcoreClassChatValidator {
                     $val = null;
                 }
 
+                if (empty($val) && $jsVar->persistent == 0) {
+                    $removeVars[] = $jsVar->var_identifier;
+                }
+
                 if (!empty($val)) {
                     if (strpos($jsVar->var_identifier,'lhc.') !== false) {
                         $lhcVar = str_replace('lhc.','',$jsVar->var_identifier);
+
+                        $secure = false;
+
+                        if ($val != '' && $jsVar->type == 3) {
+                            try {
+                                $val = self::decryptAdditionalField($val, $chat);
+                                $secure = true;
+                            } catch (Exception $e) {
+                                $val = $e->getMessage();
+                            }
+                        }
+
                         if (
                             ($jsVar->type != 4 && $chat->{$lhcVar} != $val && $val != '') ||
                             ($jsVar->type == 4 && mb_strtolower($chat->{$lhcVar}) != mb_strtolower($val) && $val != '')
@@ -956,11 +1113,21 @@ class erLhcoreClassChatValidator {
                             }
 
                             $chat->{$lhcVar} = $val;
+
+                            if ($secure === true) {
+                                $chatVariablesDataArray[$lhcVar . '_secure'] = true;
+                                $variablesUpdates = true;
+                            } elseif (isset($chatVariablesDataArray[$lhcVar . '_secure'])) {
+                                unset($chatVariablesDataArray[$lhcVar . '_secure']);
+                                $variablesUpdates = true;
+                            }
+
                             $updateColumns[] = $lhcVar;
                             $needUpdate = true;
                         }
                     } else {
-                        if ($jsVar->type == 0 || $jsVar->type == 4) {
+                        $secure = false;
+                        if ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5) {
                             $val = (string)$val;
                         } elseif ($jsVar->type == 1) {
                             $val = (int)$val;
@@ -969,6 +1136,7 @@ class erLhcoreClassChatValidator {
                         } elseif ($jsVar->type == 3) {
                             try {
                                 $val = self::decryptAdditionalField($val, $chat);
+                                $secure = true;
                             } catch (Exception $e) {
                                 $val = $e->getMessage();
                             }
@@ -985,6 +1153,11 @@ class erLhcoreClassChatValidator {
                                 }
 
                                 $chatVariablesDataArray[$jsVar->var_identifier] = $val;
+                                if ($secure === true) {
+                                    $chatVariablesDataArray[$jsVar->var_identifier . '_secure'] = true;
+                                } elseif (isset($chatVariablesDataArray[$jsVar->var_identifier . '_secure'])){
+                                    unset($chatVariablesDataArray[$jsVar->var_identifier . '_secure']);
+                                }
                                 $variablesUpdates = true;
                                 $needUpdate = true;
                             }
@@ -995,9 +1168,17 @@ class erLhcoreClassChatValidator {
                                 $logMessage[$jsVar->var_identifier] = $jsVar->change_message;
                             }
 
-                            $stringParts[] = array('t' => $jsVar->type, 'h' => false, 'identifier' => $jsVar->var_identifier, 'key' => $jsVar->var_name, 'value' => $val);
+                            $stringParts[] = array('secure' => $secure, 't' => $jsVar->type, 'h' => false, 'identifier' => $jsVar->var_identifier, 'key' => $jsVar->var_name, 'value' => $val);
                         }
                     }
+                }
+            }
+
+            foreach ($removeVars as $varToRemove) {
+                if (isset($chatVariablesDataArray[$varToRemove])) {
+                    unset($chatVariablesDataArray[$varToRemove]);
+                    $variablesUpdates = true;
+                    $needUpdate = true;
                 }
             }
 
@@ -1021,6 +1202,8 @@ class erLhcoreClassChatValidator {
                             }
 
                             $item['value'] = $newItem['value'];
+                            $item['secure'] = $newItem['secure'];
+
                             $needUpdate = true;
                         }
                         $identifiersUpdated[] = $newItem['identifier'];
@@ -1029,7 +1212,7 @@ class erLhcoreClassChatValidator {
             }
 
             foreach ($stringParts as $newItem) {
-                if (!in_array($newItem['identifier'],$identifiersUpdated)){
+                if (isset($newItem['identifier']) && !in_array($newItem['identifier'],$identifiersUpdated)){
                     if (isset($newItem['t'])) {
                         unset($newItem['t']);
                     }
@@ -1037,6 +1220,15 @@ class erLhcoreClassChatValidator {
                     $needUpdate = true;
                 }
             }
+
+            foreach ($additionalDataArray as $index => $additionalItem) {
+                if (isset($additionalItem['identifier']) && in_array($additionalItem['identifier'],$removeVars)){
+                    unset($additionalDataArray[$index]);
+                    $needUpdate = true;
+                }
+            }
+
+            $additionalDataArray = array_values($additionalDataArray);
 
             if ($needUpdate == true) {
                 $chat->additional_data_array = $additionalDataArray;
@@ -1181,7 +1373,7 @@ class erLhcoreClassChatValidator {
 
     public static function getPriorityByAdditionalData($chat, $paramsExecution = array())
     {
-        $priorityRules = erLhAbstractModelChatPriority::getList(array('sort' => 'dep_id DESC, sort_priority DESC, priority DESC', 'customfilter' => array('dep_id = 0 OR dep_id = ' .(int)$chat->dep_id)));
+        $priorityRules = erLhAbstractModelChatPriority::getList(array('sort' => 'sort_priority DESC, priority DESC', 'customfilter' => array('dep_id = 0 OR dep_id = ' .(int)$chat->dep_id)));
 
         foreach ($priorityRules as $priorityRule) {
 
@@ -1208,7 +1400,7 @@ class erLhcoreClassChatValidator {
                             }
                         }
                     }
-                } elseif (strpos($rule['field'],'chat_variable') !== false) {
+                } elseif (strpos($rule['field'],'chat_variable') === 0) {
                     $additionalDataArray = $chat->chat_variables_array;
                     if (is_array($additionalDataArray)) {
                         $variableName = str_replace('chat_variable.','', $rule['field']);
@@ -1221,10 +1413,21 @@ class erLhcoreClassChatValidator {
                     if (isset($chat->{$variableName}) && $chat->{$variableName} != '') {
                         $valueToCompare = $chat->{$variableName};
                     }
+                } elseif (strpos($rule['field'],'{') === 0) {
+                    $valueToCompare = erLhcoreClassGenericBotWorkflow::translateMessage($rule['field'], array('rule_value' => $rule['value'], 'chat' => $chat, 'args' => ['chat' => $chat]));
+                } elseif (strpos($rule['field'],'department_role') === 0) {
+                    $valueToCompare = '';
+                    $valueToCompareRole = \LiveHelperChat\Models\Brand\BrandMember::findOne(['filter' => ['dep_id' => $chat->dep_id]]);
+                    if (is_object($valueToCompareRole)) {
+                        $valueToCompare = $valueToCompareRole->role;
+                    }
                 }
 
                 if ($valueToCompare !== null) {
                     if ($rule['comparator'] == '=' && $rule['value'] != $valueToCompare) {
+                        $ruleMatched = false;
+                        break;
+                    } else if ($rule['comparator'] == '!=' && ($valueToCompare != $rule['value']) == false) {
                         $ruleMatched = false;
                         break;
                     } else if ($rule['comparator'] == '>' && ($valueToCompare > $rule['value']) == false) {
@@ -1248,7 +1451,38 @@ class erLhcoreClassChatValidator {
 
             if ($ruleMatched == true) {
                 if (isset($paramsExecution['detailed']) && $paramsExecution['detailed'] == true) {
-                    return array('priority' => $priorityRule->priority, 'dep_id' => $priorityRule->dest_dep_id);
+
+                    $canChangeDepartment = true;
+
+                    if (!empty($priorityRule->present_role_is)) {
+                        $canChangeDepartment = \LiveHelperChat\Models\Brand\BrandMember::getCount(['filter' => ['dep_id' => $chat->dep_id, 'role' => $priorityRule->present_role_is]]) > 0;
+                    }
+
+                    if ($canChangeDepartment === false) {
+                        return array('priority' => $priorityRule->priority, 'dep_id' => $chat->dep_id);
+                    }
+
+                    if (!empty($priorityRule->role_destination)) {
+
+                        $presentRole = \LiveHelperChat\Models\Brand\BrandMember::findOne(['filter' => ['dep_id' => $chat->dep_id]]);
+
+                        if (!is_object($presentRole)) {
+                            return array('priority' => $priorityRule->priority, 'dep_id' => $chat->dep_id);
+                        }
+
+                        $destinationBrandMember = \LiveHelperChat\Models\Brand\BrandMember::findOne(['filter' => ['brand_id' => $presentRole->brand_id, 'role' => $priorityRule->role_destination]]);
+
+                        if (!is_object($destinationBrandMember)) {
+                            return array('priority' => $priorityRule->priority, 'dep_id' => $chat->dep_id);
+                        }
+
+                        return array('priority' => $priorityRule->priority, 'dep_id' => $destinationBrandMember->dep_id);
+
+                    } else {
+                        return array('priority' => $priorityRule->priority, 'dep_id' => $priorityRule->dest_dep_id);
+                    }
+
+
                 } else {
                     return $priorityRule->priority;
                 }
@@ -1377,16 +1611,17 @@ class erLhcoreClassChatValidator {
                 if (isset($inputForm->type[$key]) && $inputForm->type[$key] == 'hidden') {
 
                     $valueStore = isset($inputForm->value[$key]) ? trim($inputForm->value[$key]) : '';
-
+                    $secure = false;
                     if (isset($inputForm->encattr[$key]) && $inputForm->encattr[$key] == 't' && $valueStore != '') {
                         try {
                             $valueStore = self::decryptAdditionalField($valueStore, $chat);
+                            $secure = true;
                         } catch (Exception $e) {
                             $valueStore = $e->getMessage();
                         }
                     }
 
-                    $currentChatData[] = array('h' => true, 'key' => $name_item,'value' => $valueStore);
+                    $currentChatData[] = array('secure' => $secure, 'h' => true, 'key' => $name_item,'value' => $valueStore);
                 }
             }
         }
@@ -1394,7 +1629,7 @@ class erLhcoreClassChatValidator {
         /**
          * Admin custom fields
          * */
-        $startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('filter' => array('department_id' => $chat->dep_id)));
+        $startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('customfilter' => array("((`dep_ids` != '' AND JSON_CONTAINS(`dep_ids`,'" . (int)$chat->dep_id . "','$')) OR department_id = " . (int)$chat->dep_id . ")" )));
         
         if ($startDataDepartment instanceof erLhcoreClassModelChatStartSettings) {
             $start_data_fields = $startDataDepartment->data_array;
@@ -1467,16 +1702,17 @@ class erLhcoreClassChatValidator {
                         if (isset($valuesArray[$key]) && $valuesArray[$key] != '') {
             
                             $valueStore = (isset($valuesArray[$key]) ? trim($valuesArray[$key]) : '');
-            
+                            $secure = false;
                             if (isset($inputForm->via_encrypted[$key]) && $inputForm->via_encrypted[$key] == 't' && $valueStore != '') {
                                 try {
                                     $valueStore = self::decryptAdditionalField($valueStore, $chat);
+                                    $secure = true;
                                 } catch (Exception $e) {
                                     $valueStore = $e->getMessage();
                                 }
                             }
 
-                            $currentChatData[] = array('h' => true, 'identifier' => $adminField['fieldidentifier'], 'key' => $adminField['fieldname'], 'value' => $valueStore);
+                            $currentChatData[] = array('secure' => $secure, 'h' => true, 'identifier' => $adminField['fieldidentifier'], 'key' => $adminField['fieldname'], 'value' => $valueStore);
                         }
                     }
                 }
@@ -1498,14 +1734,22 @@ class erLhcoreClassChatValidator {
                         }
                     } else {
                         $val = $form->jsvar[$jsVar->id];
+                        $secure = false;
                         if ($jsVar->type == 0) {
                             $val = (string)$val;
                         } elseif ($jsVar->type == 1) {
                             $val = (int)$val;
                         } elseif ($jsVar->type == 2) {
                             $val = (float)$val;
+                        } elseif ($jsVar->type == 3) {
+                            try {
+                                $val = self::decryptAdditionalField($val, $chat);
+                                $secure = true;
+                            } catch (Exception $e) {
+                                $val = $e->getMessage();
+                            }
                         }
-                        $stringParts[] = array('h' => false, 'identifier' => $jsVar->var_identifier, 'key' => $jsVar->var_name, 'value' => $val);
+                        $stringParts[] = array('secure' => $secure, 'h' => false, 'identifier' => $jsVar->var_identifier, 'key' => $jsVar->var_name, 'value' => $val);
                     }
                 }
             }
@@ -1550,7 +1794,7 @@ class erLhcoreClassChatValidator {
         if ($valueStore != '') {
 
             if ($chat !== null) {
-                $startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('filter' => array('department_id' => $chat->dep_id)));
+                $startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('customfilter' => array("(JSON_CONTAINS(`dep_ids`,'" . (int)$chat->dep_id . "','$') OR department_id = " . (int)$chat->dep_id . ")" )));
 
                 if ($startDataDepartment instanceof erLhcoreClassModelChatStartSettings) {
                     $startData = $startDataDepartment->data_array;
@@ -1669,17 +1913,19 @@ class erLhcoreClassChatValidator {
     			
     			$valueStore = $attrValue['val'];
     			$hiddenField = false;
-    			
+    			$secure = false;
+
     			if (isset($attrValue['enc']) && $attrValue['enc'] == true) {
     				$hiddenField = true;
 	    			try {
 	                     $valueStore = self::decryptAdditionalField($valueStore, $chat);
+                         $secure = true;
 	                } catch (Exception $e) {
 	                     $valueStore = $e->getMessage();
 	                }
     			}
     			
-    			$currentChatData[] = array('h' => $hiddenField, 'key' => $field, 'value' => $valueStore);
+    			$currentChatData[] = array('secure' => $secure, 'h' => $hiddenField, 'key' => $field, 'value' => $valueStore);
     		}
     		
     		// To reset index
@@ -1746,23 +1992,23 @@ class erLhcoreClassChatValidator {
 
             if (isset($params['input_data']) && $params['input_data']->has_file == true) {
                 $fileData = erLhcoreClassModelChatConfig::fetch('file_configuration');
-                $data = (array)$fileData->data;
+                $dataFile = (array)$fileData->data;
                 $path = 'var/storage/' . date('Y') . 'y/' . date('m') . '/' . date('d') . '/' . $params['chat']->id . '/';
 
                 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('file.uploadfile.file_path', array('path' => & $path, 'storage_id' => $params['chat']->id));
 
                 $clamav = false;
 
-                if (isset($data['clamav_enabled']) && $data['clamav_enabled'] == true) {
+                if (isset($dataFile['clamav_enabled']) && $dataFile['clamav_enabled'] == true) {
 
                     $opts = array();
 
-                    if (isset($data['clamd_sock']) && !empty($data['clamd_sock'])) {
-                        $opts['clamd_sock'] = $data['clamd_sock'];
+                    if (isset($dataFile['clamd_sock']) && !empty($dataFile['clamd_sock'])) {
+                        $opts['clamd_sock'] = $dataFile['clamd_sock'];
                     }
 
-                    if (isset($data['clamd_sock_len']) && !empty($data['clamd_sock_len'])) {
-                        $opts['clamd_sock_len'] = $data['clamd_sock_len'];
+                    if (isset($dataFile['clamd_sock_len']) && !empty($dataFile['clamd_sock_len'])) {
+                        $opts['clamd_sock_len'] = $dataFile['clamd_sock_len'];
                     }
 
                     $clamav = new Clamav($opts);
@@ -1772,8 +2018,8 @@ class erLhcoreClassChatValidator {
                     'antivirus' => $clamav,
                     'user_id' => 0,
                     'param_name' => 'File',
-                    'max_file_size' => $data['fs_max'] * 1024,
-                    'accept_file_types_lhc' => '/\.(' . $data['ft_us'] . ')$/i',
+                    'max_file_size' => $dataFile['fs_max'] * 1024,
+                    'accept_file_types_lhc' => '/\.(' . $dataFile['ft_us'] . ')$/i',
                     'chat' => $params['chat'],
                     'download_via_php' => true,
                     'upload_dir' => $path));
@@ -1786,14 +2032,15 @@ class erLhcoreClassChatValidator {
             if (isset($data['close_offline']) && $data['close_offline'] == 1) {
                 erLhcoreClassChatHelper::closeChat(array(
                     'chat' => & $params['chat'],
-                    'user' => false
+                    'user' => false,
+                    'append_message' => ' ' . erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Offline message')
                 ));
             }
 
-            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_offline_request_saved', array(
-                'chat' =>  & $params['chat']
-            ));
+            return true;
         }
+
+        return false;
     }
 
     // Set's chat as a bot
@@ -1833,6 +2080,8 @@ class erLhcoreClassChatValidator {
 
                 if (!isset($params['ignore_default']) || $params['ignore_default'] == false)
                 {
+                    erLhcoreClassGenericBotWorkflow::$setBotFlow = true;
+
                     if (isset($params['trigger_id']) && $params['trigger_id'] > 0) {
                         $botTrigger = erLhcoreClassModelGenericBotTrigger::fetch($params['trigger_id']);
 
@@ -1867,16 +2116,20 @@ class erLhcoreClassChatValidator {
 
                         if (isset($params['trigger_button_id'])) {
                             $chat->saveThis();
+                            erLhcoreClassGenericBotWorkflow::$setBotFlow = false;
                             erLhcoreClassGenericBotWorkflow::processTriggerClick($chat, $message, $params['trigger_button_id'], array('processed' => (isset($params['processed']) && $params['processed'] == true)));
                         } else if (isset($params['trigger_payload_id'])) {
                             $chat->saveThis();
+                            erLhcoreClassGenericBotWorkflow::$setBotFlow = false;
                             erLhcoreClassGenericBotWorkflow::processButtonClick($chat, $message, $params['trigger_payload_id'], array('processed' => (isset($params['processed']) && $params['processed'] == true)));
                         }
 
-                        if (isset($message) && $message instanceof erLhcoreClassModelmsg && $message->id > 0) {
+                        if (isset($message) && $message instanceof erLhcoreClassModelmsg && $message->id > 0 && $message->id > $chat->last_msg_id) {
                             $chat->last_msg_id = $message->id;
                         }
                     }
+
+                    erLhcoreClassGenericBotWorkflow::$setBotFlow = false;
                 }
 
                 $chat->saveThis();
@@ -1985,7 +2238,10 @@ class erLhcoreClassChatValidator {
                 }
                 
                 if ($department !== false && $department->department_transfer_id > 0) {
-                    if (!(isset($department->bot_configuration_array['off_if_online']) && $department->bot_configuration_array['off_if_online'] == 1 && erLhcoreClassChat::isOnline($chat->dep_id,false, array('exclude_bot' => true, 'exclude_online_hours' => true)) === true)) {
+                    if (
+                        !(isset($department->bot_configuration_array['off_if_online']) && $department->bot_configuration_array['off_if_online'] == 1 && erLhcoreClassChat::isOnline($chat->dep_id,false, array('exclude_bot' => true, 'exclude_online_hours' => true)) === true) &&
+                        !(isset($department->bot_configuration_array['transfer_min_priority']) && is_numeric($department->bot_configuration_array['transfer_min_priority']) && (int)$department->bot_configuration_array['transfer_min_priority'] > $chat->priority)
+                    ) {
                         $chat->transfer_if_na = 1;
                         $chat->transfer_timeout_ts = time();
                         $chat->transfer_timeout_ac = $department->transfer_timeout;
@@ -2068,16 +2324,18 @@ class erLhcoreClassChatValidator {
                             }
 
                             $valueStore = isset($valuesArray[$key]) ? trim($valuesArray[$key]) : '';
+                            $secure = false;
 
                             if (isset($params['inputData']->encattr[$key]) && $params['inputData']->encattr[$key] == 't' && $valueStore != '') {
                                 try {
                                     $valueStore = self::decryptAdditionalField($valueStore, $chat);
+                                    $secure = true;
                                 } catch (Exception $e) {
                                     $Errors[] = $e->getMessage();
                                 }
                             }
 
-                            $stringParts[] = array('h' => ($params['inputData']->value_types[$key] && $params['inputData']->value_types[$key] == 'hidden' ? true : false), 'key' => $name_item, 'value' => $valueStore);
+                            $stringParts[] = array('secure' => $secure, 'h' => ($params['inputData']->value_types[$key] && $params['inputData']->value_types[$key] == 'hidden' ? true : false), 'key' => $name_item, 'value' => $valueStore);
                         }
                     }
 
@@ -2098,16 +2356,17 @@ class erLhcoreClassChatValidator {
                                     if (isset($valuesArray[$key]) && $valuesArray[$key] != '') {
 
                                         $valueStore = (isset($valuesArray[$key]) ? trim($valuesArray[$key]) : '');
-
+                                        $secure = false;
                                         if (isset($params['inputData']->via_encrypted[$key]) && $params['inputData']->via_encrypted[$key] == 't' && $valueStore != '') {
                                             try {
                                                 $valueStore = self::decryptAdditionalField($valueStore, $chat);
+                                                $secure = true;
                                             } catch (Exception $e) {
                                                 $valueStore = $e->getMessage();
                                             }
                                         }
 
-                                        $stringParts[] = array('h' => (isset($params['inputData']->via_hidden[$key]) || $adminField['fieldtype'] == 'hidden'), 'identifier' => (isset($adminField['fieldidentifier'])) ? $adminField['fieldidentifier'] : null, 'key' => $adminField['fieldname'], 'value' => $valueStore);
+                                        $stringParts[] = array('secure' => $secure, 'h' => (isset($params['inputData']->via_hidden[$key]) || $adminField['fieldtype'] == 'hidden'), 'identifier' => (isset($adminField['fieldidentifier'])) ? $adminField['fieldidentifier'] : null, 'key' => $adminField['fieldname'], 'value' => $valueStore);
                                     }
                                 }
                             }
@@ -2119,12 +2378,10 @@ class erLhcoreClassChatValidator {
                     }
 
                     // Detect user locale
-                    if(isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-                        $parts = explode(';',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
-                        $languages = explode(',',$parts[0]);
-                        if (isset($languages[0])) {
-                            $chat->chat_locale = $languages[0];
-                        }
+                    $locale = self::getVisitorLocale();
+
+                    if ($locale !== null) {
+                        $chat->chat_locale = $locale;
                     }
 
                     // Detect device

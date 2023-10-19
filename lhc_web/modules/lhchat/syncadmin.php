@@ -34,6 +34,10 @@ if (isset($_POST['chats']) && is_array($_POST['chats']) && count($_POST['chats']
 
     $db->beginTransaction();
     try {
+
+        $icons_additional = erLhAbstractModelChatColumn::getList(array('ignore_fields' => array('position','conditions','column_identifier','enabled'), 'sort' => false, 'filter' => array('icon_mode' => 1, 'enabled' => 1, 'chat_enabled' => 1)));
+        $see_sensitive_information = $currentUser->hasAccessTo('lhchat','see_sensitive_information');
+            
         foreach ($_POST['chats'] as $chat_id_list)
         {
             list($chat_id, $MessageID ) = explode(',',$chat_id_list);
@@ -78,6 +82,7 @@ if (isset($_POST['chats']) && is_array($_POST['chats']) && count($_POST['chats']
                     $tpl->set('messages',$Messages);
                     $tpl->set('chat',$Chat);
                     $tpl->set('current_user_id',$currentUser->getUserID());
+                    $tpl->set('see_sensitive_information',$see_sensitive_information);
 
                     $msgText = '';
                     if ($userOwner == 'true') {
@@ -115,15 +120,41 @@ if (isset($_POST['chats']) && is_array($_POST['chats']) && count($_POST['chats']
 
                 $vwa = $Chat->status != erLhcoreClassModelChat::STATUS_CLOSED_CHAT && $Chat->last_user_msg_time > ($Chat->last_op_msg_time > 0 ? $Chat->last_op_msg_time : $Chat->pnd_time) && (time() - $Chat->last_user_msg_time > (int)erLhcoreClassModelChatConfig::fetchCache('vwait_to_long')->current_value) ? erLhcoreClassChat::formatSeconds(time() - $Chat->last_user_msg_time) : null;
 
+                $user_typing_txt = $Chat->user_typing_txt;
+
+                if (!$see_sensitive_information && $user_typing_txt != '') {
+                    $user_typing_txt = \LiveHelperChat\Models\LHCAbstract\ChatMessagesGhosting::maskMessage($user_typing_txt);
+                }
+
                 if ($Chat->is_user_typing == true) {
-                    $ReturnStatuses[$chat_id] = array('pnd_rsp' => $Chat->pnd_rsp, 'vwa' => $vwa, 'lmt' => max($Chat->last_user_msg_time, $Chat->last_op_msg_time, $Chat->pnd_time), 'cs' => $Chat->status, 'co' => $Chat->user_id, 'cdur' => $Chat->chat_duration_front, 'lmsg' => erLhcoreClassChat::formatSeconds(time() - ($Chat->last_user_msg_time > 0 ? $Chat->last_user_msg_time : $Chat->time)), 'chat_id' => $chat_id, 'lp' => $lp, 'um' => $Chat->has_unread_op_messages, 'us' => $Chat->user_status_front, 'tp' => 'true','tx' => htmlspecialchars($Chat->user_typing_txt));
+                    $ReturnStatuses[$chat_id] = array('ssub' => $Chat->status_sub_sub, 'pnd_rsp' => $Chat->pnd_rsp, 'vwa' => $vwa, 'lmt' => max($Chat->last_user_msg_time, $Chat->last_op_msg_time, $Chat->pnd_time), 'cs' => $Chat->status, 'co' => $Chat->user_id, 'cdur' => $Chat->chat_duration_front, 'lmsg' => erLhcoreClassChat::formatSeconds(time() - ($Chat->last_user_msg_time > 0 ? $Chat->last_user_msg_time : $Chat->time)), 'chat_id' => $chat_id, 'lp' => $lp, 'um' => $Chat->has_unread_op_messages, 'us' => $Chat->user_status_front, 'tp' => 'true','tx' => htmlspecialchars($user_typing_txt));
                 } else {
-                    $ReturnStatuses[$chat_id] = array('pnd_rsp' => $Chat->pnd_rsp, 'vwa' => $vwa, 'lmt' => max($Chat->last_user_msg_time, $Chat->last_op_msg_time, $Chat->pnd_time), 'cs' => $Chat->status, 'co' => $Chat->user_id, 'cdur' => $Chat->chat_duration_front, 'lmsg' => erLhcoreClassChat::formatSeconds(time() - ($Chat->last_user_msg_time > 0 ? $Chat->last_user_msg_time : $Chat->time)), 'chat_id' => $chat_id, 'lp' => $lp, 'um' => $Chat->has_unread_op_messages, 'us' => $Chat->user_status_front, 'tp' => 'false');
+                    $ReturnStatuses[$chat_id] = array('ssub' => $Chat->status_sub_sub, 'pnd_rsp' => $Chat->pnd_rsp, 'vwa' => $vwa, 'lmt' => max($Chat->last_user_msg_time, $Chat->last_op_msg_time, $Chat->pnd_time), 'cs' => $Chat->status, 'co' => $Chat->user_id, 'cdur' => $Chat->chat_duration_front, 'lmsg' => erLhcoreClassChat::formatSeconds(time() - ($Chat->last_user_msg_time > 0 ? $Chat->last_user_msg_time : $Chat->time)), 'chat_id' => $chat_id, 'lp' => $lp, 'um' => $Chat->has_unread_op_messages, 'us' => $Chat->user_status_front, 'tp' => 'false');
                 }
 
                 if ($Chat->operation_admin != '') {
                     $ReturnStatuses[$chat_id]['oad'] = 1;
                 }
+
+                if (!empty($icons_additional)) {
+                    $chatItems = [$Chat];
+                    erLhcoreClassChat::prefillGetAttributes($chatItems, array(), array(), array('additional_columns' => $icons_additional, 'do_not_clean' => true));
+                    $chatIcons = [];
+                    foreach ($icons_additional as $iconAdditional) {
+                        $columnIconData = json_decode($iconAdditional->column_icon,true);
+                        if (isset($Chat->{'cc_' . $iconAdditional->id})) {
+                            $chatIcons[] = [
+                                'has_popup' => $iconAdditional->has_popup,
+                                'icon_id' => $iconAdditional->id,
+                                'title' => (isset($Chat->{'cc_' . $iconAdditional->id . '_tt'})) ? $Chat->{'cc_' . $iconAdditional->id . '_tt'} : (isset($Chat->{'cc_' . $iconAdditional->id}) ? $Chat->{'cc_' . $iconAdditional->id} : ''),
+                                'icon' => ($iconAdditional->column_icon != "" && strpos($iconAdditional->column_icon, '"') !== false) ? $columnIconData[$Chat->{'cc_' . $iconAdditional->id}]['icon'] : $iconAdditional->column_icon,
+                                'color' => isset($columnIconData[$Chat->{'cc_' . $iconAdditional->id}]['color']) ? $columnIconData[$Chat->{'cc_' . $iconAdditional->id}]['color'] : '#CECECE'
+                            ];
+                        }
+                   }
+                   $ReturnStatuses[$chat_id]['adicons'] = $chatIcons;
+                }
+
             } else {
                 $chatsGone[] = $chat_id;
             }

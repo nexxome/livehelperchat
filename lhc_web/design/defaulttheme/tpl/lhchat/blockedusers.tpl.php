@@ -1,3 +1,4 @@
+<div>
 <?php include(erLhcoreClassDesign::designtpl('lhchat/lists_titles/blockedusers.tpl.php'));?>
 
 <?php if (isset($block_saved) && $block_saved == true) : ?>
@@ -105,41 +106,48 @@
         <td title="<?php echo $item->btype?>">
 
             <?php if (isset($enabled_log)) : ?>
-                <a class="text-danger" target="_blank" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Block history');?>" href="<?php echo erLhcoreClassDesign::baseurl('abstract/list')?>/Audit/(category)/block/(source)/lhc/(object_id)/<?php echo $item->id?>"><span class="material-icons mr-0">history</span></a>
+                <a class="text-danger" target="_blank" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Block history');?>" href="<?php echo erLhcoreClassDesign::baseurl('abstract/list')?>/Audit/(category)/block/(source)/lhc/(object_id)/<?php echo $item->id?>"><span class="material-icons me-0">history</span></a>
             <?php endif; ?>
 
             <?php if (in_array($item->btype, [erLhcoreClassModelChatBlockedUser::BLOCK_IP,erLhcoreClassModelChatBlockedUser::BLOCK_ALL_IP_NICK,erLhcoreClassModelChatBlockedUser::BLOCK_ALL_IP_NICK_DEP])) : ?>
-                <span class="badge badge-secondary">IP</span>
+                <span class="badge bg-secondary">IP</span>
             <?php endif; ?>
 
             <?php if (in_array($item->btype, [erLhcoreClassModelChatBlockedUser::BLOCK_NICK,erLhcoreClassModelChatBlockedUser::BLOCK_ALL_IP_NICK])) : ?>
-                <span class="badge badge-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Nick');?></span>
+                <span class="badge bg-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Nick');?></span>
             <?php endif; ?>
 
             <?php if (in_array($item->btype, [erLhcoreClassModelChatBlockedUser::BLOCK_COUNTRY])) : ?>
-                <span class="badge badge-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Country');?></span>
+                <span class="badge bg-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Country');?></span>
             <?php endif; ?>
 
             <?php if (in_array($item->btype, [erLhcoreClassModelChatBlockedUser::BLOCK_NICK_DEP,erLhcoreClassModelChatBlockedUser::BLOCK_ALL_IP_NICK_DEP])) : ?>
-                <span class="badge badge-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Nick and Department');?></span>
+                <span class="badge bg-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Nick and Department');?></span>
             <?php endif; ?>
 
             <?php if (in_array($item->btype, [erLhcoreClassModelChatBlockedUser::BLOCK_EMAIL])) : ?>
-                <span class="badge badge-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','E-mail');?></span>
+                <span class="badge bg-secondary"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','E-mail');?></span>
             <?php endif; ?>
 
             <?php if (in_array($item->btype, [erLhcoreClassModelChatBlockedUser::BLOCK_ONLINE_USER])) : ?>
-                <span class="badge badge-secondary" title="<?php echo $item->online_user_id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Online user');?></span>
+                <span class="badge bg-secondary" title="<?php echo $item->online_user_id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/blockedusers','Online user');?></span>
             <?php endif; ?>
 
             <?php if ($item->chat_id > 0) : ?><a class="material-icons" title="<?php echo htmlspecialchars($item->chat_id)?>" onclick="lhc.previewChat(<?php echo $item->chat_id?>)">info_outline</a><?php endif; ?><?php
             if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','seeip')) {
                 echo htmlspecialchars($item->ip);
             } else {
-                $parts = explode('.',$item->ip);
-                if (isset($parts[0]) && $parts[1]) {
-                    echo htmlspecialchars($parts[0] . '.' . $parts[1] . '.xxx.xxx');
-                }
+                echo htmlspecialchars(preg_replace(
+                    [
+                        '/(\.\d+){2}$/',
+                        '/(:[\da-f]*){2,4}$/'
+                    ],
+                    [
+                        '.XXX.XXX',
+                        ':XXXX:XXXX:XXXX:XXXX'
+                    ],
+                    $item->ip
+                ));
             }
             ?>
         </td>
@@ -162,3 +170,4 @@
 <?php if (isset($pages)) : ?>
     <?php include(erLhcoreClassDesign::designtpl('lhkernel/paginator.tpl.php')); ?>
 <?php endif;?>
+</div>

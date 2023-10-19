@@ -30,8 +30,8 @@
     			    <div role="tabpanel">
                       <!-- Nav tabs -->
                       <ul class="nav nav-tabs" role="tablist">
-                        <li role="presentation" class="active nav-item"><a class="nav-link" href="#applicationame" aria-controls="applicationame" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/listchatconfig','Application name');?></a></li>
-                        <li role="presentation" class="nav-item"><a class="nav-link" href="#sitesettings" aria-controls="sitesettings" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/listchatconfig','Site settings');?></a></li>
+                        <li role="presentation" class="active nav-item"><a class="nav-link" href="#applicationame" aria-controls="applicationame" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/listchatconfig','Application name');?></a></li>
+                        <li role="presentation" class="nav-item"><a class="nav-link" href="#sitesettings" aria-controls="sitesettings" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/listchatconfig','Site settings');?></a></li>
                       </ul>                
                       <!-- Tab panes -->
                       <div class="tab-content">
@@ -201,6 +201,9 @@
     		    <?php include(erLhcoreClassDesign::designtpl('lhchat/part/chat_settings.tpl.php'));?>	
 
     		    <?php $attribute = 'disable_print';$boolValue = true;?>
+    		    <?php include(erLhcoreClassDesign::designtpl('lhchat/part/chat_settings.tpl.php'));?>
+
+    		    <?php $attribute = 'disable_txt_dwnld';$boolValue = true;?>
     		    <?php include(erLhcoreClassDesign::designtpl('lhchat/part/chat_settings.tpl.php'));?>
     		    		    
     		    <?php $attribute = 'disable_send';$boolValue = true;?>

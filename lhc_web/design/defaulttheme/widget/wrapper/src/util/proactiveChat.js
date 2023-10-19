@@ -29,6 +29,10 @@ class _proactiveChat {
             this.initInvitation();
         }
 
+        if (this.attributes.conversion != '') {
+            this.storeConversion(this.attributes.conversion);
+        }
+
         // check invitaiton then tag is added
         this.attributes.eventEmitter.addListener('tagAdded', () => {
             this.initInvitation({init: 0});
@@ -36,6 +40,10 @@ class _proactiveChat {
 
         this.attributes.eventEmitter.addListener('eventAdded', () => {
             this.storeEvents(this.attributes.events);
+        });
+
+        this.attributes.eventEmitter.addListener('conversionAdded', () => {
+            this.storeConversion(this.attributes.conversion);
         });
 
         this.attributes.eventEmitter.addListener('checkMessageOperator', () => {
@@ -102,6 +110,15 @@ class _proactiveChat {
         }
     }
 
+    storeConversion(conversion) {
+        const chatParams = this.attributes['userSession'].getSessionAttributes();
+        if (!chatParams['id'] && this.attributes['onlineStatus'].value == true) {
+            helperFunctions.makeRequest(this.attributes.LHC_API.args.lhc_base_url + this.attributes['lang'] + 'widgetrestapi/logconversions/(vid)/' + this.attributes.userSession.getVID(), {params: {'data' : JSON.stringify(conversion)}}, (data) => {
+
+            });
+        }
+    }
+
     initInvitation(paramsExecution) {
 
         if (this.inProgress == true) {
@@ -139,6 +156,10 @@ class _proactiveChat {
                 params['tag'] = this.attributes['tag']
             }
 
+            if (this.attributes['langOverride']) {
+                params['lang'] = this.attributes['langOverride']
+            }
+
             params['l'] = encodeURIComponent(window.location.href.substring(window.location.protocol.length));
             params['dt'] = encodeURIComponent(document.title);
             params['init'] = this.initCall == true ? 1 : init;
@@ -153,7 +174,7 @@ class _proactiveChat {
                     const params = {'vid_id' : data.vid_id, 'invitation' : data.invitation, 'inject_html' :  data.inject_html, 'qinv' : data.qinv};
                     setTimeout(() => {
                         this.showInvitation(params, init);
-                    }, this.attributes.widgetStatus.value === true ? 0 : (data.delay || 0));
+                    }, this.attributes.widgetStatus.value === true ? 0 : (data.delay ? data.delay + this.attributes['status_delay'] : this.attributes['status_delay']));
                 } else {
                     if (this.attributes.LHC_API.args.check_messages) {
                         this.checkMessageTimeout = setTimeout(() => {

@@ -150,7 +150,7 @@ if (!(is_numeric($departament_id) && $departament_id > 0)) {
     $department_id_form = $departament_id;
 }
 
-if (is_numeric($department_id_form) && $department_id_form > 0 && ($startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('filter' => array('department_id' => $department_id_form)))) !== false) {
+if (is_numeric($department_id_form) && $department_id_form > 0 && ($startDataDepartment = erLhcoreClassModelChatStartSettings::findOne(array('customfilter' => array("((`dep_ids` != '' AND JSON_CONTAINS(`dep_ids`,'" . (int)$department_id_form . "','$')) OR department_id = " . (int)$department_id_form . ")" )))) !== false) {
     $start_data_fields = $startDataFields = $startDataDepartment->data_array;
 } else {
     // Start chat field options
@@ -192,6 +192,10 @@ if ((int)erLhcoreClassModelChatConfig::fetch('bbc_button_visible')->value != 1) 
     $chat_ui['bbc_btnh'] = true;
 }
 
+if ((int)erLhcoreClassModelChatConfig::fetch('show_language_switcher')->current_value == 1){
+    $chat_ui['lng_btnh'] = true;
+}
+
 if ($Params['user_parameters_unordered']['online'] == '0') {
 
     if (isset($start_data_fields['pre_offline_chat_html']) && $start_data_fields['pre_offline_chat_html'] != '') {
@@ -208,9 +212,9 @@ if ($Params['user_parameters_unordered']['online'] == '0') {
 
     if ($Params['user_parameters_unordered']['online'] == '0') {
 
-        if ($theme instanceof erLhAbstractModelWidgetTheme){
+        if ($theme instanceof erLhAbstractModelWidgetTheme) {
             if (isset($theme->bot_configuration_array['thank_feedback']) && !empty($theme->bot_configuration_array['thank_feedback'])) {
-                $chat_ui['thank_feedback'] = $theme->bot_configuration_array['thank_feedback'];
+                $chat_ui['thank_feedback'] = erLhcoreClassBBCode::make_clickable(htmlspecialchars($theme->bot_configuration_array['thank_feedback']));
             }
 
             if (isset($theme->bot_configuration_array['chat_unavailable']) && !empty($theme->bot_configuration_array['chat_unavailable'])) {
@@ -544,20 +548,49 @@ if (isset($start_data_fields['custom_fields']) && $start_data_fields['custom_fie
                 );
 
                 if ($fieldData['type'] == 'dropdown') {
-                    $optionsRaw = explode("\n",$adminField['options']);
                     $fieldData['options'] = array();
                     $defaultValue = null;
-                    foreach ($optionsRaw as $optionRaw) {
-                        $itemData = explode('=>',$optionRaw);
-                        if ($defaultValue === null) {
-                            $defaultValue = trim($itemData[0]);
+                     $optionsRaw = explode("\n",$adminField['options']);
+                     foreach ($optionsRaw as $optionRaw) {
+                         $itemDataJson = json_decode($optionRaw,true);
+
+                         if (is_array($itemDataJson)) {
+                             $nameValue = $itemDataJson['name'];
+                             $depValue = isset($itemDataJson['dep_id']) ? $itemDataJson['dep_id'] : null;
+                             $valueOption = isset($itemDataJson['value']) ? $itemDataJson['value'] : $nameValue;
+                             $subject = isset($itemDataJson['subject_id']) ? $itemDataJson['subject_id'] : null;
+                         } else {
+                             $itemData = explode('=>',$optionRaw);
+
+                             if ($defaultValue === null) {
+                                 $defaultValue = explode('||',trim($itemData[0]))[0];
+                             }
+
+                             $nameParts = explode('||',trim(isset($itemData[1]) ? $itemData[1] : $itemData[0]));
+                             $nameValue = $nameParts[0];
+
+                             $depValue = isset($nameParts[1]) ? (int)$nameParts[1] : null;
+
+                             $valueItem = explode('||',trim($itemData[0]));
+                             $valueOption = $valueItem[0];
+                             $subject = null;
                         }
-                        $fieldData['options'][] = array(
-                            'name' => trim(isset($itemData[1]) ? $itemData[1] : $itemData[0]),
-                            'value' => trim($itemData[0])
-                        );
+
+                         $optionItem = array(
+                             'name' => $nameValue,
+                             'dep_id' => $depValue,
+                             'value' => $valueOption,
+                         );
+                         
+                         if ($subject !== null) {
+                             $optionItem['subject_id'] = $subject;
+                         }
+
+                        $fieldData['options'][] = $optionItem;
                     }
-                    $fieldData['value'] = $defaultValue;
+                    if (empty($fieldData['value'])) {
+                        $fieldData['value'] = $defaultValue;
+                    }
                 }
 
                 $fields[] = $fieldData;
@@ -692,7 +725,7 @@ if ($theme !== false) {
                 $chat_ui['img_icon_min'] = $theme->minimize_image_url;
             }
 
-            foreach (array('min_text','popup_text','end_chat_text') as $textIcon) {
+            foreach (array('min_text','popup_text','end_chat_text','fheight_text_class','fheight_text_col') as $textIcon) {
                 if (isset($theme->bot_configuration_array[$textIcon]) && $theme->bot_configuration_array[$textIcon] != '') {
                     $chat_ui[$textIcon] = $theme->bot_configuration_array[$textIcon];
                 }
@@ -712,6 +745,13 @@ if ($theme !== false) {
         }
     }
 
+    if ($theme->hide_ts > 0) {
+        $chat_ui['show_ts'] = true;
+        if ($theme->hide_op_ts == 1) {
+            $outputResponse['chat_ui']['show_ts_below'] = true;
+        }
+    }
+
     if (isset($theme->bot_configuration_array['trigger_id']) && !empty($theme->bot_configuration_array['trigger_id']) && $theme->bot_configuration_array['trigger_id'] > 0) {
 
         $tpl = new erLhcoreClassTemplate('lhchat/part/render_intro.tpl.php');
@@ -721,7 +761,7 @@ if ($theme !== false) {
 
         if ($bot instanceof erLhcoreClassModelGenericBotBot)
         {
-            if ($bot->has_photo) {
+            if ($bot->has_photo && $theme->operator_image_url === false) {
                 $theme->operator_image_url = $bot->photo_path;
             }
 
@@ -733,6 +773,30 @@ if ($theme !== false) {
                     $chat->gbot_id = $bot->id;
                     $chat->additional_data_array = $onlineUser->online_attr_array;
                     $chat->chat_variables_array = $onlineUser->chat_variables_array;
+
+                    if (!(isset($theme->bot_configuration_array['use_system_tz']) && $theme->bot_configuration_array['use_system_tz'] == true) && $onlineUser->visitor_tz != '') {
+                        $chat->user_tz_identifier = $onlineUser->visitor_tz;
+                    }
+
+                    $locale = erLhcoreClassChatValidator::getVisitorLocale();
+
+                    if ($locale !== null) {
+                        $chat->chat_locale = $locale;
+                    }
+
+                    // We set custom chat locale only if visitor is not using default siteaccss and default langauge is not english.
+                    if (erConfigClassLhConfig::getInstance()->getSetting('site','default_site_access') != erLhcoreClassSystem::instance()->SiteAccess) {
+                        $siteAccessOptions = erConfigClassLhConfig::getInstance()->getSetting('site_access_options', erLhcoreClassSystem::instance()->SiteAccess);
+                        // Never override to en
+                        if (isset($siteAccessOptions['content_language'])) {
+                            $chat->chat_locale = $siteAccessOptions['content_language'];
+                        }
+                    }
+
+                    if ($onlineUser->dep_id > 0) {
+                        $chat->dep_id = $onlineUser->dep_id;
+                    }
+
                     $tpl->set('chat',$chat);
                 }
             }
@@ -845,6 +909,10 @@ if ($theme !== false) {
         $chat_ui['proactive_once_typed'] = 1;
     }
 
+    if (isset($theme->bot_configuration_array['print_btn_msg']) && $theme->bot_configuration_array['print_btn_msg'] == true) {
+        $chat_ui['print_btn_msg'] = true;
+    }
+
     if (isset($theme->bot_configuration_array['close_in_status']) && $theme->bot_configuration_array['close_in_status'] == true) {
         $chat_ui['clinst'] = true;
     }
@@ -895,6 +963,10 @@ if ($theme !== false) {
         $chat_ui['custom_html_header'] = $theme->bot_configuration_array['custom_html_header'];
     }
 
+    if (isset($theme->bot_configuration_array['custom_html_footer']) && $theme->bot_configuration_array['custom_html_footer'] != '') {
+        $chat_ui['custom_html_footer'] = $theme->bot_configuration_array['custom_html_footer'];
+    }
+
     if (isset($theme->bot_configuration_array['custom_html_header_body']) && $theme->bot_configuration_array['custom_html_header_body'] != '') {
         $chat_ui['custom_html_header_body'] = $theme->bot_configuration_array['custom_html_header_body'];
     }
@@ -925,6 +997,7 @@ foreach ([
             'custom_html_widget',
             'custom_html_header_body',
             'custom_html_header',
+            'custom_html_footer',
             'cmmsg_widget',
             'pre_chat_html',
             'operator_profile'
@@ -1043,9 +1116,18 @@ if ($outputResponse['disabled'] === true) {
 }
 
 $outputResponse['department'] = $departmentsOptions;
+
 $outputResponse['dep_forms'] = $department_id_form;
 
-erLhcoreClassChatEventDispatcher::getInstance()->dispatch('widgetrestapi.onlinesettings', array('output' => & $outputResponse));
+if (isset($parametersDepartment['system']) && !empty($parametersDepartment['system'])) {
+    foreach ($parametersDepartment['system'] as $systemDepartmentIndex => $systemDepartmentId) {
+        if ($outputResponse['dep_forms'] == $systemDepartmentId) {
+            $outputResponse['dep_forms'] = $parametersDepartment['argument'][$systemDepartmentIndex];
+        }
+    }
+}
+
+erLhcoreClassChatEventDispatcher::getInstance()->dispatch('widgetrestapi.onlinesettings', array('ou_vid' => $Params['user_parameters_unordered']['vid'], 'output' => & $outputResponse));
 
 erLhcoreClassRestAPIHandler::outputResponse($outputResponse);
 exit();

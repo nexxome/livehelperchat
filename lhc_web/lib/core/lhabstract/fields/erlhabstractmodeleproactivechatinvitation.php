@@ -1,6 +1,24 @@
 <?php
 
 $proactiveAttr = array(
+    'event_id' => array(
+        'type' => 'text',
+        'main_attr' => 'design_data_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Event id to receive from website for conversion to finish.'),
+        'required' => false,
+        'hidden' => true,
+        'maxlength' => 20,
+        'placeholder' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','E.g ordered'),
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
+    ),
+    'conversion_expires_in' => array(
+        'type' => 'text',
+        'main_attr' => 'design_data_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Conversion has to happen within this period of time after invitation was send/clicked.'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
+    ),
     'name' => array(
         'type' => 'text',
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Name for personal purposes'),
@@ -163,6 +181,13 @@ $proactiveAttr = array(
         'required' => false,
         'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
     ),
+    'use_default_autoresponder' => array(
+        'type' => 'checkbox',
+        'main_attr' => 'design_data_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Use default auto responder if available'),
+        'required' => false,
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
+    ),
     'show_everytime' => array(
         'type' => 'checkbox',
         'main_attr' => 'design_data_array',
@@ -174,6 +199,13 @@ $proactiveAttr = array(
         'type' => 'checkbox',
         'main_attr' => 'design_data_array',
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Show invitation next time even if a customer started a chat'),
+        'required' => false,
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
+    ),
+    'lock_department' => array(
+        'type' => 'checkbox',
+        'main_attr' => 'design_data_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Lock department. The department will be the one that was set when the invitation was issued.'),
         'required' => false,
         'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
     ),
@@ -230,6 +262,14 @@ $proactiveAttr = array(
         'params_call' => array_merge(['limit' => false, 'sort' => '`name` ASC'],$departmentFilterdefault),
         'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
     ),
+    'parent_id' => array(
+        'type' => 'text',
+        'default_value' => 0,
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Parent invitation'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
+    ),
     'campaign_id' => array(
         'type' => 'combobox',
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Campaign'),
@@ -278,6 +318,7 @@ $proactiveAttr = array(
     ),
     'message' => array(
         'type' => 'textarea',
+        'help' => 'inv_message',
         'translatable' => true,
         'main_attr_lang' => 'design_data_array',
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Message to user'),
@@ -389,6 +430,22 @@ $proactiveAttr = array(
         'hidden' => true,
         'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
     ),
+    'hide_op_img' => array(
+        'type' => 'checkbox',
+        'main_attr' => 'design_data_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Hide operator profile image'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
+    ),
+    'hide_on_open' => array(
+        'type' => 'checkbox',
+        'main_attr' => 'design_data_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/proactivechatinvitation', 'Hide content on click'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'int')
+    ),
     'std_header' => array(
         'type' => 'checkbox',
         'main_attr' => 'design_data_array',
@@ -477,6 +534,16 @@ $proactiveAttr = array(
         'nginit' => true,
         'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
     ),
+    'custom_on_click' => array(
+        'type' => 'textarea',
+        'main_attr' => 'design_data_array',
+        'height' => '200px',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom on click event'),
+        'required' => false,
+        'hidden' => true,
+        'nginit' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
+    ),
     'inject_html' => array(
         'type' => 'textarea',
         'main_attr' => 'design_data_array',
@@ -489,9 +556,11 @@ $proactiveAttr = array(
     ),
     'mobile_style' => array(
         'type' => 'textarea',
+        'ace_editor' => 'css',
+        'placeholder' => '.proactive-need-help{background-color:black!important;padding:0px!important;}',
         'main_attr' => 'design_data_array',
         'height' => '200px',
-        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Mobile style'),
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Custom CSS, applies also to invitation bubble'),
         'required' => false,
         'hidden' => true,
         'nginit' => true,
@@ -567,24 +636,6 @@ $proactiveAttr = array(
         'validation_definition' => new ezcInputFormDefinitionElement(
             ezcInputFormDefinitionElement::OPTIONAL, 'callback','erLhcoreClassSearchHandler::isImageFile()'
     )),
-    'attrf_key_1' => array(
-        'type' => 'text',
-        'main_attr' => 'design_data_array',
-        'trans' => '',
-        'required' => false,
-        'hidden' => true,
-        'nginit' => true,
-        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
-    ),
-    'attrf_val_1' => array(
-        'type' => 'text',
-        'main_attr' => 'design_data_array',
-        'trans' => '',
-        'required' => false,
-        'hidden' => true,
-        'nginit' => true,
-        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
-    ),
 );
 
 for ($ai = 0; $ai < 10; $ai++) {
@@ -597,6 +648,14 @@ for ($ai = 0; $ai < 10; $ai++) {
         'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
     );
     $proactiveAttr['attrf_val_' . ($ai  + 1)] = array(
+        'type' => 'text',
+        'main_attr' => 'design_data_array',
+        'trans' => '',
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw')
+    );
+    $proactiveAttr['attrf_cond_' . ($ai  + 1)] = array(
         'type' => 'text',
         'main_attr' => 'design_data_array',
         'trans' => '',

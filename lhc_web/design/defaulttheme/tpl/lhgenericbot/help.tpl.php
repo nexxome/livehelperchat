@@ -1,14 +1,15 @@
 <div class="modal-dialog modal-lg">
     <div class="modal-content">
-        <div class="modal-header pt-1 pb-1 pl-2 pr-2">
+        <div class="modal-header pt-1 pb-1 ps-2 pe-2">
             <h4 class="modal-title" id="myModalLabel">Usage Help</h4>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
             <p>
 
-           <?php include(erLhcoreClassDesign::designtpl('lhgenericbot/helpattributes/cannedreplacerules.tpl.php'));?>
-           <?php include(erLhcoreClassDesign::designtpl('lhgenericbot/helpattributes/preconditions.tpl.php'));?>
+            <?php if (preg_match('/^[a-z0-9-]+/i', $context) &&($pathDynamic = erLhcoreClassDesign::designtpldynamic('lhgenericbot/helpattributes/' . $context . '.tpl.php')) && $pathDynamic !== null ) : ?>
+                <?php include $pathDynamic;?>
+            <?php endif; ?>
 
             <?php if ($context == 'text') : ?>
                 <ul>

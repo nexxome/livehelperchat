@@ -1,13 +1,20 @@
-<div class="float-right">
+<div class="float-end">
 <p class="fs12">
 <?php if ( !empty($online_user->user_country_code) ) : ?><img src="<?php echo erLhcoreClassDesign::design('images/flags');?>/<?php echo $online_user->user_country_code?>.png" alt="<?php echo htmlspecialchars($online_user->user_country_name)?>" title="<?php echo htmlspecialchars($online_user->user_country_name)?>" /><?php endif; ?> (<?php
     if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','seeip')) {
         echo htmlspecialchars($online_user->ip);
     } else {
-        $parts = explode('.',$online_user->ip);
-        if (isset($parts[0]) && $parts[1]) {
-            echo htmlspecialchars($parts[0] . '.' . $parts[1] . '.xxx.xxx');
-        }
+        echo htmlspecialchars(preg_replace(
+            [
+                '/(\.\d+){2}$/',
+                '/(:[\da-f]*){2,4}$/'
+            ],
+            [
+                '.XXX.XXX',
+                ':XXXX:XXXX:XXXX:XXXX'
+            ],
+            $online_user->ip
+        ));
     }
 ?>)
 <?php if ( !empty($online_user->city) ) :?><br/><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/onlineusers','City');?>: <?php echo htmlspecialchars($online_user->city) ?><?php endif;?>
@@ -19,17 +26,19 @@
 
 <?php if ($online_user->nick != '' && $online_user->has_nick) : ?>
     <h5><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/onlineusers','Nick')?></h5>
-    <p><?php echo htmlspecialchars($online_user->nick)?></p>
+    <p><?php if (isset($online_user->chat_variables_array['username_secure']) && $online_user->chat_variables_array['username_secure'] == true) : ?><i class="material-icons" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Passed as encrypted variable')?>">enhanced_encryption</i><?php endif;?><?php echo htmlspecialchars($online_user->nick)?></p>
 <?php endif; ?>
-
+    <?php include(erLhcoreClassDesign::designtpl('lhchat/online_user/parts/after_nick_information.tpl.php')); ?>
 <?php if ($online_user->online_attr != '') : ?>
 <h5><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/onlineusers','Additional information')?></h5>
     <ul class="circle">
         <?php foreach (json_decode($online_user->online_attr,true) as $attrKey => $addItem) : ?>
         <?php if (isset($addItem['key'])) : ?>
-            <li<?php if (isset($addItem['identifier'])): ?> title="<?php echo htmlspecialchars($addItem['identifier'])?>"<?php endif;?>><?php echo htmlspecialchars($addItem['key'])?> - <?php echo htmlspecialchars($addItem['value'])?>
+            <li<?php if (isset($addItem['identifier'])): ?> title="<?php echo htmlspecialchars($addItem['identifier'])?>"<?php endif;?>>
                 <?php if (isset($addItem['h']) && $addItem['h'] == true) : ?>&nbsp;<i class="material-icons" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Hidden field')?>">visibility_off</i><?php endif;?>
+                <?php if (isset($addItem['secure']) && $addItem['secure'] == true) : ?>&nbsp;<i class="material-icons" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Passed as encrypted variable')?>">enhanced_encryption</i><?php endif;?>
                 <?php if (isset($addItem['url']) && $addItem['url'] == true) : ?>&nbsp;<i class="material-icons" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','Identifier')?> - <?php echo htmlspecialchars($addItem['identifier'])?>">link</i><?php endif;?>
+                <?php echo htmlspecialchars($addItem['key'])?> - <?php echo htmlspecialchars($addItem['value'])?>
             </li>
         <?php else : ?>
         <li>

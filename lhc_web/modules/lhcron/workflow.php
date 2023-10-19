@@ -6,6 +6,7 @@
  *
  * */
 echo "Starting chat/workflow\n";
+
 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.workflow.started',array());
 
 // Unanswered chats callback
@@ -51,6 +52,40 @@ foreach (erLhcoreClassChat::getList(array('sort' => 'priority DESC, id ASC', 'li
     }
 }
 
+$defaultTimeZone = erLhcoreClassModule::$defaultTimeZone;
+
+// Auto Responder In the Background
+foreach (erLhcoreClassChat::getList(array('sort' => 'priority DESC, id ASC', 'limit' => 500, 'filterin' => array('status' => [erLhcoreClassModelChat::STATUS_ACTIVE_CHAT,erLhcoreClassModelChat::STATUS_BOT_CHAT,erLhcoreClassModelChat::STATUS_PENDING_CHAT]))) as $chat) {
+    try {
+
+        if ($defaultTimeZone != '') {
+            date_default_timezone_set($defaultTimeZone);
+        }
+        
+        $db->beginTransaction();
+
+        $chat = erLhcoreClassModelChat::fetchAndLock($chat->id);
+
+        erLhcoreClassChat::setTimeZoneByChat($chat);
+
+        if ($chat->auto_responder !== false) {
+            $chat->auto_responder->chat = $chat;
+            $chat->auto_responder->process();
+        }
+
+        $db->commit();
+    } catch (Exception $e) {
+        $db->rollback();
+        throw $e;
+    }
+}
+
+erLhcoreClassModule::$defaultTimeZone = $defaultTimeZone;
+
+if (erLhcoreClassModule::$defaultTimeZone != '') {
+    date_default_timezone_set(erLhcoreClassModule::$defaultTimeZone);
+}
+
 // Inform visitors about unread messages
 erLhcoreClassChatWorkflow::autoInformVisitor(erLhcoreClassModelChatConfig::fetch('inform_unread_message')->current_value);
 
@@ -68,6 +103,9 @@ erLhcoreClassChatCleanup::updateFootprintBackground();
 
 // Cleanup Audit table if required
 erLhcoreClassChatCleanup::cleanupAuditLog();
+
+// Cleanup expired canned messages
+erLhcoreClassChatCleanup::cleanupCannedMessages();
 
 echo "Ended chat/workflow\n";
 

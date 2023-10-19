@@ -21,6 +21,9 @@ ini_set('display_errors', 1);
 
 ini_set("max_execution_time", "3600");
 
+// Uncomment if you are using composer dependencies
+// require_once dirname(__FILE__)."/lib/vendor/autoload.php";
+
 require_once dirname(__FILE__)."/ezcomponents/Base/src/base.php";
 
 ezcBase::addClassRepository( dirname(__FILE__).'/', dirname(__FILE__).'/lib/autoloads');
@@ -76,6 +79,70 @@ ezcBaseInit::setCallback(
  'erLhcoreClassLazyDatabaseConfiguration'
 );
 
+function defaultCronjobFatalHandler($errno, $errstr, $errfile, $errline) {
+
+    $msg = 'Unexpected error, the message was : ' . $errstr . ' in ' . $errfile . ' on line ' . $errline;
+
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+
+    if ($errno == E_USER_ERROR || $errno == E_COMPILE_ERROR || $errno == E_PARSE || $errno == E_ERROR || $errno == E_RECOVERABLE_ERROR || $errno == E_WARNING) {
+        error_log($msg);
+
+        erLhcoreClassLog::write($msg);
+        erLhcoreClassLog::write(
+            json_encode([
+                'msg' => $msg,
+                'trace' => $trace
+            ]),
+            ezcLog::SUCCESS_AUDIT,
+            array(
+                'source' => 'lhc',
+                'category' => 'cronjob_fatal',
+                'line' => __LINE__,
+                'file' => __FILE__,
+                'object_id' => 0
+            )
+        );
+    }
+
+    return false;
+}
+
+function defaultCronjobExceptionHandler($e) {
+
+    error_log($e);
+
+    erLhcoreClassLog::write(json_encode([
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTrace(),
+        'raw' => (string)$e,
+    ],JSON_PRETTY_PRINT));
+
+    erLhcoreClassLog::write(
+        json_encode([
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTrace(),
+            'raw' => (string)$e,
+        ],JSON_PRETTY_PRINT)
+        ,
+        ezcLog::SUCCESS_AUDIT,
+        array(
+            'source' => 'lhc',
+            'category' => 'cronjob_exception',
+            'line' => __LINE__,
+            'file' => __FILE__,
+            'object_id' => 0
+        )
+    );
+}
+
+set_exception_handler( 'defaultCronjobExceptionHandler' );
+set_error_handler ( 'defaultCronjobFatalHandler' );
+
 $instance = erLhcoreClassSystem::instance();
 $instance->backgroundMode = true;
 $instance->SiteAccess = $helpOption->value;
@@ -87,10 +154,16 @@ $instance->Language = $optionsSiteAccess['locale'];
 $instance->ThemeSite = $optionsSiteAccess['theme'];
 $instance->WWWDirLang = '/'.$helpOption->value;
 
-erLhcoreClassModule::$defaultTimeZone = $cfgSite->getSetting('site', 'time_zone', false);
+$tz = isset($optionsSiteAccess['time_zone']) ? $optionsSiteAccess['time_zone'] : $cfgSite->getSetting( 'site', 'time_zone', false);
+
+erLhcoreClassModule::$defaultTimeZone = $tz;
 erLhcoreClassModule::$dateFormat = $cfgSite->getSetting('site', 'date_format', false);
 erLhcoreClassModule::$dateHourFormat = $cfgSite->getSetting('site', 'date_hour_format', false);
 erLhcoreClassModule::$dateDateHourFormat = $cfgSite->getSetting('site', 'date_date_hour_format', false);
+
+if (erLhcoreClassModule::$defaultTimeZone != '') {
+    date_default_timezone_set(erLhcoreClassModule::$defaultTimeZone);
+}
 
 // Attatch extensions events listeners
 erLhcoreClassModule::attatchExtensionListeners();

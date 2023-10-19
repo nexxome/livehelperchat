@@ -1,6 +1,6 @@
 {
   "tables": {
-    "lh_canned_msg_replace": [
+    "lh_abstract_msg_protection": [
       {
         "field": "id",
         "type": "int(11) unsigned",
@@ -10,7 +10,133 @@
         "extra": "auto_increment"
       }
     ],
+    "lh_bot_condition": [
+      {
+        "field": "id",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      }
+    ],
+    "lh_brand": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      }
+    ],
+    "lh_brand_member": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      }
+    ],
+    "lh_chat_participant": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "frt",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "aart",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "mart",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      }
+    ],
+    "lh_canned_msg_replace": [
+      {
+        "field": "id",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "active_from",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "active_to",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "repetitiveness",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "days_activity",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "time_zone",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      }
+    ],
     "lh_chat_action": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      }
+    ],
+    "lh_userdep_alias": [
       {
         "field": "id",
         "type": "bigint(20) unsigned",
@@ -36,6 +162,59 @@
         "key": "",
         "default": "0",
         "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "sharer_user_id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "description",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      }
+    ],
+    "lh_abstract_saved_report": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "recurring_options",
+        "type": "longtext",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "send_log",
+        "type": "longtext",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
       }
     ],
     "lh_canned_msg_use": [
@@ -502,6 +681,15 @@
       {
         "field": "name",
         "type": "varchar(250)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "identifier",
+        "type": "varchar(50)",
         "null": "NO",
         "key": "",
         "default": null,
@@ -1298,6 +1486,46 @@
         "key": "PRI",
         "default": null,
         "extra": "auto_increment"
+      },
+      {
+        "field": "variation_id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "conv_int_expires",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "conv_int_time",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "conv_event",
+        "type": "varchar(20)",
+        "null": "NO",
+        "key": "",
+        "default": "",
+        "extra": ""
+      },
+      {
+        "field": "unique_id",
+        "type": "varchar(20)",
+        "null": "NO",
+        "key": "",
+        "default": "",
+        "extra": ""
       }
     ],
     "lh_incoming_webhook": [
@@ -1318,7 +1546,39 @@
         "extra": ""
       },
       {
+        "field": "log_incoming",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "log_failed_parse",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
         "field": "scope",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "icon",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "icon_color",
         "type": "varchar(50)",
         "null": "NO",
         "key": "",
@@ -1334,6 +1594,15 @@
         "key": "PRI",
         "default": null,
         "extra": "auto_increment"
+      },
+      {
+        "field": "chat_external_id",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
       }
     ],
     "lh_chat_paid": [
@@ -1932,6 +2201,14 @@
       {
         "field": "chat_id",
         "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "online_user_id",
+        "type": "bigint(20) unsigned",
         "null": "NO",
         "key": "MUL",
         "default": null,
@@ -2594,6 +2871,14 @@
         "extra": ""
       },
       {
+        "field": "parent_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
         "field": "bot_id",
         "type": "int(11)",
         "null": "NO",
@@ -3171,6 +3456,22 @@
         "extra": ""
       },
       {
+        "field": "hide_op_ts",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "hide_ts",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
         "field": "hide_close",
         "type": "int(11)",
         "null": "NO",
@@ -3188,14 +3489,6 @@
       },
       {
         "field": "show_status_delay",
-        "type": "int(11)",
-        "null": "NO",
-        "key": "",
-        "default": 0,
-        "extra": ""
-      },
-      {
-        "field": "hide_ts",
         "type": "int(11)",
         "null": "NO",
         "key": "",
@@ -3704,6 +3997,14 @@
         "extra": ""
       },
       {
+        "field": "delete_on_exp",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
         "field": "repetitiveness",
         "type": "int(11) unsigned",
         "null": "NO",
@@ -3971,6 +4272,46 @@
       {
         "field": "status",
         "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "iwh_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "frt",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "aart",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "mart",
+        "type": "int(11) unsigned",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "theme_id",
+        "type": "int(11) unsigned",
         "null": "NO",
         "key": "MUL",
         "default": "0",
@@ -5407,6 +5748,38 @@
         "key": "MUL",
         "default": "0",
         "extra": ""
+      },
+      {
+        "field": "exc_indv_autoasign",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "assign_priority",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "chat_min_priority",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "chat_max_priority",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
       }
     ],
     "lh_speech_user_language": [
@@ -5477,6 +5850,14 @@
         "key": "",
         "default": null,
         "extra": ""
+      },
+      {
+        "field": "old_js_id",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
       }
     ],
     "lh_generic_bot_rest_api": [
@@ -5491,6 +5872,17 @@
       {
         "field": "name",
         "type": "varchar(50)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      }
+    ],
+    "lh_generic_bot_rest_api_cache": [
+      {
+        "field": "hash",
+        "type": "varchar(32)",
         "null": "NO",
         "key": "MUL",
         "default": null,
@@ -5516,11 +5908,77 @@
         "extra": ""
       },
       {
+        "field": "icon_mode",
+        "type": "tinyint(1)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "has_popup",
+        "type": "tinyint(1)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "popup_content",
+        "type": "longtext",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "sort_column",
+        "type": "varchar(200)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
         "field": "online_enabled",
         "type": "tinyint(1)",
         "null": "NO",
         "key": "",
         "default": null,
+        "extra": ""
+      },
+      {
+        "field": "sort_enabled",
+        "type": "tinyint(1)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "chat_list_enabled",
+        "type": "tinyint(1)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "mail_list_enabled",
+        "type": "tinyint(1)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "mail_enabled",
+        "type": "tinyint(1)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
         "extra": ""
       }
     ],
@@ -5547,6 +6005,22 @@
         "null": "NO",
         "key": "",
         "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "role_destination",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": "",
+        "extra": ""
+      },
+      {
+        "field": "present_role_is",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": "",
         "extra": ""
       }
     ],
@@ -5615,6 +6089,16 @@
       }
     ],
     "lh_canned_msg_dep": [
+      {
+        "field": "id",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      }
+    ],
+    "lh_abstract_auto_responder_dep": [
       {
         "field": "id",
         "type": "bigint(20)",
@@ -6571,6 +7055,14 @@
         "extra": ""
       },
       {
+        "field": "del_st",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
         "field": "name_support",
         "type": "varchar(100)",
         "null": "NO",
@@ -6766,6 +7258,24 @@
         "collation": "utf8mb4_unicode_ci"
       },
       {
+        "field": "bot_lang",
+        "type": "varchar(10)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
         "field": "configuration",
         "type": "longtext",
         "null": "NO",
@@ -6791,6 +7301,14 @@
         "default": null,
         "extra": "",
         "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "use_translation_service",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
       }
     ],
     "lh_generic_bot_tr_item": [
@@ -6801,6 +7319,14 @@
         "key": "PRI",
         "default": null,
         "extra": "auto_increment"
+      },
+      {
+        "field": "auto_translate",
+        "type": "tinyint(1) unsigned",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
       }
     ],
     "lh_generic_bot_bot": [
@@ -6975,6 +7501,16 @@
         "extra": ""
       }
     ],
+    "lh_generic_bot_trigger_template": [
+      {
+        "field": "id",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      }
+    ],
     "lh_generic_bot_trigger": [
       {
         "field": "id",
@@ -7103,6 +7639,16 @@
         "extra": "auto_increment"
       }
     ],
+    "lh_generic_bot_trigger_event_template": [
+      {
+        "field": "id",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      }
+    ],
     "lh_generic_bot_trigger_event": [
       {
         "field": "id",
@@ -7126,6 +7672,14 @@
         "null": "NO",
         "key": "",
         "default": null,
+        "extra": ""
+      },
+      {
+        "field": "skip",
+        "type": "tinyint(1)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
         "extra": ""
       },
       {
@@ -7365,6 +7919,15 @@
         "collation": "utf8mb4_unicode_ci"
       },
       {
+        "field": "dep_ids",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
         "field": "department_id",
         "type": "int(11)",
         "null": "NO",
@@ -7565,6 +8128,42 @@
         "key": "PRI",
         "default": null,
         "extra": "auto_increment"
+      },
+      {
+        "field": "shortcut_1",
+        "type": "varchar(10)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "shortcut_2",
+        "type": "varchar(10)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "sub_command",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
+      },
+      {
+        "field": "info_msg",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": "",
+        "collation": "utf8mb4_unicode_ci"
       }
     ],
     "lh_userdep": [
@@ -7594,6 +8193,14 @@
       },
       {
         "field": "exclude_autoasign",
+        "type": "tinyint(1)",
+        "null": "NO",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "exc_indv_autoasign",
         "type": "tinyint(1)",
         "null": "NO",
         "key": "MUL",
@@ -7699,6 +8306,30 @@
       {
         "field": "always_on",
         "type": "tinyint(1)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "assign_priority",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "chat_max_priority",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "chat_min_priority",
+        "type": "int(11)",
         "null": "NO",
         "key": "",
         "default": "0",
@@ -8554,6 +9185,13 @@
         "value": "0",
         "type": "0",
         "explain": "Disable chat print",
+        "hidden": "0"
+      },
+      {
+        "identifier": "disable_txt_dwnld",
+        "value": "0",
+        "type": "0",
+        "explain": "Disable chat download",
         "hidden": "0"
       },
       {
@@ -9741,6 +10379,23 @@
         "recipient": "",
         "user_mail_as_sender": "0",
         "translations": ""
+      },
+      {
+        "id": "13",
+        "name": "Report prepared",
+        "from_name": "Live Helper Chat",
+        "from_name_ac": "0",
+        "from_email": "",
+        "from_email_ac": "0",
+        "content": "Hello,\r\n\r\nReport prepared - {report_name}, {date_range}\r\n\r\n{report_description}\r\n\r\nView report at:\r\n{url_report}",
+        "subject": "Report prepared - {report_name}",
+        "bcc_recipients": "",
+        "subject_ac": "0",
+        "reply_to": "",
+        "reply_to_ac": "0",
+        "recipient": "",
+        "user_mail_as_sender": "0",
+        "translations": ""
       }
     ]
   },
@@ -9836,6 +10491,10 @@
       "new" : {"lactivity" : "ALTER TABLE `lh_users_online_session` ADD INDEX `lactivity` (`lactivity`);"},
       "old" : []
     },
+    "lh_chat_incoming" : {
+      "new" : {"incoming_ext_id_uniq" : "ALTER TABLE `lh_chat_incoming` ADD UNIQUE `incoming_ext_id_uniq` (`incoming_id`, `chat_external_id`);"},
+      "old" : ["incoming_ext_id"]
+    },
     "lh_notification_subscriber" : {
       "new" : {"subscriber_hash" : "ALTER TABLE `lh_notification_subscriber` ADD INDEX `subscriber_hash` (`subscriber_hash`);"},
       "old" : []
@@ -9881,7 +10540,11 @@
     "lh_chat" : {
       "new" : {
         "nick" : "ALTER TABLE `lh_chat` ADD INDEX `nick` (`nick`);",
+        "time" : "ALTER TABLE `lh_chat` ADD INDEX `time` (`time`);",
+        "iwh_id" : "ALTER TABLE `lh_chat` ADD INDEX `iwh_id` (`iwh_id`);",
+        "theme_id" : "ALTER TABLE `lh_chat` ADD INDEX `theme_id` (`theme_id`);",
         "email" : "ALTER TABLE `lh_chat` ADD INDEX `email` (`email`);",
+        "phone" : "ALTER TABLE `lh_chat` ADD INDEX `phone` (`phone`);",
         "unanswered_chat" : "ALTER TABLE `lh_chat` ADD INDEX `unanswered_chat` (`unanswered_chat`);",
         "product_id" : "ALTER TABLE `lh_chat` ADD INDEX `product_id` (`product_id`);",
         "dep_id" : "ALTER TABLE `lh_chat` ADD INDEX `dep_id` (`dep_id`);",
@@ -9893,8 +10556,7 @@
         "has_unread_messages" : "ALTER TABLE `lh_chat` ADD INDEX `has_unread_messages` (`has_unread_messages`);",
         "dep_id_status" : "ALTER TABLE `lh_chat` ADD INDEX `dep_id_status` (`dep_id`,`status`);",
         "status" : "ALTER TABLE `lh_chat` ADD INDEX `status` (`status`);",
-        "status_user_id" : "ALTER TABLE `lh_chat` ADD INDEX `status_user_id` (`status`,`user_id`);",
-        "unread_operator" : "ALTER TABLE `lh_chat` ADD INDEX `unread_operator` (`has_unread_op_messages`, `unread_op_messages_informed`);"
+        "status_user_id" : "ALTER TABLE `lh_chat` ADD INDEX `status_user_id` (`status`,`user_id`);"
       },
       "old" : ["user_id","status_dep_id_id","status_dep_id_priority_id","status_priority_id","has_unread_messages_dep_id_id"]
     },
@@ -9979,7 +10641,8 @@
         "disabled" : "ALTER TABLE `lh_canned_msg` ADD INDEX `disabled` (`disabled`);",
         "unique_id" : "ALTER TABLE `lh_canned_msg` ADD INDEX `unique_id` (`unique_id`);",
         "repetitiveness" : "ALTER TABLE `lh_canned_msg` ADD INDEX `repetitiveness` (`repetitiveness`);",
-        "position_title_v2" : "ALTER TABLE `lh_canned_msg` ADD INDEX `position_title_v2` (`position`, `title`(191));"
+        "position_title_v2" : "ALTER TABLE `lh_canned_msg` ADD INDEX `position_title_v2` (`position`, `title`(191));",
+        "delete_on_exp" : "ALTER TABLE `lh_canned_msg` ADD INDEX `delete_on_exp` (`delete_on_exp`);"
       },
       "old" : ["position_title"]
     },
@@ -10001,7 +10664,14 @@
         "question_options_2" : "ALTER TABLE `lh_abstract_survey_item` ADD INDEX `question_options_2` (`question_options_2`);",
         "question_options_3" : "ALTER TABLE `lh_abstract_survey_item` ADD INDEX `question_options_3` (`question_options_3`);",
         "question_options_4" : "ALTER TABLE `lh_abstract_survey_item` ADD INDEX `question_options_4` (`question_options_4`);",
-        "question_options_5" : "ALTER TABLE `lh_abstract_survey_item` ADD INDEX `question_options_5` (`question_options_5`);"
+        "question_options_5" : "ALTER TABLE `lh_abstract_survey_item` ADD INDEX `question_options_5` (`question_options_5`);",
+        "online_user_id" : "ALTER TABLE `lh_abstract_survey_item` ADD INDEX `online_user_id` (`online_user_id`);"
+      },
+      "old" : []
+    },
+    "lh_abstract_survey" : {
+      "new" : {
+        "identifier" : "ALTER TABLE `lh_abstract_survey` ADD INDEX `identifier` (`identifier`);"
       },
       "old" : []
     },
@@ -10009,15 +10679,22 @@
       "new" : {
         "tag" : "ALTER TABLE `lh_abstract_proactive_chat_invitation` ADD INDEX `tag` (`tag`);",
         "dynamic_invitation" : "ALTER TABLE `lh_abstract_proactive_chat_invitation` ADD INDEX `dynamic_invitation` (`dynamic_invitation`);",
-        "show_on_mobile" : "ALTER TABLE `lh_abstract_proactive_chat_invitation` ADD INDEX `show_on_mobile` (`show_on_mobile`)"
+        "show_on_mobile" : "ALTER TABLE `lh_abstract_proactive_chat_invitation` ADD INDEX `show_on_mobile` (`show_on_mobile`)",
+        "parent_id" : "ALTER TABLE `lh_abstract_proactive_chat_invitation` ADD INDEX `parent_id` (`parent_id`)"
       },
       "old" : []
     },
     "lh_abstract_proactive_chat_campaign_conv" : {
       "new" : {
-        "ctime" : "ALTER TABLE `lh_abstract_proactive_chat_campaign_conv` ADD INDEX `ctime` (`ctime`);"
+        "ctime" : "ALTER TABLE `lh_abstract_proactive_chat_campaign_conv` ADD INDEX `ctime` (`ctime`);",
+        "invitation_id_variation_id" : "ALTER TABLE `lh_abstract_proactive_chat_campaign_conv` ADD INDEX `invitation_id_variation_id` (`invitation_id`, `variation_id`);",
+        "conv_event_vid_id" : "ALTER TABLE `lh_abstract_proactive_chat_campaign_conv` ADD INDEX `conv_event_vid_id` (`conv_event`, `vid_id`);",
+        "unique_id" : "ALTER TABLE `lh_abstract_proactive_chat_campaign_conv` ADD INDEX `unique_id` (`unique_id`);",
+        "conv_int_time" : "ALTER TABLE `lh_abstract_proactive_chat_campaign_conv` ADD INDEX `conv_int_time` (`conv_int_time`);"
       },
-      "old" : []
+      "old" : [
+        "invitation_id"
+      ]
     },
     "lh_group_chat" : {
       "new" : {
@@ -10042,6 +10719,22 @@
         "alias" : "ALTER TABLE `lh_abstract_widget_theme` ADD INDEX `alias` (`alias`);"
       },
       "old" : []
+    },
+    "lh_abstract_saved_search" : {
+      "new" : {
+        "user_id_status" : "ALTER TABLE `lh_abstract_saved_search` ADD INDEX `user_id_status` (`user_id`,`status`);"
+      },
+      "old" : [
+        "user_id"
+      ]
+    },
+    "lh_audits" : {
+      "new" : {
+        "time" : "ALTER TABLE `lh_audits` ADD INDEX `time` (`time`);"
+      },
+      "old" : [
+
+      ]
     }
   },
   "tables_create": {
@@ -10096,7 +10789,7 @@
     "lh_chat_paid": "CREATE TABLE `lh_chat_paid` ( `id` int(11) NOT NULL AUTO_INCREMENT,  `hash` varchar(250) NOT NULL,  `chat_id` int(11) NOT NULL,  PRIMARY KEY (`id`),  KEY `hash` (`hash`(191)),  KEY `chat_id` (`chat_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     "lh_abstract_rest_api_key": "CREATE TABLE `lh_abstract_rest_api_key` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `api_key` varchar(50) NOT NULL,  `user_id` int(11) NOT NULL,  `active` int(11) NOT NULL DEFAULT '0',  PRIMARY KEY (`id`),  KEY `user_id` (`user_id`),  KEY `api_key_active` (`api_key`,`active`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     "lh_abstract_rest_api_key_remote": "CREATE TABLE `lh_abstract_rest_api_key_remote` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `api_key` varchar(50) NOT NULL, `username` varchar(50) NOT NULL, `name` varchar(50) NOT NULL,  `host` varchar(250) NOT NULL, `active` tinyint(1) NOT NULL DEFAULT '0', `position` int(11) NOT NULL DEFAULT '0',  PRIMARY KEY (`id`), KEY `active` (`active`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-    "lh_departament_group_user": "CREATE TABLE `lh_departament_group_user` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `dep_group_id` int(11) NOT NULL,  `user_id` int(11) NOT NULL,  PRIMARY KEY (`id`),  KEY `dep_group_id` (`dep_group_id`),  KEY `user_id` (`user_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    "lh_departament_group_user": "CREATE TABLE `lh_departament_group_user` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `dep_group_id` int(11) NOT NULL,\n  `user_id` int(11) NOT NULL,\n  `read_only` tinyint(1) unsigned NOT NULL DEFAULT 0,\n  `exc_indv_autoasign` tinyint(1) unsigned NOT NULL DEFAULT 0,\n  `assign_priority` int(11) unsigned NOT NULL DEFAULT 0,\n  `chat_min_priority` int(11) unsigned NOT NULL DEFAULT 0,\n  `chat_max_priority` int(11) unsigned NOT NULL DEFAULT 0,\n  PRIMARY KEY (`id`),\n  KEY `dep_group_id` (`dep_group_id`),\n  KEY `user_id` (`user_id`)\n) ENGINE=InnoDB AUTO_INCREMENT=382 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci\n",
     "lh_departament_group_member": "CREATE TABLE `lh_departament_group_member` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `dep_id` int(11) NOT NULL,  `dep_group_id` int(11) NOT NULL,  PRIMARY KEY (`id`),  KEY `dep_group_id` (`dep_group_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     "lh_departament_limit_group_member": "CREATE TABLE `lh_departament_limit_group_member` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `dep_id` int(11) NOT NULL,  `dep_limit_group_id` int(11) NOT NULL,  PRIMARY KEY (`id`),  KEY `dep_limit_group_id` (`dep_limit_group_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     "lh_departament_group": "CREATE TABLE `lh_departament_group` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `name` varchar(50) NOT NULL,  PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
@@ -10112,9 +10805,9 @@
     "lh_chat_start_settings": "CREATE TABLE `lh_chat_start_settings` ( `id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(50) NOT NULL, `data` longtext NOT NULL, `department_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `department_id` (`department_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     "lh_chat_event_track": "CREATE TABLE `lh_chat_event_track` ( `id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(50) NOT NULL, `data` longtext NOT NULL, `department_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `department_id` (`department_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     "lh_abstract_subject": "CREATE TABLE `lh_abstract_subject` ( `id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL, `internal` tinyint(1) NOT NULL DEFAULT 0, `internal_type` varchar(20) NOT NULL DEFAULT '', PRIMARY KEY (`id`), KEY `internal` (`internal`), KEY `internal_type` (`internal_type`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_abstract_chat_variable": "CREATE TABLE `lh_abstract_chat_variable` ( `id` int(11) NOT NULL AUTO_INCREMENT, `var_name` varchar(255) NOT NULL, `var_identifier` varchar(255) NOT NULL, `inv` tinyint(1) NOT NULL, `change_message` varchar(250) NOT NULL, `type` tinyint(1) NOT NULL, `persistent` tinyint(1) NOT NULL,`js_variable` varchar(255) NOT NULL, `dep_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_abstract_chat_column": "CREATE TABLE `lh_abstract_chat_column` (`id` int(11) NOT NULL AUTO_INCREMENT,`column_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,`variable` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL, `position` int(11) NOT NULL, `enabled` tinyint(1) NOT NULL, `online_enabled` tinyint(1) NOT NULL, `chat_enabled` tinyint(1) NOT NULL, `conditions` text COLLATE utf8mb4_unicode_ci NOT NULL,`column_icon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL, `column_identifier` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL, PRIMARY KEY (`id`), KEY `enabled` (`enabled`), KEY `online_enabled` (`online_enabled`), KEY `chat_enabled` (`chat_enabled`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_abstract_chat_priority": "CREATE TABLE `lh_abstract_chat_priority` (`id` int(11) NOT NULL AUTO_INCREMENT,`value` text COLLATE utf8mb4_unicode_ci NOT NULL,`dep_id` int(11) NOT NULL,`priority` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_abstract_chat_variable": "CREATE TABLE `lh_abstract_chat_variable` ( `id` int(11) NOT NULL AUTO_INCREMENT, `var_name` varchar(255) NOT NULL, `var_identifier` varchar(255) NOT NULL, `old_js_id` varchar(50) NOT NULL, `inv` tinyint(1) NOT NULL, `change_message` varchar(250) NOT NULL, `type` tinyint(1) NOT NULL, `persistent` tinyint(1) NOT NULL,`js_variable` varchar(255) NOT NULL, `dep_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_abstract_chat_column": "CREATE TABLE `lh_abstract_chat_column` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `column_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `variable` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `position` int(11) NOT NULL,\n  `enabled` tinyint(1) NOT NULL,\n  `conditions` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `column_icon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `column_identifier` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `chat_enabled` tinyint(1) NOT NULL,\n  `online_enabled` tinyint(1) NOT NULL,\n  `icon_mode` tinyint(1) NOT NULL DEFAULT 0,\n  `has_popup` tinyint(1) NOT NULL DEFAULT 0,\n  `popup_content` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n  `sort_column` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `sort_enabled` tinyint(1) NOT NULL DEFAULT 0,\n  `chat_list_enabled` tinyint(1) NOT NULL DEFAULT 0,\n  `mail_list_enabled` tinyint(1) NOT NULL DEFAULT 0,\n  `mail_enabled` tinyint(1) NOT NULL DEFAULT 0,\n  PRIMARY KEY (`id`),\n  KEY `enabled` (`enabled`),\n  KEY `online_enabled` (`online_enabled`),\n  KEY `chat_enabled` (`chat_enabled`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_abstract_chat_priority": "CREATE TABLE `lh_abstract_chat_priority` (`id` int(11) NOT NULL AUTO_INCREMENT,`value` text COLLATE utf8mb4_unicode_ci NOT NULL,`role_destination` varchar(50) NOT NULL,`present_role_is` varchar(50) NOT NULL, `dep_id` int(11) NOT NULL, `dest_dep_id` int(11) NOT NULL DEFAULT 0, `sort_priority` int(11) NOT NULL DEFAULT 0,`priority` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_abstract_subject_dep": "CREATE TABLE `lh_abstract_subject_dep` ( `id` int(11) NOT NULL AUTO_INCREMENT, `dep_id` int(11) NOT NULL, `subject_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `subject_id` (`subject_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_abstract_subject_chat": "CREATE TABLE `lh_abstract_subject_chat` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `subject_id` int(11) NOT NULL, `chat_id` bigint(20) NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_group_object": "CREATE TABLE `lh_group_object` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `object_id` bigint(20) NOT NULL, `group_id` bigint(20) NOT NULL, `type` bigint(20) NOT NULL, PRIMARY KEY (`id`), KEY `object_id_type` (`object_id`,`type`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
@@ -10122,11 +10815,13 @@
     "lh_generic_bot_bot": "CREATE TABLE `lh_generic_bot_bot` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `name` varchar(100) NOT NULL, `avatar` varchar(150) NOT NULL, `nick` varchar(100) NOT NULL, `filepath` varchar(250) NOT NULL, `filename` varchar(250) NOT NULL, `configuration` longtext NOT NULL,`attr_str_1` varchar(100) NOT NULL,`attr_str_2` varchar(100) NOT NULL,`attr_str_3` varchar(100) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_exception": "CREATE TABLE `lh_generic_bot_exception` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `name` varchar(100) NOT NULL, `priority` int(11) NOT NULL, `active` tinyint(1) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_exception_message": "CREATE TABLE `lh_generic_bot_exception_message` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `code` varchar(20) NOT NULL, `exception_group_id` int(11) NOT NULL, `priority` int(11) NOT NULL, `active` tinyint(1) NOT NULL, `message` text NOT NULL, PRIMARY KEY (`id`),  KEY `code` (`code`), KEY `exception_group_id` (`exception_group_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_generic_bot_tr_group": "CREATE TABLE `lh_generic_bot_tr_group` ( `id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(50) NOT NULL,`filename` varchar(250) NOT NULL,`filepath` varchar(250) NOT NULL,`configuration` longtext NOT NULL,`nick` varchar(100) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_generic_bot_tr_item": "CREATE TABLE `lh_generic_bot_tr_item` ( `id` int(11) NOT NULL AUTO_INCREMENT, `group_id` int(11) NOT NULL, `identifier` varchar(50) NOT NULL, `translation` text NOT NULL, PRIMARY KEY (`id`),  KEY `identifier` (`identifier`), KEY `group_id` (`group_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_generic_bot_tr_group": "CREATE TABLE `lh_generic_bot_tr_group` ( `id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(100) NOT NULL,`filename` varchar(250) NOT NULL, `bot_lang` varchar(10) NOT NULL, `use_translation_service` tinyint(1) unsigned NOT NULL DEFAULT '0', `filepath` varchar(250) NOT NULL,`configuration` longtext NOT NULL,`nick` varchar(100) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_generic_bot_tr_item": "CREATE TABLE `lh_generic_bot_tr_item` ( `id` int(11) NOT NULL AUTO_INCREMENT, `group_id` int(11) NOT NULL, `identifier` varchar(50) NOT NULL,`auto_translate` tinyint(1) unsigned NOT NULL DEFAULT '0', `translation` text NOT NULL, PRIMARY KEY (`id`),  KEY `identifier` (`identifier`), KEY `group_id` (`group_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_group": "CREATE TABLE `lh_generic_bot_group` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `name` varchar(100) NOT NULL,`is_collapsed` int(11) NOT NULL DEFAULT '0', `pos` int(11) NOT NULL DEFAULT '0', `bot_id` bigint(20) NOT NULL, PRIMARY KEY (`id`), KEY `bot_id` (`bot_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_generic_bot_trigger_template": "CREATE TABLE `lh_generic_bot_trigger_template` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `name` varchar(100) NOT NULL, `actions` longtext NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_trigger": "CREATE TABLE `lh_generic_bot_trigger` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `name` varchar(100) NOT NULL, `actions` longtext NOT NULL, `group_id` bigint(20) NOT NULL, `bot_id` int(11) NOT NULL, `default` int(11) NOT NULL, `default_unknown` int(11) NOT NULL, `default_unknown_btn` int(11) NOT NULL DEFAULT '0', `in_progress` int(11) NOT NULL DEFAULT '0', `as_argument` int(11) NOT NULL DEFAULT '0', PRIMARY KEY (`id`), KEY `default_unknown` (`default_unknown`), KEY `default_unknown_btn` (`default_unknown_btn`), KEY `bot_id` (`bot_id`), KEY `in_progress` (`in_progress`), KEY `group_id` (`group_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_trigger_event": "CREATE TABLE `lh_generic_bot_trigger_event` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `pattern` text NOT NULL, `pattern_exc` text NOT NULL, `configuration` longtext NOT NULL, `trigger_id` bigint(20) NOT NULL, `bot_id` int(11) NOT NULL, `on_start_type` tinyint(1) NOT NULL, `priority` int(11) NOT NULL, `type` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `pattern_v2` (`pattern`(191)), KEY `type` (`type`), KEY `on_start_type` (`on_start_type`), KEY `trigger_id` (`trigger_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_generic_bot_trigger_event_template": "CREATE TABLE `lh_generic_bot_trigger_event_template` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `configuration` longtext NOT NULL, `name` varchar(100) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_payload": "CREATE TABLE `lh_generic_bot_payload` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `name` varchar(100) NOT NULL, `payload` varchar(100) NOT NULL, `bot_id` int(11) NOT NULL, `trigger_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `bot_id` (`bot_id`), KEY `trigger_id` (`trigger_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_chat_workflow": "CREATE TABLE `lh_generic_bot_chat_workflow` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `chat_id` bigint(20) NOT NULL, `time` int(11) NOT NULL, `trigger_id` bigint(20) NOT NULL, `identifier` varchar(100) NOT NULL, `status` int(11) NOT NULL, `collected_data` text, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_chat_event": "CREATE TABLE `lh_generic_bot_chat_event` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `chat_id` bigint(20) NOT NULL, `counter` int(11) NOT NULL, `content` longtext NOT NULL, `ctime` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
@@ -10134,27 +10829,36 @@
     "lh_notification_subscriber": "CREATE TABLE `lh_notification_subscriber` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `chat_id` bigint(20) NOT NULL, `online_user_id` bigint(20) NOT NULL, `dep_id` int(11) NOT NULL,`theme_id` int(11) NOT NULL, `ctime` int(11) NOT NULL, `utime` int(11) NOT NULL, `status` int(11) NOT NULL, `params` text NOT NULL, `device_type` tinyint(1) NOT NULL,`subscriber_hash` varchar(50) NOT NULL, `uagent` varchar(250) NOT NULL, `ip` varchar(250) NOT NULL, `last_error` text NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`), KEY `dep_id` (`dep_id`), KEY `online_user_id` (`online_user_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_speech_user_language": "CREATE TABLE `lh_speech_user_language` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `user_id` bigint(20) NOT NULL, `language` varchar(20) NOT NULL, PRIMARY KEY (`id`), KEY `user_id_language` (`user_id`,`language`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_abstract_proactive_chat_campaign": "CREATE TABLE `lh_abstract_proactive_chat_campaign` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `name` varchar(50) NOT NULL, `text` text NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_abstract_proactive_chat_campaign_conv": "CREATE TABLE `lh_abstract_proactive_chat_campaign_conv` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `device_type` tinyint(1) NOT NULL, `invitation_type` tinyint(1) NOT NULL,`invitation_status` tinyint(1) NOT NULL,`chat_id` bigint(20) NOT NULL, `campaign_id` int(11) NOT NULL,`invitation_id` int(11) NOT NULL,`department_id` int(11) NOT NULL,`ctime` int(11) NOT NULL,`con_time` int(11) NOT NULL, `vid_id` bigint(20) DEFAULT NULL, PRIMARY KEY (`id`), KEY `campaign_id` (`campaign_id`), KEY `invitation_id` (`invitation_id`), KEY `invitation_status` (`invitation_status`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_audits": "CREATE TABLE `lh_audits` (`id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY, `category` varchar(255) NOT NULL, `file` varchar(255), `object_id` bigint(20) DEFAULT '0', `line` bigint(20), `message` longtext NOT NULL, `severity` varchar(255) NOT NULL, `source` varchar(255) NOT NULL, `time` timestamp NOT NULL, KEY `object_id` (`object_id`), KEY `source` (`source`(191)), KEY `category` (`category`(191))) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_abstract_proactive_chat_campaign_conv": "CREATE TABLE `lh_abstract_proactive_chat_campaign_conv` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `device_type` tinyint(11) NOT NULL,\n  `invitation_type` tinyint(1) NOT NULL,\n  `invitation_status` tinyint(1) NOT NULL,\n  `chat_id` bigint(20) NOT NULL,\n  `campaign_id` int(11) NOT NULL,\n  `invitation_id` int(11) NOT NULL,\n  `department_id` int(11) NOT NULL,\n  `ctime` int(11) NOT NULL,\n  `con_time` int(11) NOT NULL,\n  `vid_id` bigint(20) DEFAULT NULL,\n  `variation_id` bigint(20) unsigned NOT NULL DEFAULT 0,\n  `conv_int_expires` bigint(20) unsigned NOT NULL DEFAULT 0,\n  `conv_int_time` bigint(20) unsigned NOT NULL DEFAULT 0,\n  `conv_event` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `unique_id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `campaign_id` (`campaign_id`),\n  KEY `invitation_status` (`invitation_status`),\n  KEY `ctime` (`ctime`),\n  KEY `invitation_id_variation_id` (`invitation_id`,`variation_id`),\n  KEY `unique_id` (`unique_id`),\n  KEY `conv_int_time` (`conv_int_time`),\n  KEY `conv_event_vid_id` (`conv_event`,`vid_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    "lh_audits": "CREATE TABLE `lh_audits` (`id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY, `category` varchar(255) NOT NULL, `file` varchar(255), `object_id` bigint(20) DEFAULT '0', `line` bigint(20), `message` longtext NOT NULL, `severity` varchar(255) NOT NULL, `source` varchar(255) NOT NULL, `time` timestamp NOT NULL, KEY `time` (`time`), KEY `object_id` (`object_id`), KEY `source` (`source`(191)), KEY `category` (`category`(191))) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_repeat_restrict": "CREATE TABLE `lh_generic_bot_repeat_restrict` (`id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY, `chat_id` bigint(20) NOT NULL, `trigger_id` bigint(20), `counter` int(11) DEFAULT '0', KEY `chat_id_trigger_id` (`chat_id`,`trigger_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_generic_bot_rest_api": "CREATE TABLE `lh_generic_bot_rest_api` (`id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY, `name` varchar(50) NOT NULL, `description` varchar(250), `configuration` text NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_group_chat": "CREATE TABLE `lh_group_chat` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(50) NOT NULL,\n  `status` int(11) NOT NULL, `chat_id` bigint(20) NOT NULL, `time` int(11) NOT NULL,\n  `user_id` int(11) NOT NULL,\n  `last_msg_op_id` bigint(20) NOT NULL,\n  `last_msg` varchar(200) NOT NULL,\n  `last_user_msg_time` int(11) NOT NULL,  `last_msg_id` bigint(20) NOT NULL,  `type` tinyint(1) NOT NULL DEFAULT 0,  `tm` int(11) NOT NULL,  PRIMARY KEY (`id`),\n  KEY `user_id` (`user_id`), KEY `chat_id` (`chat_id`),\n  KEY `type` (`type`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_group_msg": "CREATE TABLE `lh_group_msg` (\n `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `msg` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n  `time` int(11) NOT NULL,\n  `chat_id` int(11) NOT NULL DEFAULT 0,\n  `user_id` int(11) NOT NULL DEFAULT 0,\n  `name_support` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL, `meta_msg` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `chat_id_id` (`chat_id`,`id`),\n  KEY `user_id` (`user_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_group_chat_member": "CREATE TABLE `lh_group_chat_member` (\n `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL, `type` tinyint(1) NOT NULL DEFAULT '0',\n  `group_id` bigint(20) NOT NULL, `last_msg_id` bigint(20) NOT NULL DEFAULT '0', `last_activity` int(11) NOT NULL,\n  `jtime` int(11) NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `group_id` (`group_id`), KEY `user_id` (`user_id`), KEY `type` (`type`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_generic_bot_command": "CREATE TABLE `lh_generic_bot_command` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `command` varchar(50) NOT NULL,\n  `bot_id` int(11) NOT NULL,\n  `trigger_id` int(11) NOT NULL,\n  `dep_id` int(11) NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `dep_id` (`dep_id`),\n  KEY `command` (`command`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_generic_bot_command": "CREATE TABLE `lh_generic_bot_command` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `command` varchar(50) NOT NULL, `info_msg` varchar(100) NOT NULL, `sub_command` varchar(100) NOT NULL,`shortcut_1` varchar(10) NOT NULL,`shortcut_2` varchar(10) NOT NULL,\n  `bot_id` int(11) NOT NULL,\n  `trigger_id` int(11) NOT NULL,\n  `dep_id` int(11) NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `dep_id` (`dep_id`),\n  KEY `command` (`command`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_webhook": "CREATE TABLE `lh_webhook` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `event` varchar(50) NOT NULL,`bot_id_alt` int(11) NOT NULL DEFAULT '0', `trigger_id_alt` int(11) NOT NULL DEFAULT '0',  `bot_id` int(11) NOT NULL,  `trigger_id` int(11) NOT NULL,  `disabled` tinyint(1) NOT NULL, `configuration` longtext NOT NULL, `type` tinyint(1) NOT NULL DEFAULT 0,  PRIMARY KEY (`id`),  KEY `event_disabled` (`event`,`disabled`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_users_login": "CREATE TABLE `lh_users_login` (`id` bigint(20) NOT NULL AUTO_INCREMENT,`user_id` bigint(20) NOT NULL,`type` int(11) NOT NULL,`ctime` bigint(20) NOT NULL,`status` int(11) NOT NULL,`ip` varchar(100) NOT NULL,`msg` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,PRIMARY KEY (`id`),KEY `user_id_type` (`user_id`,`type`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_abstract_chat_alert_icon": "CREATE TABLE `lh_abstract_chat_alert_icon` (`id` bigint(20) NOT NULL AUTO_INCREMENT, `name` varchar(50) NOT NULL, `identifier` varchar(50) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_abstract_stats": "CREATE TABLE `lh_abstract_stats` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `type` int(11) NOT NULL,\n  `lupdate` bigint(20) NOT NULL,\n  `object_id` bigint(20) NOT NULL,\n  `stats` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `type_object_id` (`type`,`object_id`)\n) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_chat_voice_video" : "CREATE TABLE IF NOT EXISTS `lh_chat_voice_video` (`id` bigint(20) NOT NULL AUTO_INCREMENT,`chat_id` bigint(20) NOT NULL,`user_id` bigint(20) NOT NULL,`op_status` tinyint(4) NOT NULL,`vi_status` tinyint(4) NOT NULL,`voice` tinyint(4) NOT NULL, `video` tinyint(4) NOT NULL,`screen_share` tinyint(4) NOT NULL,`status` tinyint(4) NOT NULL,`ctime` int(11) NOT NULL, `token` varchar(200) NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`) ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_incoming_webhook" : "CREATE TABLE `lh_incoming_webhook` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `name` varchar(50) NOT NULL, `dep_id` int(11) NOT NULL, `identifier` varchar(50) NOT NULL, `scope` varchar(50) NOT NULL, `disabled` tinyint(1) NOT NULL, `configuration` longtext NOT NULL, PRIMARY KEY (`id`),  KEY `identifier` (`identifier`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_chat_incoming" : "CREATE TABLE `lh_chat_incoming` (  `id` bigint(20) NOT NULL AUTO_INCREMENT, `chat_id` bigint(20) NOT NULL, `utime` bigint(20) NOT NULL, `incoming_id` int(11) NOT NULL, `payload` longtext NOT NULL, `chat_external_id` varchar(50) NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`),  KEY `incoming_ext_id` (`incoming_id`,`chat_external_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_incoming_webhook" : "CREATE TABLE `lh_incoming_webhook` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `identifier` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `disabled` tinyint(1) NOT NULL,\n  `configuration` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n  `dep_id` int(11) NOT NULL,\n  `scope` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `icon` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `icon_color` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `log_incoming` tinyint(1) unsigned NOT NULL,\n  `log_failed_parse` tinyint(1) unsigned NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `identifier` (`identifier`,`disabled`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci\n",
+    "lh_chat_incoming" : "CREATE TABLE `lh_chat_incoming` (  `id` bigint(20) NOT NULL AUTO_INCREMENT, `chat_id` bigint(20) NOT NULL, `utime` bigint(20) NOT NULL, `incoming_id` int(11) NOT NULL, `payload` longtext NOT NULL, `chat_external_id` varchar(100) NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`), UNIQUE KEY `incoming_ext_id_uniq` (`incoming_id`,`chat_external_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_canned_msg_dep" : "CREATE TABLE `lh_canned_msg_dep` (`id` bigint(20) NOT NULL AUTO_INCREMENT,`canned_id` int(11) NOT NULL,`dep_id` int(11) NOT NULL,PRIMARY KEY (`id`), KEY `canned_id` (`canned_id`),KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_abstract_auto_responder_dep" : "CREATE TABLE `lh_abstract_auto_responder_dep` (`id` bigint(20) NOT NULL AUTO_INCREMENT, `autoresponder_id` int(11) NOT NULL, `dep_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `autoresponder_id` (`autoresponder_id`),KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_canned_msg_subject" : "CREATE TABLE `lh_canned_msg_subject` (\n    `id` int(11) NOT NULL AUTO_INCREMENT,\n    `canned_id` int(11) NOT NULL,\n    `subject_id` int(11) NOT NULL,\n    PRIMARY KEY (`id`),\n    KEY `canned_id` (`canned_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_canned_msg_use" : "CREATE TABLE `lh_canned_msg_use` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `canned_id` int(11) unsigned NOT NULL, `chat_id` bigint(20) unsigned NOT NULL, `ctime` bigint(20) unsigned NOT NULL, `user_id` bigint(20) unsigned NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`), KEY `ctime` (`ctime`),   KEY `canned_id` (`canned_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_canned_msg_replace" : "CREATE TABLE `lh_canned_msg_replace` (    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,    `identifier` varchar(50) NOT NULL,    `default` text NOT NULL, `conditions` longtext NOT NULL,    PRIMARY KEY (`id`),    KEY `identifier` (`identifier`)    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_abstract_saved_search" : "CREATE TABLE `lh_abstract_saved_search` (\n                    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n                  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,\n                  `params` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n                  `user_id` bigint(20) unsigned NOT NULL, `passive` tinyint(1) unsigned NOT NULL DEFAULT 0, `position` int(11) unsigned NOT NULL, `scope` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n                  `days` int(11) unsigned NOT NULL,\n                  `updated_at` bigint(20) unsigned NOT NULL,\n                  `requested_at` bigint(20) unsigned NOT NULL,\n                  `total_records` bigint(20) unsigned NOT NULL,\n                  PRIMARY KEY (`id`),\n                  KEY `user_id` (`user_id`),\n                  KEY `scope` (`scope`),\n                  KEY `updated_at` (`updated_at`),\n                  KEY `requested_at` (`requested_at`)\n                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_abstract_saved_search" : "CREATE TABLE `lh_abstract_saved_search` (\n                    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,`description` text COLLATE utf8mb4_unicode_ci NOT NULL, `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,\n                  `params` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n                  `user_id` bigint(20) unsigned NOT NULL, `passive` tinyint(1) unsigned NOT NULL DEFAULT 0, `position` int(11) unsigned NOT NULL, `scope` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n                  `days` int(11) unsigned NOT NULL,\n                  `updated_at` bigint(20) unsigned NOT NULL,\n                  `requested_at` bigint(20) unsigned NOT NULL,\n                  `total_records` bigint(20) unsigned NOT NULL,\n                  PRIMARY KEY (`id`),\n                  KEY `user_id` (`user_id`),\n                  KEY `scope` (`scope`),\n                  KEY `updated_at` (`updated_at`),\n                  KEY `requested_at` (`requested_at`)\n                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_abstract_saved_report" : "CREATE TABLE `lh_abstract_saved_report` (\n    `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n    `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,\n    `description` text COLLATE utf8mb4_unicode_ci NOT NULL,\n    `params` longtext COLLATE utf8mb4_unicode_ci NOT NULL, `send_log` longtext COLLATE utf8mb4_unicode_ci NOT NULL, `recurring_options` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n    `user_id` bigint(20) unsigned NOT NULL,\n    `position` int(11) unsigned NOT NULL,\n    `days` int(11) unsigned NOT NULL,\n    `date_type` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,\n    `days_end` int(11) unsigned NOT NULL,\n    `updated_at` bigint(20) unsigned NOT NULL,\n    PRIMARY KEY (`id`),\n    KEY `user_id` (`user_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
     "lh_chat_action" : "CREATE TABLE `lh_chat_action` (\n                `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n                  `chat_id` bigint(20) NOT NULL,\n                  `action` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n                  `body` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n                  `created_at` bigint(20) unsigned NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
-    "lh_abstract_proactive_chat_invitation_dep" : "CREATE TABLE `lh_abstract_proactive_chat_invitation_dep` (`id` bigint(20) NOT NULL AUTO_INCREMENT,`invitation_id` int(11) NOT NULL,`dep_id` int(11) NOT NULL,PRIMARY KEY (`id`), KEY `invitation_id` (`invitation_id`),KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+    "lh_abstract_proactive_chat_invitation_dep" : "CREATE TABLE `lh_abstract_proactive_chat_invitation_dep` (`id` bigint(20) NOT NULL AUTO_INCREMENT,`invitation_id` int(11) NOT NULL,`dep_id` int(11) NOT NULL,PRIMARY KEY (`id`), KEY `invitation_id` (`invitation_id`),KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_generic_bot_rest_api_cache" : "CREATE TABLE `lh_generic_bot_rest_api_cache` (\n  `hash` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n  `rest_api_id` bigint(20) unsigned NOT NULL,\n  `response` text NOT NULL,\n  `ctime` bigint(20) NOT NULL,\n  UNIQUE KEY `rest_api_id_hash` (`rest_api_id`,`hash`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_userdep_alias" : "CREATE TABLE `lh_userdep_alias` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,`dep_id` bigint(20) unsigned NOT NULL,`dep_group_id` bigint(20) unsigned NOT NULL, `user_id` bigint(20) unsigned NOT NULL,`nick` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,`filepath` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,`filename` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,`avatar` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL, PRIMARY KEY (`id`), KEY `dep_id_user_id` (`dep_id`,`user_id`), KEY `dep_group_id_user_id` (`dep_group_id`,`user_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_abstract_msg_protection" : "CREATE TABLE `lh_abstract_msg_protection` (`id` int(11) unsigned NOT NULL AUTO_INCREMENT,`pattern` text COLLATE utf8mb4_unicode_ci NOT NULL,`enabled` int(11) NOT NULL DEFAULT 1,`remove` int(11) NOT NULL DEFAULT 0,`v_warning` text COLLATE utf8mb4_unicode_ci NOT NULL, PRIMARY KEY (`id`), KEY `enabled` (`enabled`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_chat_participant" : "CREATE TABLE `lh_chat_participant` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `chat_id` bigint(20) NOT NULL,\n  `user_id` bigint(20) NOT NULL,\n  `duration` int(11) unsigned NOT NULL,\n  `time` bigint(20) unsigned NOT NULL,\n  `dep_id` bigint(20) unsigned NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `chat_id` (`chat_id`),\n  KEY `time` (`time`),\n  KEY `user_id` (`user_id`)\n) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_brand" : "CREATE TABLE `lh_brand` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_brand_member" : "CREATE TABLE `lh_brand_member` (`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT, `dep_id` bigint(20) unsigned NOT NULL, `brand_id` bigint(20) unsigned NOT NULL, `role` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,\n                                   PRIMARY KEY (`id`),\n                                   KEY `dep_id` (`dep_id`),\n                                   KEY `brand_id_role` (`brand_id`,`role`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    "lh_bot_condition" : "CREATE TABLE `lh_bot_condition` (\n                                    `id` int(11) unsigned NOT NULL AUTO_INCREMENT,\n                                    `configuration` longtext COLLATE utf8mb4_unicode_ci NOT NULL,\n                                    `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n                                    `identifier` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,\n                                    PRIMARY KEY (`id`),\n                                    KEY `identifier` (`identifier`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
   }
 }

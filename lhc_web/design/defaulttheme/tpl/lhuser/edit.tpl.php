@@ -8,8 +8,8 @@
 	<?php include(erLhcoreClassDesign::designtpl('lhkernel/alert_success.tpl.php'));?>
 <?php endif; ?>
 
-<ul class="nav nav-pills" role="tablist">
-	<li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == '') : ?>active<?php endif;?>" href="#account" aria-controls="account" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Account data');?></a></li>
+<ul class="nav nav-tabs mb-3" role="tablist">
+	<li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == '') : ?>active<?php endif;?>" href="#account" aria-controls="account" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Account data');?></a></li>
 
     <?php if (!(isset($can_edit_groups) && $can_edit_groups === false) && (
             erLhcoreClassUser::instance()->hasAccessTo('lhuser','see_user_assigned_departments') ||
@@ -19,20 +19,24 @@
             erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_to_own_department_individual') ||
             erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_to_own_department_group')
         )) : ?>
-	<li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == 'tab_departments') : ?>active<?php endif;?>" href="#departments" aria-controls="departments" role="tab" data-toggle="tab" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Assigned departments');?></a></li>
-    <?php endif;?>
-
-    <?php if (!(isset($can_edit_groups) && $can_edit_groups === false)) : ?>
-    <li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == 'tab_pending') : ?>active<?php endif;?>" href="#pending" aria-controls="pending" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Pending chats');?></a></li>
+	<li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == 'tab_departments') : ?>active<?php endif;?>" href="#departments" aria-controls="departments" role="tab" data-bs-toggle="tab" ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Assigned departments');?></a></li>
     <?php endif;?>
 
 	<?php if (erLhcoreClassUser::instance()->hasAccessTo('lhpermission','see_permissions_users')) : ?>
-	<li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == 'tab_permission') : ?>active<?php endif;?>" href="#permission" aria-controls="permission" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Permissions');?></a></li>
+	<li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == 'tab_permission') : ?>active<?php endif;?>" href="#permission" aria-controls="permission" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Permissions');?></a></li>
 	<?php endif;?>
 
     <?php if (!(isset($can_edit_groups) && $can_edit_groups === false)) : ?>
-    <li class="nav-item" role="presentation" ><a class="nav-link <?php if ($tab == 'tab_speech') : ?>active<?php endif;?>" href="#speech" aria-controls="speech" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Speech');?></a></li>
+    <li class="nav-item" role="presentation" ><a class="nav-link <?php if ($tab == 'tab_speech') : ?>active<?php endif;?>" href="#speech" aria-controls="speech" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Speech');?></a></li>
     <?php endif; ?>
+
+    <?php if (!(isset($can_edit_groups) && $can_edit_groups === false)) : ?>
+        <li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == 'tab_pending') : ?>active<?php endif;?>" href="#pending" aria-controls="pending" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Chats');?></a></li>
+    <?php endif;?>
+
+    <?php if (!(isset($can_edit_groups) && $can_edit_groups === false)) : ?>
+        <li class="nav-item" role="presentation"><a class="nav-link <?php if ($tab == 'tab_notifications') : ?>active<?php endif;?>" href="#notifications" aria-controls="notifications" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Notifications');?></a></li>
+    <?php endif;?>
 
     <?php include(erLhcoreClassDesign::designtpl('lhuser/menu_tabs/custom_multiinclude_tab.tpl.php'));?>
 
@@ -79,7 +83,7 @@
            </div>
 
     		<div class="form-group">
-        		<label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/edit','E-mail');?></label>
+        		<label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/edit','E-mail');?>*</label>
         		<input type="text" ng-non-bindable <?php if ($can_edit_groups === false) : ?>disabled="disabled"<?php endif;?> class="form-control" name="Email" value="<?php echo $user->email;?>"/>
     		</div>
 
@@ -89,7 +93,7 @@
 			</div>
 
     		<div class="form-group">
-    		  <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/edit','Name');?></label>
+    		  <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/edit','Name');?>*</label>
     		  <input type="text" ng-non-bindable <?php if ($can_edit_groups === false) : ?>disabled="disabled"<?php endif;?> class="form-control" name="Name" value="<?php echo htmlspecialchars($user->name);?>"/>
     		</div>
 
@@ -227,23 +231,35 @@
 			<?php include(erLhcoreClassDesign::designtpl('lhkernel/alert_success.tpl.php'));?>
 		<?php endif; ?>
 
+		<?php if (isset($account_updated_departaments) && $account_updated_departaments == 'failed') : $errors[] = erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Account update failed! Please try again!'); ?>
+			<?php include(erLhcoreClassDesign::designtpl('lhkernel/validation_error.tpl.php'));?>
+		<?php endif; ?>
+
 		<?php
 		  $userDepartaments = erLhcoreClassUserDep::getUserDepartamentsIndividual($user->id);
 		  $userDepartamentsRead = erLhcoreClassUserDep::getUserDepartamentsIndividual($user->id, true);
+          $userDepartamentsAutoExc = erLhcoreClassUserDep::getUserDepartamentsExcAutoassignIds($user->id);
+          $userDepartamentsParams = erLhcoreClassUserDep::getUserIndividualParams($user->id);
+
 		  $userDepartamentsGroup = erLhcoreClassModelDepartamentGroupUser::getUserGroupsIds($user->id);
 		  $userDepartamentsGroupRead = erLhcoreClassModelDepartamentGroupUser::getUserGroupsIds($user->id, true);
+          $userDepartamentsGroupAutoExc = erLhcoreClassModelDepartamentGroupUser::getUserGroupsExcAutoassignIds($user->id);
+          $userDepartamentsGroupParams = erLhcoreClassModelDepartamentGroupUser::getUserGroupsParams($user->id);
+
           $departmentEditParams = [
                   'self_edit' => false,
                   'all_departments' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','edit_all_departments'),
                   'individual' => [
                           'read_all' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','see_user_assigned_departments') || erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_all_department_individual'),
                           'edit_all' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_all_department_individual'),
-                          'edit_personal' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_to_own_department_individual')
+                          'edit_personal' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_to_own_department_individual'),
+                          'all_dep'  => $userDepartamentsParams,
                   ],
                   'groups' => [
                       'read_all' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','see_user_assigned_departments_groups') || erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_all_department_group'),
                       'edit_all' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_all_department_group'),
-                      'edit_personal' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_to_own_department_group')
+                      'edit_personal' => erLhcoreClassUser::instance()->hasAccessTo('lhuser','assign_to_own_department_group'),
+                      'all_group' => $userDepartamentsGroupParams
                   ]
           ];
 
@@ -273,10 +289,7 @@
 		?>
 
 		<form action="<?php echo erLhcoreClassDesign::baseurl('user/edit')?>/<?php echo $user->id?>#departments" method="post" enctype="multipart/form-data">
-
 		    <?php include(erLhcoreClassDesign::designtpl('lhuser/account/departments_assignment.tpl.php'));?>
-
-		    <input type="submit" class="btn btn-secondary" name="UpdateDepartaments_account" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/edit','Update');?>"/>
 		</form>
     </div>
     <?php endif; ?>
@@ -295,12 +308,45 @@
            <label><input type="checkbox" name="autoAccept" value="1" <?php $user->auto_accept == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Automatically accept assigned chats');?></label>
         </div>
 
-        <div class="form-group">
-           <label><input type="checkbox" name="exclude_autoasign" value="1" <?php $user->exclude_autoasign == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Exclude from auto assign workflow');?></label>
-        </div>
-
        <div class="form-group">
            <label><input type="checkbox" name="auto_join_private" value="1" <?php erLhcoreClassModelUserSetting::getSetting('auto_join_private',1, $user->id) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Auto join private chats');?></label>
+       </div>
+
+       <div class="form-group">
+           <label><input type="checkbox" name="no_scroll_bottom" value="1" <?php erLhcoreClassModelUserSetting::getSetting('no_scroll_bottom',0, $user->id) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Do not scroll to the bottom on chat open');?></label>
+       </div>
+
+       <div class="form-group">
+           <fieldset class="border p-2">
+               <legend class="w-auto fs16 mb-0"><label class="fs16 m-0 p-0"><input type="checkbox" name="remove_closed_chats" value="1" <?php erLhcoreClassModelUserSetting::getSetting('remove_closed_chats',0, $user->id) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Remove my closed chats from opened chat list on page refresh');?></label></legend>
+               <br>
+               <label><input type="checkbox" name="remove_closed_chats_remote" value="1" <?php erLhcoreClassModelUserSetting::getSetting('remove_closed_chats_remote',0, $user->id) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Include not only my chats');?>
+                   <span class="d-block"><small><i><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Other operators chats also will be closed on page refresh');?></i></small></span>
+               </label>
+               <div class="form-group mb-0">
+                   <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','How much time has to be passed after chat close before chat is removed. Time in minutes.');?></label>
+                   <input name="remove_close_timeout" value="<?php echo (int)erLhcoreClassModelUserSetting::getSetting('remove_close_timeout',5, $user->id)?>" class="form-control form-control-sm" type="number" max="60" min="1" >
+               </div>
+           </fieldset>
+       </div>
+
+       <div class="form-group">
+           <label><input type="checkbox" name="exclude_autoasign" value="1" <?php $user->exclude_autoasign == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Exclude from auto assign workflow');?></label>
+       </div>
+
+       <div class="form-group">
+           <label><input type="checkbox" name="auto_preload" value="1" <?php erLhcoreClassModelUserSetting::getSetting('auto_preload',0, $user->id) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Auto preload previous visitor chat messages');?></label>
+       </div>
+
+       <div class="form-group">
+           <label><input type="checkbox" name="auto_uppercase" value="1" <?php erLhcoreClassModelUserSetting::getSetting('auto_uppercase',1, $user->id) == 1 ? print 'checked="checked"' : '' ?> /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Auto uppercase sentences');?></label>
+       </div>
+
+       <div class="form-group">
+           <label>
+               <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Default number of rows for chat text area');?>
+           </label>
+           <input class="form-control form-control-sm" type="number" name="chat_text_rows" value="<?php echo (int)erLhcoreClassModelUserSetting::getSetting('chat_text_rows',2, $user->id) ?>" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Number of rows');?>">
        </div>
 
         <div class="form-group">
@@ -347,6 +393,9 @@
 
         </form>
     </div>
+
+    <?php include(erLhcoreClassDesign::designtpl('lhuser/menu_tabs_content/notifications_tab_edit.tpl.php'));?>
+
     <?php endif; ?>
 
 	<?php include(erLhcoreClassDesign::designtpl('lhuser/menu_tabs_content/custom_multiinclude_tab.tpl.php'));?>

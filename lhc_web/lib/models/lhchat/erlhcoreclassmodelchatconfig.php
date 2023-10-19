@@ -1,10 +1,11 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhcoreClassModelChatConfig {
 
-   
    public static $disableCache = false;
-    
+
+   public $prevAttributes = [];
+
    public function getState()
    {
        return array(
@@ -16,7 +17,17 @@ class erLhcoreClassModelChatConfig {
        );
    }
 
-   public static function fetch($identifier)
+   public function afterSetState($attr) {
+       $this->prevAttributes = $attr;
+   }
+
+   public static function fetchException($identifier)
+   {
+       $GLOBALS['lhc_erLhcoreClassModelChatConfig'.$identifier] = erLhcoreClassChat::getSession()->load( 'erLhcoreClassModelChatConfig', $identifier );
+       return $GLOBALS['lhc_erLhcoreClassModelChatConfig'.$identifier];
+   }
+
+   public static function fetch($identifier, $throwException = false)
    {
        if (self::$disableCache == false && isset($GLOBALS['lhc_erLhcoreClassModelChatConfig'.$identifier])) {
            return $GLOBALS['lhc_erLhcoreClassModelChatConfig'.$identifier];
@@ -24,6 +35,11 @@ class erLhcoreClassModelChatConfig {
        try {
        $GLOBALS['lhc_erLhcoreClassModelChatConfig'.$identifier] = erLhcoreClassChat::getSession()->load( 'erLhcoreClassModelChatConfig', $identifier );
        } catch (Exception $e) {
+
+           if ($throwException === true) {
+               throw $e;
+           }
+
            // Record still does not exists, this happens during install
            $GLOBALS['lhc_erLhcoreClassModelChatConfig'.$identifier] = new erLhcoreClassModelChatConfig();
        }
@@ -56,7 +72,20 @@ class erLhcoreClassModelChatConfig {
    	   if (isset($_SESSION['lhc_chat_config'][$this->identifier])) {
    	   		unset($_SESSION['lhc_chat_config'][$this->identifier]);
    	   }
-   	   
+
+       if ($this->explain != 'ignore' && json_encode($this->getState()) != json_encode($this->prevAttributes)) {
+           erLhcoreClassLog::logObjectChange(array(
+               'object' => $this,
+               'check_log' => true,
+               'msg' => array(
+                   'curr' => $this->getState(),
+                   'prev' => $this->prevAttributes,
+                   'url' => (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
+                   'user_id' => (PHP_SAPI !== 'cli' && erLhcoreClassUser::instance()->isLogged() ? erLhcoreClassUser::instance()->getUserID() : 0)
+               )
+           ));
+       }
+
        erLhcoreClassChat::getSession()->saveOrUpdate( $this );
    }
 
@@ -66,6 +95,8 @@ class erLhcoreClassModelChatConfig {
        {
            $this->$key = $val;
        }
+
+       $this->afterSetState($properties);
    }
 
    public function __get($variable)

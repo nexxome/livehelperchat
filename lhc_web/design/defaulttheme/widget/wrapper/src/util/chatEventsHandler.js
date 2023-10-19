@@ -37,6 +37,7 @@ class chatEventsHandler {
             'department' : this.attributes['department'],
             'product' : this.attributes['product'],
             'theme' : this.attributes['theme'],
+            'theme_v' : this.attributes['theme_v'],
             'base_url' : this.attributes['base_url'],
             'mode' : this.attributes['mode'],
             'captcha' : this.attributes['captcha'],
@@ -44,7 +45,9 @@ class chatEventsHandler {
             'static_chat' : this.attributes['userSession'].getSessionAttributes(),
             'domain_lhc': this.attributes['domain_lhc'],
             'leave_message': this.attributes['leaveMessage'],
-            'scope_prefix': this.attributes['prefixLowercase']
+            'scope_prefix': this.attributes['prefixLowercase'],
+            'position_placement': this.attributes['position_placement'],
+            'position_placement_original': this.attributes['position_placement_original']
         };
 
         if (this.attributes['fresh'] == true) {
@@ -63,6 +66,10 @@ class chatEventsHandler {
 
         if (this.attributes['trigger_id'] != '') {
             attr['trigger_id'] = this.attributes['trigger_id'];
+        }
+        
+        if (this.attributes['subject_id'] != '') {
+            attr['subject_id'] = this.attributes['subject_id'];
         }
 
         if (this.attributes['priority'] != '') {
@@ -125,7 +132,10 @@ class chatEventsHandler {
                     prefilOptionsList.push({'Question' : item.value});
                 }
             })
+            prefilOptionsList = prefilOptionsList.concat(this.attributes['userSession'].getPrefillVars());
             attr['attr_prefill'] = prefilOptionsList;
+        } else {
+            attr['attr_prefill'] = this.attributes['userSession'].getPrefillVars();
         }
 
         if (this.attributes.LHCChatOptions && this.attributes.LHCChatOptions.attr_prefill_admin) {

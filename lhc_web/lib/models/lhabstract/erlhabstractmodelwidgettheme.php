@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhAbstractModelWidgetTheme {
 
     use erLhcoreClassDBTrait;
@@ -101,6 +101,7 @@ class erLhAbstractModelWidgetTheme {
 			'notification_configuration'=> $this->notification_configuration,
 
 			'hide_ts'                   => $this->hide_ts,
+			'hide_op_ts'                => $this->hide_op_ts,
 			'widget_response_width'     => $this->widget_response_width,
 			'modified'                  => $this->modified,
 			'alias'                     => $this->alias,
@@ -260,7 +261,7 @@ class erLhAbstractModelWidgetTheme {
 
            case 'replace_array':
 
-               $host = '//'.$_SERVER['HTTP_HOST'];
+               $host = erLhcoreClassSystem::getHost();
 
                $this->replace_array = array(
                    'search' => array(
@@ -309,7 +310,7 @@ class erLhAbstractModelWidgetTheme {
 	   	       $attr = str_replace('_url', '', $var);	   	       	   	       
 	   	       $this->$var = false;	   	        
 	   	       if ($this->$attr != ''){
-	   	           $this->$var =  ($this->{$attr.'_path'} != '' ? (erLhcoreClassSystem::$httpsMode == true ? 'https:' : 'http:') . '//' . $_SERVER['HTTP_HOST'] . erLhcoreClassSystem::instance()->wwwDir() : erLhcoreClassSystem::instance()->wwwImagesDir() ) . '/' . $this->{$attr.'_path'} . $this->$attr;
+	   	           $this->$var =  ($this->{$attr.'_path'} != '' ? erLhcoreClassSystem::getHost() . erLhcoreClassSystem::instance()->wwwDir() : erLhcoreClassSystem::instance()->wwwImagesDir() ) . '/' . $this->{$attr.'_path'} . $this->$attr;
 	   	       }	   	        
 	   	       return $this->$var;
 	   	    break;
@@ -327,7 +328,7 @@ class erLhAbstractModelWidgetTheme {
 	   	        $attr = str_replace('_url_img', '', $var);	   	    
 	   			$this->$var = false;	   		
 	   			if($this->$attr != ''){
-	   				$this->$var = '<img src="'.($this->{$attr.'_path'} != '' ? (erLhcoreClassSystem::$httpsMode == true ? 'https:' : 'http:') . '//' . $_SERVER['HTTP_HOST'] . erLhcoreClassSystem::instance()->wwwDir() : erLhcoreClassSystem::instance()->wwwImagesDir() ) .'/'.$this->{$attr.'_path'} . $this->$attr.'"/>';
+	   				$this->$var = '<img src="'.($this->{$attr.'_path'} != '' ? erLhcoreClassSystem::getHost() . erLhcoreClassSystem::instance()->wwwDir() : erLhcoreClassSystem::instance()->wwwImagesDir() ) .'/'.$this->{$attr.'_path'} . $this->$attr.'"/>';
 	   			}
 	   			return $this->$var;
 	   		break;
@@ -438,17 +439,9 @@ class erLhAbstractModelWidgetTheme {
 	}
 
 	public function translate() {
-        $chatLocale = null;
-        $chatLocaleFallback = erConfigClassLhConfig::getInstance()->getDirLanguage('content_language');
 
-        // Detect user locale
-        if(isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-            $parts = explode(';',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
-            $languages = explode(',',$parts[0]);
-            if (isset($languages[0])) {
-                $chatLocale = $languages[0];
-            }
-        }
+        $chatLocaleFallback = erConfigClassLhConfig::getInstance()->getDirLanguage('content_language');
+        $chatLocale = erLhcoreClassChatValidator::getVisitorLocale();
 
         $attributesDirect = array(
             'pending_join_queue',
@@ -478,11 +471,13 @@ class erLhAbstractModelWidgetTheme {
             'custom_html_bot',
             'custom_html_widget',
             'custom_html',
+            'after_chat_status',
             'intro_message',
             'intro_message_html',
             'pre_chat_html',
             'pre_offline_chat_html',
             'thank_feedback',
+            'blocked_visitor',
             'placeholder_message',
             'need_help_html',
             'chat_unavailable',
@@ -500,6 +495,8 @@ class erLhAbstractModelWidgetTheme {
             'formf_file',
             'formf_phone',
             'formf_question',
+            'fheight_text_class',
+            'fheight_text_col',
         ),$attributesDirect);
 
         $attributes = $this->bot_configuration_array;
@@ -619,6 +616,8 @@ class erLhAbstractModelWidgetTheme {
 	public $buble_operator_text_color = ''; //333333
 
     public $hide_ts = 0;
+    public $hide_op_ts = 0;
+
     public $widget_response_width = 0;
 
     // Theme modified time. We will use this attribute for E-Tag

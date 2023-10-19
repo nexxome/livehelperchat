@@ -16,6 +16,23 @@ $departmentParams['filter']['archive'] = 0;
 
 $departmentNames = array();
 $departmentList = array();
+
+// Always include selected departments
+$dwFilters = json_decode(erLhcoreClassModelUserSetting::getSetting('dw_filters', '{}', false, false, true),true);
+$filterDep = [];
+
+foreach (['actived','departmentd','unreadd','pendingd','operatord','closedd','mcd','botd','subjectd','department_online'] as $list) {
+    if (isset($dwFilters[$list]) && !empty($dwFilters[$list])) {
+        $filterDep = array_unique(array_merge($filterDep,explode("/",$dwFilters[$list])));
+    }
+}
+
+if (!empty($filterDep)) {
+    $departmentParams['filterin']['id'] = $filterDep;
+} else {
+    $departmentParams['limit'] = 20;
+}
+
 $departments = erLhcoreClassModelDepartament::getList($departmentParams);
 
 $loggedDepartments = erLhcoreClassChat::getLoggedDepartmentsIds(array_keys($departments), false);
@@ -33,6 +50,7 @@ foreach ($departments as $department) {
         'disabled' => $department->disabled == 1,
         'ogen' => in_array($department->id, $loggedDepartments),            // Online general
         'oexp' => in_array($department->id, $loggedDepartmentsExplicit),    // Online explicit
+        'slc' => in_array($department->id, $filterDep)
     );
 
     $filterProducts[] = $department->id;
@@ -118,7 +136,13 @@ if (is_array($Params['user_parameters_unordered']['chatopen']) && !empty($Params
     }
 
     foreach ($chats as $chat) {
-        if (erLhcoreClassChat::hasAccessToRead($chat)){
+        if (erLhcoreClassChat::hasAccessToRead($chat) && (
+                $chat->status != erLhcoreClassModelChat::STATUS_CLOSED_CHAT ||
+                ($chat->user_id != $userData->id && (int)erLhcoreClassModelUserSetting::getSetting('remove_closed_chats_remote',0) == 0) ||
+                $chat->cls_time > (time() - (int)erLhcoreClassModelUserSetting::getSetting('remove_close_timeout',5) * 60) ||
+                erLhcoreClassModelUserSetting::getSetting('remove_closed_chats',0) == 0
+            )
+        ) {
             $chatOpen[] = array(
                 'id' => $chat->id,
                 'nick' => erLhcoreClassDesign::shrt($chat->nick,10,'...',30,ENT_QUOTES)
@@ -153,15 +177,25 @@ if (is_array($Params['user_parameters_unordered']['chatgopen']) && !empty($Param
     }
 }
 
-$columns = erLhAbstractModelChatColumn::getList(array('ignore_fields' => array('position','conditions','enabled','variable'), 'sort' => 'position ASC, id ASC','filter' => array('enabled' => 1)));
+$columns = erLhAbstractModelChatColumn::getList(array('ignore_fields' => array('popup_content','position','conditions','enabled','variable'), 'sort' => 'position ASC, id ASC','filter' => array('enabled' => 1)));
 
 $columnsAdd = array();
 foreach ($columns as $column) {
     $columnsAdd[$column->column_identifier]['items'][] = 'cc_' . $column->id;
     $columnsAdd[$column->column_identifier]['name'] = $column->column_name;
-    $columnsAdd[$column->column_identifier]['icon'] = $column->column_icon;
+    $columnsAdd[$column->column_identifier]['icon'] = $column->column_icon != "" && strpos($column->column_icon,'"') !== false ? json_decode($column->column_icon,true) : $column->column_icon;
     $columnsAdd[$column->column_identifier]['cenabl'] = $column->chat_enabled == 1;
     $columnsAdd[$column->column_identifier]['oenabl'] = $column->online_enabled == 1;
+    $columnsAdd[$column->column_identifier]['iconm'] = $column->icon_mode == 1;
+    $columnsAdd[$column->column_identifier]['iconp'] = $column->has_popup == 1;
+
+    if ($column->sort_enabled == 1) {
+        $columnsAdd[$column->column_identifier]['sorten'] = true;
+    }
+
+    if ($columnsAdd[$column->column_identifier]['iconp'] === true) {
+        $columnsAdd[$column->column_identifier]['id'] = $column->id;
+    }
 }
 
 $groupListParams = erLhcoreClassGroupUser::getConditionalUserFilter(false, true);
@@ -178,7 +212,7 @@ $widgets = erLhcoreClassChat::array_flatten($widgets);
 
 $dwic = json_decode(erLhcoreClassModelUserSetting::getSetting('dwic', ''),true);
 $not_ic = json_decode(erLhcoreClassModelUserSetting::getSetting('dw_nic', ''),true);
-$dwFilters = json_decode(erLhcoreClassModelUserSetting::getSetting('dw_filters', '{}', false, false, true),true);
+
 
 $response = array(
     'widgets' => $widgets,

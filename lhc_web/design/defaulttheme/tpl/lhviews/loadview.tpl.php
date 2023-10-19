@@ -2,7 +2,7 @@
     <?php if (!$list_mode) : ?>
     <div role="tabpanel" id="tabs" ng-cloak>
         <ul class="nav nav-pills" role="tablist">
-            <li role="presentation" class="nav-item"><a class="nav-link active" href="#chatlist" aria-controls="chatlist" ng-non-bindable role="tab" data-toggle="tab" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/onlineusers','Chat list');?>">
+            <li role="presentation" class="nav-item"><a class="nav-link active" href="#chatlist" aria-controls="chatlist" ng-non-bindable role="tab" data-bs-toggle="tab" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/onlineusers','Chat list');?>">
                     <?php echo htmlspecialchars($search->name)?> </a>
             </li>
         </ul>
@@ -27,6 +27,9 @@
                         <?php foreach ($items as $chat) : ?>
                             <?php include(erLhcoreClassDesign::designtpl('lhchat/lists/start_row.tpl.php')); ?>
                             <td nowrap="">
+
+                                <?php include(erLhcoreClassDesign::designtpl('lhchat/lists/icons_additional.tpl.php')); ?>
+
                                 <?php foreach ($chat->aicons as $aicon) : ?>
                                     <i class="material-icons" style="color: <?php isset($aicon['c']) ? print htmlspecialchars($aicon['c']) : print '#6c757d'?>" title="<?php isset($aicon['t']) ? print htmlspecialchars($aicon['t']) : htmlspecialchars($aicon['i'])?> {{icon.t ? icon.t : icon.i}}"><?php isset($aicon['i']) ? print htmlspecialchars($aicon['i']) : htmlspecialchars($aicon)?></i>
                                 <?php endforeach; ?>

@@ -11,7 +11,7 @@
     $params = array (
         'input_name'     => 'group_id',
         'display_name'   => 'name',
-        'css_class'      => 'form-control',
+        'css_class'      => 'form-control form-control-sm',
         'selected_id'    => $item->group_id,
         'list_function'  => 'erLhcoreClassModelGenericBotTrGroup::getList',
         'list_function_params'  => array('limit' => false)
@@ -22,14 +22,19 @@
 
 <div class="form-group" ng-non-bindable>
     <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/edit','Identifier');?></label>
-    <input type="text" class="form-control" name="identifier"  value="<?php echo htmlspecialchars($item->identifier);?>" />
+    <input type="text" class="form-control form-control-sm" name="identifier" value="<?php echo htmlspecialchars($item->identifier);?>" />
+</div>
+
+<div class="form-group">
+    <label><input type="checkbox" name="auto_translate" <?php $item->auto_translate == 1 ? print 'checked="checked"' : ''?> value="1" /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','If translation is not found use translation service')?></label>
+    <p><i><small><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/edit','If you have configured Automatic Translations we will use it for untranslated items.');?></small></i></p>
 </div>
 
 <div role="tabpanel">
     <!-- Nav tabs -->
     <ul class="nav nav-tabs mb-2" role="tablist" id="autoresponder-tabs">
-        <li role="presentation" class="nav-item"><a class="nav-link active" href="#defaulttr" aria-controls="defaulttr" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Default');?></a></li>
-        <li ng-repeat="lang in cmsg.languages" class="nav-item" role="presentation"><a class="nav-link" href="#lang-{{$index}}" aria-controls="lang-{{$index}}" role="tab" data-toggle="tab" ><i class="material-icons mr-0">&#xE894;</i> [{{cmsg.getLanguagesChecked(lang)}}]</a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link active" href="#defaulttr" aria-controls="defaulttr" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Default');?></a></li>
+        <li ng-repeat="lang in cmsg.languages" class="nav-item" role="presentation"><a class="nav-link" href="#lang-{{$index}}" aria-controls="lang-{{$index}}" role="tab" data-bs-toggle="tab" ><i class="material-icons me-0">&#xE894;</i> [{{cmsg.getLanguagesChecked(lang)}}]</a></li>
         <li class="nav-item"><a class="nav-link" href="#addlanguage" ng-click="cmsg.addLanguage()"><i class="material-icons">&#xE145;</i><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Add translation');?></a></li>
     </ul>
 

@@ -1,5 +1,5 @@
 <?php
-
+#[\AllowDynamicProperties]
 class erLhAbstractModelProactiveChatInvitation {
 
     use erLhcoreClassDBTrait;
@@ -51,7 +51,8 @@ class erLhAbstractModelProactiveChatInvitation {
 			'disabled' => $this->disabled,
 			'campaign_id' => $this->campaign_id,
 			'design_data' => $this->design_data,
-			'inject_only_html' => $this->inject_only_html
+			'inject_only_html' => $this->inject_only_html,
+			'parent_id' => $this->parent_id
 		);
 			
 		return $stateArray;
@@ -72,7 +73,8 @@ class erLhAbstractModelProactiveChatInvitation {
 		$departmentParams = array();
 		$userDepartments = erLhcoreClassUserDep::parseUserDepartmetnsForFilter($currentUser->getUserID(), $currentUser->cache_version);
 		if ($userDepartments !== true) {
-			if (!in_array($this->dep_id, $userDepartments) && $this->dep_id != 0) {
+            $depIDS = $this->dep_ids_front;
+			if (!empty($depIDS) && count(array_diff($depIDS, $userDepartments)) > 0) {
 				return false;
 			}
 		}
@@ -273,6 +275,7 @@ class erLhAbstractModelProactiveChatInvitation {
 				AND (`lh_abstract_proactive_chat_invitation`.`id` IN (SELECT `invitation_id` FROM `lh_abstract_proactive_chat_invitation_dep` WHERE `dep_id` = ' . (int)$item->dep_id . ') OR `dep_id` = ' . (int)$item->dep_id . ' OR `dep_id` = 0)
 	            AND `inject_only_html` = 1
 	            AND `disabled` = 0
+	            AND `parent_id` = 0
 				AND ('.$q->expr->like( $session->database->quote(trim($referrer)), 'concat(referrer,\'%\')' ).' OR referrer = \'\')'
         )
         ->orderBy('position ASC')
@@ -325,6 +328,7 @@ class erLhAbstractModelProactiveChatInvitation {
 	            AND `inject_only_html` = 0
 	            AND `dynamic_invitation` = 1
 	            AND `disabled` = 0
+	            AND `parent_id` = 0
 				AND ('.$q->expr->like( $session->database->quote(trim($referrer)), 'concat(referrer,\'%\')' ).' OR referrer = \'\')'
 	    )
 	    ->orderBy('position ASC, RAND()')
@@ -336,28 +340,40 @@ class erLhAbstractModelProactiveChatInvitation {
 	}
 	
 	public static function setInvitation(erLhcoreClassModelChatOnlineUser & $item, $invitationId) {
-	    
-	    $message = self::fetch($invitationId);
 
-	    $message->translateByLocale();
+        $messageContent = $message = self::fetch($invitationId);
 
-	    if ($item->total_visits == 1 || $message->message_returning == '') {
-	        $item->operator_message = $message->message;
+        // This is a variation message
+        if (isset($item->online_attr_system_array['lhc_inv_var_id'])) {
+            $messageContent = self::fetch($item->online_attr_system_array['lhc_inv_var_id']);
+            if (!($messageContent instanceof erLhAbstractModelProactiveChatInvitation)){
+                $messageContent = $message;
+            }
+        }
+
+        $messageContent->translateByLocale();
+
+	    if ($item->total_visits == 1 || $messageContent->message_returning == '') {
+	        $item->operator_message = $messageContent->message;
 	    } else {
 	        if ($item->chat !== false && $item->chat->nick != '') {
 	            $nick = $item->chat->nick;
-	        } elseif ($message->message_returning_nick != '') {
-	            $nick = $message->message_returning_nick;
+	        } elseif ($messageContent->message_returning_nick != '') {
+	            $nick = $messageContent->message_returning_nick;
 	        } else {
 	            $nick = '';
 	        }
 	    
-	        $item->operator_message = str_replace('{nick}', $nick, $message->message_returning);
+	        $item->operator_message = str_replace('{nick}', $nick, $messageContent->message_returning);
 	    }
 
-	    $item->operator_user_proactive = $message->operator_name;
-	    $item->invitation_id = $message->id;
-	    $item->invitation_seen_count = 1;
+	    $item->operator_user_proactive = $messageContent->operator_name;
+
+        if ($item->invitation_id != $message->id) {
+            $item->invitation_seen_count = 1;
+        }
+
+        $item->invitation_id = $message->id;
 	    $item->requires_email = $message->requires_email;
 	    $item->requires_username = $message->requires_username;
 	    $item->requires_phone = $message->requires_phone;
@@ -366,42 +382,44 @@ class erLhAbstractModelProactiveChatInvitation {
 	    $item->invitation_assigned = true;
 	    $item->last_visit = time();
 	    
-	    if ($message->show_random_operator == 1) {
-	        $item->operator_user_id = erLhcoreClassChat::getRandomOnlineUserID(array('operators' => explode(',',trim($message->operator_ids))));
+	    if ($messageContent->show_random_operator == 1) {
+	        $item->operator_user_id = erLhcoreClassChat::getRandomOnlineUserID(array('operators' => explode(',',trim($messageContent->operator_ids))));
 
 	        // Assign same operator as invitation was shown from
 	        $onlineAttrSystem = $item->online_attr_system_array;
-            $attributesDesignData = $message->design_data_array;
+            $attributesDesignData = $messageContent->design_data_array;
 
             if ($item->operator_user_id > 0 && !isset($onlineAttrSystem['lhc_assign_to_me']) && isset($attributesDesignData['assign_to_randomop']) && $attributesDesignData['assign_to_randomop'] == 1) {
                 $onlineAttrSystem['lhc_assign_to_me'] = 1;
                 $item->online_attr_system_array = $onlineAttrSystem;
                 $item->online_attr_system = json_encode($onlineAttrSystem);
             }
-	    }
+	    } else {
+            $item->operator_user_id = 0;
+        }
 
         $message->executed_times += 1;
         $message->updateThis(array('update' => array(
             'executed_times'
         )));
-	    	
+
+        if ($message->id != $messageContent->id) {
+            $messageContent->executed_times += 1;
+            $messageContent->updateThis(array('update' => array(
+                'executed_times'
+            )));
+        }
+
 	    $item->saveThis();
 	    
-	    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('onlineuser.proactive_triggered', array('message' => & $message, 'ou' => & $item));
+	    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('onlineuser.proactive_triggered', array('message' => & $message, 'variation' => & $messageContent, 'ou' => & $item));
+
+        return ['invitation' => $message, 'variation' => $messageContent];
 	}
 
 	public function translateByLocale()
     {
-        $chatLocale = null;
-
-        // Detect user locale
-        if(isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-            $parts = explode(';',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
-            $languages = explode(',',$parts[0]);
-            if (isset($languages[0])) {
-                $chatLocale = $languages[0];
-            }
-        }
+        $chatLocale = erLhcoreClassChatValidator::getVisitorLocale();
 
         // We set custom chat locale only if visitor is not using default siteaccss and default langauge is not english.
         if (erConfigClassLhConfig::getInstance()->getSetting('site','default_site_access') != erLhcoreClassSystem::instance()->SiteAccess) {
@@ -491,6 +509,7 @@ class erLhAbstractModelProactiveChatInvitation {
 				' . $appendDevice . '
 		        AND `dynamic_invitation` = 0
 		        AND `disabled` = 0
+		        AND `parent_id` = 0
 		        AND `inject_only_html` = 0
 		        ' . $appendInvitationsId . '
 				AND (`lh_abstract_proactive_chat_invitation`.`id` IN (SELECT `invitation_id` FROM `lh_abstract_proactive_chat_invitation_dep` WHERE `dep_id` = ' . (int)$item->dep_id . ') OR `dep_id` = ' . (int)$item->dep_id . ' OR `dep_id` = 0)
@@ -518,7 +537,7 @@ class erLhAbstractModelProactiveChatInvitation {
                 $filter['customfilter'][] = '(last_activity > ' . (int)(time() - 120) . ' OR always_on = 1)';
                 $filter['filterin']['dep_id'] = [$item->dep_id,0];
                 $filter['group'] = 'user_id';
-                $filter['ignore_fields'] = array('exclude_autoasign','max_chats','dep_group_id','type','ro','id','dep_id','hide_online_ts','hide_online','last_activity','lastd_activity','always_on','last_accepted','active_chats','pending_chats','inactive_chats');
+                $filter['ignore_fields'] = array('exclude_autoasign','exc_indv_autoasign','max_chats','dep_group_id','type','ro','id','dep_id','hide_online_ts','hide_online','last_activity','lastd_activity','always_on','last_accepted','active_chats','pending_chats','inactive_chats');
                 $filter['select_columns'] = 'max(`id`) as `id`,user_id';
 
                 if (isset($optionsInvitation['op_max_chats']) && !empty($optionsInvitation['op_max_chats'])) {
@@ -557,30 +576,117 @@ class erLhAbstractModelProactiveChatInvitation {
             }
 
             $design_data_array = $messageToUser->design_data_array;
+            $conditionsValid = true;
 
             for ($i = 1; $i <= 10; $i++) {
-                if (
-                    (
-                        isset($design_data_array['attrf_key_' . $i]) &&
-                        $design_data_array['attrf_key_' . $i] != '' &&
-                        !isset($onlineAttrSystem[$design_data_array['attrf_key_' . $i]])
-                    ) || (
-                        isset($design_data_array['attrf_key_' . $i]) &&
-                        isset($design_data_array['attrf_val_' . $i]) &&
-                        $design_data_array['attrf_key_' . $i] != '' &&
-                        !in_array(
-                            strtolower($onlineAttrSystem[$design_data_array['attrf_key_' . $i]]),
-                            explode('||',strtolower($design_data_array['attrf_val_' . $i]))
-                        )
-                    )
-                ) {
-                    continue 2;
+                 if ( isset($design_data_array['attrf_key_' . $i]) &&  $design_data_array['attrf_key_' . $i] != '' ) {
+
+                     if (!isset($onlineAttrSystem[$design_data_array['attrf_key_' . $i]])) {
+                         $conditionsValid = false;
+                         break;
+                     }
+
+                     if (!isset($design_data_array['attrf_val_' . $i])) {
+                         $design_data_array['attrf_val_' . $i] = '';
+                     }
+
+                     $valuesExpected = explode('||',strtolower($design_data_array['attrf_val_' . $i]));
+                     $conditionAttr = strtolower($design_data_array['attrf_val_' . $i]);
+                     $valueAttr = strtolower($onlineAttrSystem[$design_data_array['attrf_key_' . $i]]);
+
+                     $replaceArray = array(
+                         '{time}' => time()
+                     );
+
+                     // Remove internal variables
+                     $conditionAttr = str_replace(array_keys($replaceArray), array_values($replaceArray),$conditionAttr);
+                     $valueAttr = str_replace(array_keys($replaceArray), array_values($replaceArray),$valueAttr);
+
+                     if (isset($design_data_array['attrf_cond_' . $i]) && !in_array($design_data_array['attrf_cond_' . $i],['like','notlike','contains'])) {
+                         // Remove spaces
+                         $conditionAttr = preg_replace('/\s+/', '', $conditionAttr);
+                         $valueAttr = preg_replace('/\s+/', '', $valueAttr);
+
+                         // Allow only mathematical operators
+                         $conditionAttrMath = preg_replace("/[^\(\)\.\*\-\/\+0-9]+/", "", $conditionAttr);
+                         $valueAttrMath = preg_replace("/[^\(\)\.\*\-\/\+0-9]+/", "", $valueAttr);
+
+                         if ($conditionAttrMath != '' && $conditionAttrMath == $conditionAttr) {
+                             // Evaluate if there is mathematical rules
+                             try {
+                                 eval('$conditionAttr = ' . $conditionAttrMath . ";");
+                             } catch (ParseError $e) {
+                                 // Do nothing
+                             }
+                         }
+
+                         if ($valueAttrMath != '' && $valueAttrMath == $valueAttr) {
+                             // Evaluate if there is mathematical rules
+                             try {
+                                 eval('$valueAttr = ' . $valueAttrMath . ";");
+                             } catch (ParseError $e) {
+                                 // Do nothing
+                             }
+                         }
+                     }
+
+                     if (isset($design_data_array['attrf_cond_' . $i]) && in_array($design_data_array['attrf_cond_' . $i],['lt','lte','gt','gte'])) {
+                         $conditionAttr = round((float)$conditionAttr,3);
+                         $valueAttr = round((float)$valueAttr,3);
+                     } elseif ((is_string($conditionAttr) || is_numeric($conditionAttr)) && (is_string($valueAttr) || is_numeric($valueAttr))) {
+                         $conditionAttr = (string)$conditionAttr;
+                         $valueAttr = (string)$valueAttr;
+                     }
+
+                     if (!isset($design_data_array['attrf_cond_' . $i]) || ($design_data_array['attrf_cond_' . $i] == 'eq' && !in_array(
+                                 $valueAttr,
+                             $valuesExpected
+                         ))) {
+                         $conditionsValid = false;
+                         break;
+                     } elseif ($design_data_array['attrf_cond_' . $i] == 'neq' && in_array(
+                             $valueAttr,
+                             $valuesExpected
+                         )) {
+                         $conditionsValid = false;
+                         break;
+                     } elseif ($design_data_array['attrf_cond_' . $i] == 'gt' && !($valueAttr > $conditionAttr)) {
+                         $conditionsValid = false;
+                         break;
+                     } elseif ($design_data_array['attrf_cond_' . $i] == 'gte' && !($valueAttr >= $conditionAttr)) {
+                         $conditionsValid = false;
+                         break;
+                     } elseif ($design_data_array['attrf_cond_' . $i] == 'lt' && !($valueAttr < $conditionAttr)) {
+                         $conditionsValid = false;
+                         break;
+                     } elseif ($design_data_array['attrf_cond_' . $i] == 'lte' && !($valueAttr <= $conditionAttr)) {
+                         $conditionsValid = false;
+                         break;
+                     } elseif ($design_data_array['attrf_cond_' . $i] == 'like' && erLhcoreClassGenericBotWorkflow::checkPresenceMessage(array(
+                             'pattern' => $conditionAttr,
+                             'msg' => $valueAttr,
+                             'words_typo' => 0,
+                         ))['found'] !== true) {
+                         $conditionsValid = false;
+                         break;
+                     } elseif ($design_data_array['attrf_cond_' . $i] == 'notlike' && erLhcoreClassGenericBotWorkflow::checkPresenceMessage(array(
+                             'pattern' => $conditionAttr,
+                             'msg' => $valueAttr,
+                             'words_typo' => 0,
+                         ))['found'] === true) {
+                         $conditionsValid = false;
+                         break;
+                     } elseif ($design_data_array['attrf_cond_' . $i] == 'contains' && strrpos($valueAttr, $conditionAttr) === false) {
+                         $conditionsValid = false;
+                         break;
+                     }
                 }
             }
 
-            $messagesToUser[] = $messageToUser;
+            if ($conditionsValid === true) {
+                $messagesToUser[] = $messageToUser;
+            }
         }
-
 
 		if ( !empty($messagesToUser) ) {
 
@@ -596,24 +702,27 @@ class erLhAbstractModelProactiveChatInvitation {
                     }
                 }
 
-                $message->translateByLocale();
+                // Variation message either original either some child
+                // We should always find one even yourself
+                $messageContent = erLhAbstractModelProactiveChatInvitation::findOne(['sort' => 'rand()', 'filter' => ['disabled' => 0], 'filterlor' => ['parent_id' => [$message->id], 'id' => [$message->id]]]);
+                $messageContent->translateByLocale();
 
                 // Use default message if first time visit or returning message is empty
-                if ($item->total_visits == 1 || $message->message_returning == '') {
-                    $item->operator_message = $message->message;
+                if ($item->total_visits == 1 || $messageContent->message_returning == '') {
+                    $item->operator_message = $messageContent->message;
                 } else {
                     if ($item->chat !== false && $item->chat->nick != '') {
                         $nick = $item->chat->nick;
-                    } elseif ($message->message_returning_nick != '') {
-                        $nick = $message->message_returning_nick;
+                    } elseif ($messageContent->message_returning_nick != '') {
+                        $nick = $messageContent->message_returning_nick;
                     } else {
                         $nick = '';
                     }
 
-                    $item->operator_message = str_replace('{nick}', $nick, $message->message_returning);
+                    $item->operator_message = str_replace('{nick}', $nick, $messageContent->message_returning);
                 }
 
-                $item->operator_user_proactive = $message->operator_name;
+                $item->operator_user_proactive = $messageContent->operator_name;
                 $item->invitation_id = $message->id;
                 $item->invitation_seen_count = 1;
                 $item->requires_email = $message->requires_email;
@@ -624,14 +733,16 @@ class erLhAbstractModelProactiveChatInvitation {
                 $item->invitation_assigned = true;
                 $item->last_visit = time();
 
-                if ($message->show_random_operator == 1) {
-                    $item->operator_user_id = erLhcoreClassChat::getRandomOnlineUserID(array('operators' => (isset($operatorsOnlineId) && !empty($operatorsOnlineId)) ? $operatorsOnlineId : explode(',',trim($message->operator_ids))));
+                if ($messageContent->show_random_operator == 1) {
+                    $item->operator_user_id = erLhcoreClassChat::getRandomOnlineUserID(array('operators' => (isset($operatorsOnlineId) && !empty($operatorsOnlineId)) ? $operatorsOnlineId : explode(',',trim($messageContent->operator_ids))));
+                } else {
+                    $item->operator_user_id = 0;
                 }
 
                 $onlineAttrSystem = $item->online_attr_system_array;
 
-                if (isset($message->design_data_array['next_inv_time']) && (int)$message->design_data_array['next_inv_time'] > 0) {
-                    $onlineAttrSystem['lhcnxt_ivt'] = (int)$message->design_data_array['next_inv_time'];
+                if (isset($messageContent->design_data_array['next_inv_time']) && (int)$messageContent->design_data_array['next_inv_time'] > 0) {
+                    $onlineAttrSystem['lhcnxt_ivt'] = (int)$messageContent->design_data_array['next_inv_time'];
                     $item->online_attr_system = json_encode($onlineAttrSystem);
                     $item->online_attr_system_array = $onlineAttrSystem;
                 } elseif (isset($onlineAttrSystem['lhcnxt_ivt'])) {
@@ -640,8 +751,8 @@ class erLhAbstractModelProactiveChatInvitation {
                     $item->online_attr_system_array = $onlineAttrSystem;
                 }
 
-                if (isset($message->design_data_array['expires_after']) && (int)$message->design_data_array['expires_after'] > 0) {
-                    $onlineAttrSystem['lhcinv_exp'] = (int)$message->design_data_array['expires_after'] + time();
+                if (isset($messageContent->design_data_array['expires_after']) && (int)$messageContent->design_data_array['expires_after'] > 0) {
+                    $onlineAttrSystem['lhcinv_exp'] = (int)$messageContent->design_data_array['expires_after'] + time();
                     $item->online_attr_system = json_encode($onlineAttrSystem);
                     $item->online_attr_system_array = $onlineAttrSystem;
                 } elseif (isset($onlineAttrSystem['lhcinv_exp'])) {
@@ -650,12 +761,32 @@ class erLhAbstractModelProactiveChatInvitation {
                     $item->online_attr_system_array = $onlineAttrSystem;
                 }
 
-                if (isset($message->design_data_array['ignore_bot']) && $message->design_data_array['ignore_bot'] == true) {
+                if (isset($messageContent->design_data_array['ignore_bot']) && $messageContent->design_data_array['ignore_bot'] == true) {
                     $onlineAttrSystem['lhc_ignore_bot'] = 1;
                     $item->online_attr_system = json_encode($onlineAttrSystem);
                     $item->online_attr_system_array = $onlineAttrSystem;
                 } elseif (isset($onlineAttrSystem['lhc_ignore_bot'])) {
                     unset($onlineAttrSystem['lhc_ignore_bot']);
+                    $item->online_attr_system = json_encode($onlineAttrSystem);
+                    $item->online_attr_system_array = $onlineAttrSystem;
+                }
+
+                if ($item->dep_id > 0 && isset($messageContent->design_data_array['lock_department']) && $messageContent->design_data_array['lock_department'] == true) {
+                    $onlineAttrSystem['inv_ldp'] = $item->dep_id; // Remember department to set it later
+                    $item->online_attr_system = json_encode($onlineAttrSystem);
+                    $item->online_attr_system_array = $onlineAttrSystem;
+                } elseif (isset($onlineAttrSystem['inv_ldp'])) {
+                    unset($onlineAttrSystem['inv_ldp']);
+                    $item->online_attr_system = json_encode($onlineAttrSystem);
+                    $item->online_attr_system_array = $onlineAttrSystem;
+                }
+
+                if ($message->id != $messageContent->id) {
+                    $onlineAttrSystem['lhc_inv_var_id'] = $messageContent->id;
+                    $item->online_attr_system = json_encode($onlineAttrSystem);
+                    $item->online_attr_system_array = $onlineAttrSystem;
+                } elseif (isset($onlineAttrSystem['lhc_inv_var_id'])) {
+                    unset($onlineAttrSystem['lhc_inv_var_id']);
                     $item->online_attr_system = json_encode($onlineAttrSystem);
                     $item->online_attr_system_array = $onlineAttrSystem;
                 }
@@ -670,6 +801,13 @@ class erLhAbstractModelProactiveChatInvitation {
                     'executed_times'
                 )));
 
+                if ($message->id != $messageContent->id) {
+                    $messageContent->executed_times += 1;
+                    $messageContent->updateThis(array('update' => array(
+                        'executed_times'
+                    )));
+                }
+
                 // Campaign tracking
                 if (!($campaign instanceof erLhAbstractModelProactiveChatCampaignConversion)) {
                     $campaign = new erLhAbstractModelProactiveChatCampaignConversion();
@@ -683,27 +821,35 @@ class erLhAbstractModelProactiveChatInvitation {
                 $campaign->invitation_id = $message->id;
                 $campaign->invitation_type = 1;
                 $campaign->campaign_id = $message->campaign_id;
+                $campaign->variation_id = $messageContent->id;
+                $campaign->conv_event = isset($message->design_data_array['event_id']) ? $message->design_data_array['event_id'] : '';
+                $campaign->conv_int_expires = isset($message->design_data_array['conversion_expires_in']) && (int)$message->design_data_array['conversion_expires_in'] > 0 ? time() + (int)$message->design_data_array['conversion_expires_in'] : 0;
 
                 $detect = new Mobile_Detect;
                 $detect->setUserAgent($item->user_agent);
                 $campaign->device_type = ($detect->isMobile() ? ($detect->isTablet() ? 2 : 1) : 0);
                 $campaign->saveThis();
 
-                // Set conversion for trackback for online visitor record
+                // Set conversion for track back for online visitor record
                 $item->conversion_id = $campaign->id;
 
-                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('onlineuser.proactive_triggered', array('message' => & $message, 'ou' => & $item));
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('onlineuser.proactive_triggered', array('campaign' => & $campaign, 'variation' => & $messageContent, 'message' => & $message, 'ou' => & $item));
             } else {
 			    // We know there is invitation based on current criteria just time on site is still not matched.
                 $item->next_reschedule = $message->time_on_site - $item->time_on_site;
             }
 		}
 	}
-	
+
 	public function customForm(){
 	    return 'proactive_invitation.tpl.php';
 	}
-	
+
+    public function dependJs()
+    {
+        return '<script type="text/javascript" src="'.erLhcoreClassDesign::designJS('js/ace/ace.js').'"></script>';
+    }
+
 	public function dependFooterJs(){
 	    return '<script type="text/javascript" src="'.erLhcoreClassDesign::designJS('js/angular-sanitize.min.js;js/angular.lhc.events.js;js/angular.lhc.theme.js').'"></script>';
 	}
@@ -714,8 +860,14 @@ class erLhAbstractModelProactiveChatInvitation {
 	    erLhcoreClassChatEvent::validateProactive($params);
 	}
 	
-	public function afterUpdate()
+	public function afterUpdate($params)
 	{
+        // Only one field was updated
+        // We can ignore these type of events
+        if (isset($params['update'])) {
+            return ;
+        }
+
 	    $ids = array();
 
 	    // Save events and collect id's
@@ -771,6 +923,11 @@ class erLhAbstractModelProactiveChatInvitation {
     public function beforeUpdate()
     {
         $this->design_data = json_encode($this->design_data_array);
+    }
+
+    public function beforeSave()
+    {
+        $this->beforeUpdate();
     }
 
     public function getContentAttribute($attr)
@@ -846,7 +1003,7 @@ class erLhAbstractModelProactiveChatInvitation {
         }
     }
 
-    public function afterSave()
+    public function afterSave($params)
     {
         $movePhotos = array(
             'design_data_img_1',
@@ -862,6 +1019,8 @@ class erLhAbstractModelProactiveChatInvitation {
 
         if ($pendingUpdate == true) {
             $this->updateThis();
+        } else {
+            $this->afterUpdate($params);
         }
     }
 
@@ -903,6 +1062,7 @@ class erLhAbstractModelProactiveChatInvitation {
 	public $campaign_id = 0;
 	public $design_data = '';
 	public $inject_only_html = 0;
+	public $parent_id = 0;
 
 	public $next_reschedule = 0;
 	public $hide_add = false;

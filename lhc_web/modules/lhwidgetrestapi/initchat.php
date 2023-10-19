@@ -29,7 +29,7 @@ try {
 
     erLhcoreClassChat::setTimeZoneByChat($chat);
 
-    if ($chat->hash == $requestPayload['hash'])
+    if ($chat->hash === $requestPayload['hash'])
     {
         // User online
         if ($chat->user_status != 0) {
@@ -95,18 +95,22 @@ try {
             $outputResponse['chat_ui']['bbc_btnh'] = true;
         }
 
+        if ((int)erLhcoreClassModelChatConfig::fetch('show_language_switcher')->current_value == 1) {
+            $outputResponse['chat_ui']['lng_btnh'] = true;
+        }
+
         $outputResponse['chat_ui']['header_buttons'] = array(
-            array(
+            array (
                 'pos' => 'left',
-                'btn' => 'min'
+                'btn' => 'min',
             ),
-            array(
+            array (
                 'pos' => 'right',
-                'btn' => 'close',
+                'btn' => 'close'
             ),
-            array(
+            array (
                 'pos' => 'right',
-                'btn' => 'popup'
+                'btn' => 'popup',
             )
         );
 
@@ -118,7 +122,7 @@ try {
 
                 $theme->translate();
 
-                foreach (array('placeholder_message','cnew_msgh','cnew_msg','cscroll_btn','cnew_msgm','min_text','popup_text','end_chat_text') as $attrTranslate) {
+                foreach (array('placeholder_message','cnew_msgh','cnew_msg','cscroll_btn','cnew_msgm','min_text','popup_text','end_chat_text','fheight_text_class','fheight_text_col') as $attrTranslate) {
                     if (isset($theme->bot_configuration_array[$attrTranslate]) && !empty($theme->bot_configuration_array[$attrTranslate])) {
                         $outputResponse['chat_ui'][$attrTranslate] = $theme->bot_configuration_array[$attrTranslate];
                     }
@@ -135,6 +139,10 @@ try {
                 if (isset($theme->bot_configuration_array['msg_expand']) && $theme->bot_configuration_array['msg_expand'] == true) {
                     $outputResponse['chat_ui']['msg_expand'] = true;
                 }
+                
+                if (isset($theme->bot_configuration_array['print_btn_msg']) && $theme->bot_configuration_array['print_btn_msg'] == true) {
+                    $outputResponse['chat_ui']['print_btn_msg'] = true;
+                }
 
                 if (isset($theme->bot_configuration_array['font_size']) && $theme->bot_configuration_array['font_size'] == true) {
                     $outputResponse['chat_ui']['font_size'] = true;
@@ -145,6 +153,13 @@ try {
                     $outputResponse['chat_ui']['bbc_btnh'] = true;
                 } elseif (isset($outputResponse['chat_ui']['bbc_btnh'])) {
                     unset($outputResponse['chat_ui']['bbc_btnh']);
+                }
+
+                if ($theme->hide_ts > 0) {
+                    $outputResponse['chat_ui']['show_ts'] = true;
+                    if ($theme->hide_op_ts == 1) {
+                        $outputResponse['chat_ui']['show_ts_below'] = true;
+                    }
                 }
 
                 if ($theme->hide_popup == 1) {
@@ -199,8 +214,16 @@ try {
                     $outputResponse['chat_ui']['custom_html_header'] = $theme->bot_configuration_array['custom_html_header'];
                 }
 
+                if (isset($theme->bot_configuration_array['custom_html_footer']) && $theme->bot_configuration_array['custom_html_footer'] != '') {
+                    $outputResponse['chat_ui']['custom_html_footer'] = $theme->bot_configuration_array['custom_html_footer'];
+                }
+
                 if (isset($theme->bot_configuration_array['custom_html_header_body']) && $theme->bot_configuration_array['custom_html_header_body'] != '') {
                     $outputResponse['chat_ui']['custom_html_header_body'] = $theme->bot_configuration_array['custom_html_header_body'];
+                }
+
+                if (isset($theme->bot_configuration_array['after_chat_status']) && $theme->bot_configuration_array['after_chat_status'] != '') {
+                    $outputResponse['chat_ui']['after_chat_status'] = $theme->bot_configuration_array['after_chat_status'];
                 }
 
                 if (isset($theme->bot_configuration_array['prev_msg']) && $theme->bot_configuration_array['prev_msg'] == true) {
@@ -269,6 +292,10 @@ try {
             $outputResponse['chat_ui']['print'] = true;
         }
 
+        if ((int)erLhcoreClassModelChatConfig::fetch('disable_txt_dwnld')->current_value == 0) {
+            $outputResponse['chat_ui']['dwntxt'] = true;
+        }
+
         $notificationsSettings = erLhcoreClassModelChatConfig::fetch('notifications_settings')->data_value;
 
         if (isset($notificationsSettings['enabled']) && $notificationsSettings['enabled'] == 1 && (!isset($theme) || $theme === false || (isset($theme->notification_configuration_array['notification_enabled']) && $theme->notification_configuration_array['notification_enabled'] == 1))) {
@@ -320,7 +347,13 @@ try {
 
         $voiceData = (array)erLhcoreClassModelChatConfig::fetch('vvsh_configuration')->data;
 
-        if (isset($voiceData['voice']) && $voiceData['voice'] == true) {
+        if (
+            isset($voiceData['voice']) && 
+            $voiceData['voice'] == true && 
+            $chat->status == erLhcoreClassModelChat::STATUS_ACTIVE_CHAT &&
+            $chat->user_id > 0 &&
+            erLhcoreClassRole::hasAccessTo($chat->user_id,'lhvoicevideo','use' )
+        ) {
             $outputResponse['chat_ui']['voice'] = true;
         }
 

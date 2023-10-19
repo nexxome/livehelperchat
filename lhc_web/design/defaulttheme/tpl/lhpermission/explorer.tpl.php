@@ -1,8 +1,10 @@
+<div>
 <h1 ng-non-bindable><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('permission/explorer','Permissions explorer');?></h1>
 
 <ul class="nav nav-tabs mb-3" role="tablist">
-    <li role="presentation" class="nav-item"><a href="#permissions-explorer" class="nav-link active" aria-controls="permissions-explorer" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Explorer');?></a></li>
-    <li role="presentation" class="nav-item"><a href="#permissions-url-explorer" class="nav-link" aria-controls="permissions-url-explorer" role="tab" data-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','URL Explorer');?></a></li>
+    <li role="presentation" class="nav-item"><a href="#permissions-explorer" class="nav-link active" aria-controls="permissions-explorer" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','Explorer');?></a></li>
+    <li role="presentation" class="nav-item"><a href="#permissions-url-explorer" class="nav-link" aria-controls="permissions-url-explorer" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','URL Explorer');?></a></li>
+    <li role="presentation" class="nav-item"><a href="#permissions-user-explorer" class="nav-link" aria-controls="permissions-user-explorer" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('user/account','User permissions');?></a></li>
 </ul>
 
 <div class="tab-content">
@@ -50,24 +52,45 @@
     <div role="tabpanel" class="tab-pane" id="permissions-url-explorer">
 
         <div class="input-group">
-            <input type="text" class="form-control" value="" id="url-permission-explore" placeholder="Enter URL to see required permissions" />
-            <div class="input-group-append">
-                <div class="input-group-text" >
-                    <button type="button" id="explore-permission-button" class="btn btn-sm m-0 p-0">Search</button>
-                </div>
+            <input type="text" class="form-control" value="" id="url-permission-explore" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('permission/explorer','Enter URL to see required permissions');?>" />
+            <div class="input-group-text" >
+                <button type="button" id="explore-permission-button" class="btn btn-sm m-0 p-0"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('permission/explorer','Search');?></button>
             </div>
         </div>
 
         <div id="permission-url-explore-result" class="pt-3"></div>
 
     </div>
-</div>
+    <div role="tabpanel" class="tab-pane" id="permissions-user-explorer">
 
+        <div class="input-group">
+            <input type="text" class="form-control" value="" id="module-explore" placeholder="lhfront" />
+            <input type="text" class="form-control" value="" id="function-explorer" placeholder="use" />
+            <div class="input-group-text" >
+                <button type="button" id="explore-user-button" class="btn btn-sm m-0 p-0"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('permission/explorer','Find users who can use it');?></button>
+            </div>
+        </div>
+
+        <div id="permission-user-explore-result" class="pt-3"></div>
+
+    </div>
+
+
+</div>
+</div>
 <script>
     $(function() {
         $('#explore-permission-button').click(function(){
             $.post('<?php echo erLhcoreClassDesign::baseurl('permission/explorer')?>/(action)/2',{url: $('#url-permission-explore').val()}, function(data){
                 $('#permission-url-explore-result').html(data);
+            })
+        });
+        $('#explore-user-button').click(function(){
+            $.post('<?php echo erLhcoreClassDesign::baseurl('permission/explorer')?>/(action)/3',{
+                'module': $('#module-explore').val(),
+                'function': $('#function-explorer').val()
+            }, function(data){
+                $('#permission-user-explore-result').html(data);
             })
         });
     });

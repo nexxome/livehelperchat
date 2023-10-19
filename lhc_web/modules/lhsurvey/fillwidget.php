@@ -48,7 +48,14 @@ try {
     if ($chat->hash == $hash)
     {
         $survey = erLhAbstractModelSurvey::fetch($Params['user_parameters_unordered']['survey']);
-        if($survey instanceof erLhAbstractModelSurvey) {
+        
+        if (!($survey instanceof erLhAbstractModelSurvey)) {
+            throw new Exception(erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Provided survey does not exists!'));
+        }
+        
+        $survey->translate();
+
+        if ($survey instanceof erLhAbstractModelSurvey) {
             $surveyItem = erLhAbstractModelSurveyItem::getInstance($chat, $survey);
 
             $collectedSurvey = false;
@@ -69,10 +76,17 @@ try {
                     $tpl->set('errors', $errors);
                 }
             }
-            
+
+            if ($collectedSurvey === false) {
+                $chat->user_status = erLhcoreClassModelChat::USER_STATUS_CLOSED_CHAT;
+                $chat->updateThis(['update' => ['user_status']]);
+            }
+
             if (($collectedSurvey === true || $surveyItem->is_filled == true) && $chat->status_sub == erLhcoreClassModelChat::STATUS_SUB_SURVEY_SHOW) {
                 $chat->status_sub = erLhcoreClassModelChat::STATUS_SUB_SURVEY_COLLECTED;
-                $chat->saveThis();                
+                // They are equal now in priority for the auto responder
+                $chat->last_op_msg_time = $chat->last_user_msg_time = time();
+                $chat->saveThis();
             }
             
             $tpl->set('chat', $chat);

@@ -102,11 +102,16 @@ class erLhcoreClassModule{
             	}
 
                 $fileLocation = self::getModuleFile();
-                if (file_exists($fileLocation)){
+                if (file_exists($fileLocation)) {
+                    $startTime = microtime();
+
                     $includeStatus = include($fileLocation);
+
+                    self::logSlowRequest($startTime, microtime(),(isset($currentUser) && $currentUser->isLogged() ? $currentUser->getUserID() : 0));
                 } else {
                     $includeStatus = false;
                 }
+
 
             	            	
             	// Inclusion failed
@@ -150,12 +155,13 @@ class erLhcoreClassModule{
             	header('Status: 503 Service Temporarily Unavailable');
             	header('Retry-After: 300');
 
-
             	if (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'],'application/json') !== false){
                     echo json_encode(array('error' => true, 'message' => $e->getMessage()));
                 } else {
                     include_once('design/defaulttheme/tpl/lhkernel/fatal_error.tpl.php');
                     erLhcoreClassLog::write(print_r($e,true));
+                    // Try to store to DB directly error
+                    self::logException($e);
                 }
 
                 exit;
@@ -179,6 +185,31 @@ class erLhcoreClassModule{
         }
     }
 
+    public static function getDifference($start_time, $end_time) {
+        $start = explode(' ', $start_time);
+        $end = explode(' ', $end_time);
+        return round($end[0] + $end[1] - $start[0] - $start[1],3);
+    }
+
+    public static function logSlowRequest( $start_time, $end_time, $object_id, $message = [])
+    {
+        if (erConfigClassLhConfig::getInstance()->getSetting( 'site', 'log_slow_request', false ) !== true) {
+            return;
+        }
+
+        $time = self::getDifference($start_time, $end_time);
+
+        if ($time > 2) {
+
+            $message['post'] = $_POST;
+            $message['get'] = $_GET;
+            $message['payload'] = file_get_contents('php://input');
+            $message['taken_Time'] = $time;
+
+            self::logException(new Exception(json_encode($message, JSON_PRETTY_PRINT)), 'slow_request', $object_id);
+        }
+    }
+
     public static function reRun($url) {
               
         $sysConfiguration = erLhcoreClassSystem::instance()->RequestURI = $url;
@@ -190,6 +221,7 @@ class erLhcoreClassModule{
 
     public static function defaultExceptionHandler($e)
     {
+
         if (erConfigClassLhConfig::getInstance()->getSetting( 'site', 'debug_output' ) == true) {
             echo "<pre>";
             print_r($e);
@@ -203,12 +235,42 @@ class erLhcoreClassModule{
         header('Status: 503 Service Temporarily Unavailable');
         header('Retry-After: 300');
 
+
         include_once('design/defaulttheme/tpl/lhkernel/fatal_error.tpl.php');
 
         if (file_exists('cache/default.log') && (filesize('cache/default.log')/1000) > 200){
             file_put_contents('cache/default.log', date('M j H:i:s') . ' [Warning] [default] [default] '. print_r($e,true));
         } else {
             file_put_contents('cache/default.log',date('M j H:i:s') . ' [Warning] [default] [default] '. print_r($e,true), FILE_APPEND);
+        }
+
+        self::logException($e);
+    }
+
+    public static function logException($e, $category = 'web_exception', $object_id = 0) {
+        // Try to store to DB directly error
+        try {
+            $cfg = erConfigClassLhConfig::getInstance();
+            $conn = new PDO("mysql:host=".$cfg->getSetting( 'db', 'host' ).";dbname=".$cfg->getSetting( 'db', 'database' ), $cfg->getSetting( 'db', 'user' ), $cfg->getSetting( 'db', 'password' ));
+            // set the PDO error mode to exception
+            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $stmt = $conn->prepare("INSERT INTO `lh_audits` (`category`, `source`, `line`, `file`, `object_id`, `message`, `severity`, `time`) VALUES (:category, 'lhc',:line,:file, :object_id, :message,:severity,:time)");
+            $stmt->bindValue(':category', $category);
+            $stmt->bindValue(':object_id', $object_id);
+            $stmt->bindValue(':line',__LINE__);
+            $stmt->bindValue(':file',__FILE__);
+            $stmt->bindValue(':severity',ezcLog::SUCCESS_AUDIT);
+            $stmt->bindValue(':time',date('Y-m-d H:i:s'));
+            $stmt->bindValue(':message',json_encode([
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'server' => $_SERVER,
+                'trace' => $e->getTrace()
+            ],JSON_PRETTY_PRINT));
+            $stmt->execute();
+        } catch(PDOException $e) {
+
         }
     }
 
@@ -219,6 +281,24 @@ class erLhcoreClassModule{
             error_log('Unexpected error, the message was : ' . $errstr . ' in ' . $errfile . ' on line ' . $errline);
             erLhcoreClassLog::write($msg);
             include_once('design/defaulttheme/tpl/lhkernel/fatal_error.tpl.php');
+
+            $trace = debug_backtrace();
+
+            @erLhcoreClassLog::write(
+                json_encode([
+                    'msg' => $msg,
+                    'trace' => $trace
+                ]),
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'web_fatal',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => 0
+                )
+            );
+
             exit(1);
             return true;
         }
@@ -400,7 +480,7 @@ class erLhcoreClassModule{
     	            foreach ($Matches[1] as $key => $UrlAddress)
     	            {
     	                $valueConfig = erLhcoreClassModelChatConfig::fetch($Matches[2][$key])->current_value;
-    	                $valueReplace = '\''.str_replace("'","\'",$valueConfig).'\'';
+    	                $valueReplace = '\''.str_replace("'","\'",(string)$valueConfig).'\'';
     	                $contentFile = str_replace($Matches[0][$key],$valueReplace,$contentFile);
     	            }
     		            
@@ -422,7 +502,7 @@ class erLhcoreClassModule{
     	                $valueHolder = erLhcoreClassModelChatConfig::fetch($Matches[2][$key])->data;
     	            	$valueConfig = isset($valueHolder[$Matches[4][$key]]) ? $valueHolder[$Matches[4][$key]] : '';
     	            	$valueReplace = '';
-    	            	$valueReplace = '\''.str_replace("'","\'",$valueConfig).'\'';
+    	            	$valueReplace = '\''.str_replace("'","\'",(string)$valueConfig).'\'';
     	            	$contentFile = str_replace($Matches[0][$key],$valueReplace,$contentFile);
     	            }
 			    }
@@ -472,7 +552,7 @@ class erLhcoreClassModule{
             	$cacheModules = array();
             }
 
-            if (count($cacheModules) > 0) {
+            if (is_countable($cacheModules) and count($cacheModules) > 0) {
                 self::$cacheInstance->store('moduleFunctionsCache_'.$module.'_'.$siteAccess.'_version_'.self::$cacheVersionSite,$cacheModules);
                 return $cacheModules;
             }
