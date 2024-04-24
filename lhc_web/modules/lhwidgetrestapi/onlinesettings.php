@@ -635,7 +635,7 @@ if (is_numeric($departament_id) && $departament_id > 0) {
     if (count($departments) > 1) {
         $departments = erLhcoreClassDepartament::sortByStatus($departments);
         foreach ($departments as $departament) {
-            $isOnline = erLhcoreClassChat::isOnline($departament->id, false, array('ignore_user_status' => (int)erLhcoreClassModelChatConfig::fetch('ignore_user_status')->current_value, 'online_timeout' => (int)erLhcoreClassModelChatConfig::fetch('sync_sound_settings')->data['online_timeout']));
+            $isOnline = erLhcoreClassChat::isOnline($departament->id, false, array('disable_cache' => ((int)erLhcoreClassModelChatConfig::fetch('enable_status_cache')->current_value === 0), 'ignore_user_status' => (int)erLhcoreClassModelChatConfig::fetch('ignore_user_status')->current_value, 'online_timeout' => (int)erLhcoreClassModelChatConfig::fetch('sync_sound_settings')->data['online_timeout']));
             if (($departament->visible_if_online == 1 && $isOnline === true) || $departament->visible_if_online == 0) {
                 $departmentItem = array(
                     'online' => $isOnline,
@@ -797,6 +797,9 @@ if ($theme !== false) {
                         $chat->dep_id = $onlineUser->dep_id;
                     }
 
+                    $chat->online_user_id = $onlineUser->id;
+                    $chat->online_user = $onlineUser;
+
                     $tpl->set('chat',$chat);
                 }
             }
@@ -808,7 +811,7 @@ if ($theme !== false) {
         $tpl->set('no_br',true);
         $tpl->set('triggerMessageId',$theme->bot_configuration_array['trigger_id']);
 
-        $chat_ui['cmmsg_widget'] = $tpl->fetch();
+        $chat_ui['cmmsg_widget'] = str_replace('{msg_id}',$theme->bot_configuration_array['trigger_id'],$tpl->fetch());
 
     } elseif (isset($theme->bot_configuration_array['auto_bot_intro']) && $theme->bot_configuration_array['auto_bot_intro'] == true) {
 
@@ -1075,8 +1078,7 @@ if ($messageFieldVisible === false && $visibleCount == 1) {
     $visibleCount = 2;
 }
 
-$chat_ui['max_length'] = (int)erLhcoreClassModelChatConfig::fetch('max_message_length')->current_value - 1;
-
+$chat_ui['max_length'] = (int)erLhcoreClassModelChatConfig::fetch('max_message_length')->current_value;
 
 if (isset($start_data_fields['pre_conditions']) && !empty($start_data_fields['pre_conditions'])) {
     $preConditions = json_decode($start_data_fields['pre_conditions'], true);

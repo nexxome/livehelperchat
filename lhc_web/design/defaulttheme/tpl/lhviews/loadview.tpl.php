@@ -31,7 +31,7 @@
                                 <?php include(erLhcoreClassDesign::designtpl('lhchat/lists/icons_additional.tpl.php')); ?>
 
                                 <?php foreach ($chat->aicons as $aicon) : ?>
-                                    <i class="material-icons" style="color: <?php isset($aicon['c']) ? print htmlspecialchars($aicon['c']) : print '#6c757d'?>" title="<?php isset($aicon['t']) ? print htmlspecialchars($aicon['t']) : htmlspecialchars($aicon['i'])?> {{icon.t ? icon.t : icon.i}}"><?php isset($aicon['i']) ? print htmlspecialchars($aicon['i']) : htmlspecialchars($aicon)?></i>
+                                    <i class="material-icons" style="color: <?php isset($aicon['c']) ? print htmlspecialchars($aicon['c']) : print '#6c757d'?>" title="<?php isset($aicon['t']) ? print htmlspecialchars($aicon['t']) : htmlspecialchars($aicon['i'])?>"><?php isset($aicon['i']) ? print htmlspecialchars($aicon['i']) : htmlspecialchars($aicon)?></i>
                                 <?php endforeach; ?>
 
                                 <?php if ( !empty($chat->country_code) ) : ?><img src="<?php echo erLhcoreClassDesign::design('images/flags');?>/<?php echo $chat->country_code?>.png" alt="<?php echo htmlspecialchars($chat->country_name)?>" title="<?php echo htmlspecialchars($chat->country_name)?>" />&nbsp;<?php endif; ?>
@@ -40,7 +40,7 @@
 
                                 <a ng-non-bindable class="action-image material-icons" data-title="<?php echo htmlspecialchars($chat->nick,ENT_QUOTES);?>" onclick="lhinst.startChatNewWindow('<?php echo $chat->id;?>',$(this).attr('data-title'))" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/pendingchats','Open in a new window');?>">open_in_new</a>
 
-                                <a href="#" onclick="ee.emitEvent('angularStartChatbyId',[<?php echo $chat->id?>])"><?php echo $chat->id?></a>
+                                <a href="#" <?php if ($chat->nc != '') : ?>style="color: <?php echo htmlspecialchars($chat->nc)?>"<?php endif;?> onclick="ee.emitEvent('angularStartChatbyId',[<?php echo $chat->id?>])"><?php echo $chat->id?></a>
 
                                 <?php if ($chat->status_sub == erLhcoreClassModelChat::STATUS_SUB_OFFLINE_REQUEST) : ?><i title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/activechats','Offline request')?>" class="material-icons">mail</i><?php endif?>
 
@@ -54,9 +54,17 @@
                                     $seconds = ($diff - ($hours * 3600) - ($minits * 60));
                                     ?> | <b><?php echo $hours?> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','h.');?> <?php echo $minits ?> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','m.');?> <?php echo $seconds?> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','s.');?> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','ago');?>.</b>
                                 <?php endif;?>
+
                             </td>
-                            <td ng-non-bindable>
+                            <td ng-non-bindable <?php if ($chat->nc != '') : ?>style="color: <?php echo htmlspecialchars($chat->nc)?>"<?php endif;?> <?php if ($chat->nb == 1) : ?>class="fw-bold"<?php endif;?>>
                                 <?php echo htmlspecialchars($chat->nick);?>
+
+                                <?php if (is_array($chat->subjects) && !empty($chat->subjects)) : ?>
+                                        <?php foreach ($chat->subjects as $subject) : ?>
+                                            <span class="badge bg-info mx-1" ng-non-bindable <?php if ($subject->color != '') : ?>style="background-color:#<?php echo htmlspecialchars($subject->color)?>!important;" <?php endif;?>><?php echo htmlspecialchars($subject)?></span>
+                                        <?php endforeach; ?>
+                                <?php endif; ?>
+                                
                             </td>
                             <td ng-non-bindable nowrap="nowrap">
                                 <?php echo htmlspecialchars($chat->user);?>

@@ -65,7 +65,10 @@ class erLhcoreClassDepartament{
 	   			'delay_lm' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 5)
 	   			),
-	   			'OnlineHoursActive' => new ezcInputFormDefinitionElement(
+	   			'hide_survey_bot' => new ezcInputFormDefinitionElement(
+	   					ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+	   			),
+                'OnlineHoursActive' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
 	   			),
 	   			'Disabled' => new ezcInputFormDefinitionElement(
@@ -101,6 +104,9 @@ class erLhcoreClassDepartament{
 	   			'AutoAssignActive' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
 	   			),
+                'active_mail_balancing' => new ezcInputFormDefinitionElement(
+	   					ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+	   			),
 	   			'VisibleIfOnline' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
 	   			),
@@ -113,7 +119,16 @@ class erLhcoreClassDepartament{
 	   			'MaxNumberActiveChats' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'int'
 	   			),
+                'max_ac_dep_mails' => new ezcInputFormDefinitionElement(
+	   					ezcInputFormDefinitionElement::OPTIONAL, 'int'
+	   			),
+                'max_active_mails' => new ezcInputFormDefinitionElement(
+	   					ezcInputFormDefinitionElement::OPTIONAL, 'int'
+	   			),
 	   			'MaxWaitTimeoutSeconds' => new ezcInputFormDefinitionElement(
+	   					ezcInputFormDefinitionElement::OPTIONAL, 'int'
+	   			),
+	   			'max_timeout_seconds_mail' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'int'
 	   			)
                 ,'MaxNumberActiveDepChats' => new ezcInputFormDefinitionElement(
@@ -125,10 +140,16 @@ class erLhcoreClassDepartament{
                 'delay_before_assign' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'int'
 	   			),
+                'delay_before_assign_mail' => new ezcInputFormDefinitionElement(
+	   					ezcInputFormDefinitionElement::OPTIONAL, 'int'
+	   			),
 	   			'inform_unread_delay' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 5)
 	   			),
 	   			'inform_delay' => new ezcInputFormDefinitionElement(
+	   					ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0)
+	   			),
+                'mailbox_id' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0)
 	   			),
                 'transfer_min_priority' => new ezcInputFormDefinitionElement(
@@ -276,6 +297,12 @@ class erLhcoreClassDepartament{
 		   		$department->active_balancing = 0;
 		   	}
 
+            if ( $form->hasValidData( 'active_mail_balancing' ) && $form->active_mail_balancing == true )	{
+		   		$department->active_mail_balancing = 1;
+		   	} else {
+		   		$department->active_mail_balancing = 0;
+		   	}
+
 		   	if ( $form->hasValidData( 'assign_same_language' ) && $form->assign_same_language == true )	{
 		   		$department->assign_same_language = 1;
 		   	} else {
@@ -287,6 +314,12 @@ class erLhcoreClassDepartament{
 		   	} else {
 		   		$department->max_active_chats = 0;
 		   	}
+
+            if ( $form->hasValidData( 'max_active_mails' ) )	{
+		   		$department->max_active_mails = $form->max_active_mails;
+		   	} else {
+		   		$department->max_active_mails = 0;
+		   	}
 		   	
 		   	if ( $form->hasValidData( 'MaxWaitTimeoutSeconds' ) )	{
 		   		$department->max_timeout_seconds = $form->MaxWaitTimeoutSeconds;
@@ -294,10 +327,22 @@ class erLhcoreClassDepartament{
 		   		$department->max_timeout_seconds = 0;
 		   	}
 
+		   	if ( $form->hasValidData( 'max_timeout_seconds_mail' ) )	{
+		   		$department->max_timeout_seconds_mail = $form->max_timeout_seconds_mail;
+		   	} else {
+		   		$department->max_timeout_seconds_mail = 0;
+		   	}
+
 		   	if ( $form->hasValidData( 'delay_before_assign' ) )	{
 		   		$department->delay_before_assign = $form->delay_before_assign;
 		   	} else {
 		   		$department->delay_before_assign = 0;
+		   	}
+
+		   	if ( $form->hasValidData( 'delay_before_assign_mail' ) )	{
+		   		$department->delay_before_assign_mail = $form->delay_before_assign_mail;
+		   	} else {
+		   		$department->delay_before_assign_mail = 0;
 		   	}
 
 		   	if ( $form->hasValidData( 'ExcludeInactiveChats' ) )	{
@@ -316,6 +361,13 @@ class erLhcoreClassDepartament{
 		   		$department->max_ac_dep_chats = $form->MaxNumberActiveDepChats;
 		   	} else {
 		   		$department->max_ac_dep_chats = 0;
+		   	}
+
+
+		   	if ( $form->hasValidData( 'max_ac_dep_mails' ) )	{
+		   		$department->max_ac_dep_mails = $form->max_ac_dep_mails;
+		   	} else {
+		   		$department->max_ac_dep_mails = 0;
 		   	}
 
             if ( $form->hasValidData( 'assign_by_priority' ) && $form->assign_by_priority == true )	{
@@ -636,6 +688,13 @@ class erLhcoreClassDepartament{
            $botConfiguration['bot_id'] = 0;
        }
 
+       if ( $form->hasValidData( 'mailbox_id' ) )
+       {
+           $botConfiguration['mailbox_id'] = $form->mailbox_id;
+       } else {
+           $botConfiguration['mailbox_id'] = 0;
+       }
+
        if ( $form->hasValidData( 'transfer_min_priority' ) ) {
            $botConfiguration['transfer_min_priority'] = $form->transfer_min_priority;
        } else {
@@ -668,6 +727,12 @@ class erLhcoreClassDepartament{
            $botConfiguration['bot_only_offline'] = true;
        } else {
            $botConfiguration['bot_only_offline'] = false;
+       }
+
+       if ( $form->hasValidData( 'hide_survey_bot' ) ) {
+           $botConfiguration['hide_survey_bot'] = true;
+       } else {
+           $botConfiguration['hide_survey_bot'] = false;
        }
 
        if ( $form->hasValidData( 'bot_foh' ) ) {

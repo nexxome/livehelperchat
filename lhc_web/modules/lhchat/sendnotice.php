@@ -83,6 +83,10 @@ if ( isset($_POST['SendMessage']) ) {
         unset($onlineAttrSystem['qinv']);
     }
 
+    if (isset($onlineAttrSystem['session_inv'])) {
+        unset($onlineAttrSystem['session_inv']);
+    }
+
     if ($form->hasValidData( 'InvitationExpire' )) {
         $onlineAttrSystem['lhcinv_exp'] = time() + $form->InvitationExpire;
     } elseif (isset($onlineAttrSystem['lhcinv_exp'])) {
@@ -175,7 +179,9 @@ if ( isset($_POST['SendMessage']) ) {
 
                 $attributesSystem = $onlineAttrSystem;
                 foreach ($visitor->additional_data_array as $keyItem => $additionalItem) {
-                    $attributesSystem[$additionalItem['identifier']] = $additionalItem['value'];
+                    if (isset($additionalItem['identifier']) && isset($additionalItem['value'])) {
+                        $attributesSystem[$additionalItem['identifier']] = $additionalItem['value'];
+                    }
                 }
 
                 $chat->saveThis();

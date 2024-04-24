@@ -361,6 +361,10 @@ class erLhcoreClassModelChatOnlineUser
                 return $this->{$var};
                 break;
 
+            case 'current_page_params':
+                $this->current_page_params = parse_url($this->current_page);
+                return $this->current_page_params;
+
             case 'online_status':
                 $this->online_status = 2; // Offline
 
@@ -390,13 +394,13 @@ class erLhcoreClassModelChatOnlineUser
         }
     }
 
-    public static function executeRequest($url, $headers = [])
+    public static function executeRequest($url, $headers = [], $paramsExecution = [])
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, isset($paramsExecution['timeout']) ? $paramsExecution['timeout'] : 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, isset($paramsExecution['connect_timeout']) ? $paramsExecution['connect_timeout'] : 5);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_USERAGENT, 'curl/7.29.0');
@@ -706,11 +710,10 @@ class erLhcoreClassModelChatOnlineUser
 
     public static function getReferer(){
         if (isset($_SERVER['HTTP_REFERER']) && !empty($_SERVER['HTTP_REFERER'])) {
-            return $_SERVER['HTTP_REFERER'];
+            return str_replace(['https://','http://'],'//',$_SERVER['HTTP_REFERER']);
         } elseif (isset($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] != '') {
-            return $_SERVER['HTTP_ORIGIN'];
+            return  str_replace(['https://','http://'],'//',$_SERVER['HTTP_ORIGIN']);
         }
-
         return '';
     }
 
@@ -735,6 +738,7 @@ class erLhcoreClassModelChatOnlineUser
                         $item->operator_message = '';
                         $item->operator_user_id = 0;
                     }
+
 
                     // Visit duration less than 30m. Same as google analytics
                     // See: https://support.google.com/analytics/answer/2731565?hl=en
@@ -765,6 +769,13 @@ class erLhcoreClassModelChatOnlineUser
                         if (isset($onlineAttrSystem['qinv'])) {
                             unset($onlineAttrSystem['qinv']);
                             $item->online_attr_system = json_encode($onlineAttrSystem);
+                            $item->online_attr_system_array = $onlineAttrSystem;
+                        }
+
+                        if (isset($onlineAttrSystem['session_inv'])) {
+                            unset($onlineAttrSystem['session_inv']);
+                            $item->online_attr_system = json_encode($onlineAttrSystem);
+                            $item->online_attr_system_array = $onlineAttrSystem;
                         }
                         
                         $returningVisitor = true;
@@ -838,7 +849,9 @@ class erLhcoreClassModelChatOnlineUser
                 $item->tt_pages_count++;
                 $item->store_chat = true;
 
-                $onlineAttr = array();
+                if (!isset($onlineAttr)) {
+                    $onlineAttr = array();
+                }
 
                 if (isset($_GET['onattr']) && is_array($_GET['onattr']) && !(empty($_GET['onattr']))) {
                     $onlineAttr = $_GET['onattr'];
@@ -907,6 +920,11 @@ class erLhcoreClassModelChatOnlineUser
                     $onlineAttr['tag'] = array('h' => false, 'identifier' => 'tag', 'key' => 'Tags', 'value' => implode(',',array_unique(explode(',',$paramsHandle['tag']))));
                 }
 
+                if ($newVisitor === true) {
+                    $location = isset($_POST['l']) ? (string)$_POST['l'] : (isset($_GET['l']) ? rawurldecode($_GET['l']) : '');
+                    $onlineAttr['init'] = 'NEW_VID: ' . $item->vid . (!empty($onlineAttr) ? ' | ' . json_encode($onlineAttr) : '') . ($location != '' ? ' | ' . $location : '');
+                }
+
                 if (!empty($onlineAttr)) {
                     $item->online_attr = json_encode($onlineAttr);
                 }
@@ -950,6 +968,58 @@ class erLhcoreClassModelChatOnlineUser
                 if ($item->device_type == 0) {
                     $detect = new Mobile_Detect;
                     $item->device_type = ($detect->isMobile() ? ($detect->isTablet() ? 3 : 2) : 1);
+                }
+
+                // URL Changed and our invitation is no longer relevant
+                if ($item->invitation !== false &&
+                    isset($item->invitation->design_data_array['page_based_inv']) &&
+                    $item->invitation->design_data_array['page_based_inv'] == true &&
+                    $item->invitation->url_present != ''
+                ) {
+                    $urlOptions = explode(',',$item->invitation->url_present);
+                    $currentPage = ltrim($item->current_page,'/');
+                    $validURL = false;
+                    foreach ($urlOptions as $urlOption) {
+                        if (substr($urlOption,-1) == '*') {
+                            if (strpos($currentPage,rtrim($urlOption,'*')) === 0) {
+                                $validURL = true;
+                            }
+                        } elseif ($currentPage == $urlOption) {
+                            $validURL = true;
+                        }
+                    }
+
+                    if ($validURL === false) {
+                        if (
+                            $item->has_message_from_operator == true ||
+                            ($item->message_seen == 1 && isset($item->invitation->design_data_array['show_next_inv']) && $item->invitation->design_data_array['show_next_inv'] == true)
+                        ) {
+
+                            $onlineAttrSystem = $item->online_attr_system_array;
+
+                            if ($item->message_seen == 1 && isset($item->invitation->design_data_array['do_not_show_session']) && $item->invitation->design_data_array['do_not_show_session'] == true) {
+                                if (!isset($onlineAttrSystem['session_inv'])) {
+                                    $onlineAttrSystem['session_inv'] = [];
+                                }
+                                if (!in_array($item->invitation_id,$onlineAttrSystem['session_inv'])) {
+                                    $onlineAttrSystem['session_inv'][] = $item->invitation_id;
+                                    $item->online_attr_system = json_encode($onlineAttrSystem);
+                                    $item->online_attr_system_array = $onlineAttrSystem;
+                                }
+                            }
+
+                            $item->operator_message = '';
+                            $item->message_seen = 0;
+                            $item->message_seen_ts = 0;
+                            $item->invitation_id = 0;
+
+                            if (isset($onlineAttrSystem['qinv'])) {
+                                unset($onlineAttrSystem['qinv']);
+                                $item->online_attr_system = json_encode($onlineAttrSystem);
+                                $item->online_attr_system_array = $onlineAttrSystem;
+                            }
+                        }
+                    }
                 }
             }
 

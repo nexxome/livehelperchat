@@ -321,7 +321,10 @@ class erLhcoreClassChatMail {
     	}
     	
     	$emailRecipient = array();
-    	if ($chat->department !== false && $chat->department->email != '') { // Perhaps department has assigned email
+
+        if ($sendMail->recipient != '' && $sendMail->only_recipient == 1) {
+            $emailRecipient = explode(',',$sendMail->recipient);
+        } elseif ($chat->department !== false && $chat->department->email != '') { // Perhaps department has assigned email
     		$emailRecipient = explode(',',$chat->department->email);
     	} elseif ($sendMail->recipient != '') { // Perhaps template has default recipient
     		$emailRecipient = explode(',',$sendMail->recipient);
@@ -335,7 +338,16 @@ class erLhcoreClassChatMail {
     		$mail->AddAddress( $receiver );
     	}
 
-    	self::setupSMTP($mail);
+        if (is_object($chat->department) &&
+            isset($chat->department->bot_configuration_array['mailbox_id']) &&
+            $chat->department->bot_configuration_array['mailbox_id'] > 0 &&
+            ($mailbox = erLhcoreClassModelMailconvMailbox::fetch($chat->department->bot_configuration_array['mailbox_id'])) &&
+            $mailbox->active == 1
+        ) {
+            erLhcoreClassMailconvValidator::setSendParameters($mailbox, $mail);
+        } else {
+            self::setupSMTP($mail);
+        }
 
     	if ($sendMail->bcc_recipients != '') {
     		$recipientsBCC = explode(',',$sendMail->bcc_recipients);

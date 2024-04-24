@@ -8,7 +8,7 @@ header('Pragma: no-cache');
 header('X-Frame-Options: SAMEORIGIN');
 header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 
-$tpl = erLhcoreClassTemplate::getInstance( 'lhchat/start.tpl.php');
+$tpl = erLhcoreClassTemplate::getInstance( isset($templateOverride) ? $templateOverride : 'lhchat/start.tpl.php');
 
 $dep = false;
 
@@ -288,6 +288,10 @@ if ($leaveamessage === false && $online === false){
         $Result['theme'] = $Result['theme']->alias != '' ? $Result['theme']->alias : $Result['theme']->id;
     }
     $Result['pagelayout'] = 'userchat2';
+}
+
+if (isset($pagelayoutOverride)) {
+    $Result['pagelayout'] = $pagelayoutOverride;
 }
 
 

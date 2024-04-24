@@ -34,7 +34,7 @@ class erLhcoreClassGenericBotActionAttribute {
             }
 
             if ($hasEvent && $softEvent === false) {
-                $action['content']['intro_message'] = 'Please complete previous process!';
+                $action['content']['intro_message'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please complete previous process!');
             } else {
 
                 $actionEvent = $action['content'];
@@ -51,13 +51,23 @@ class erLhcoreClassGenericBotActionAttribute {
                 }
             }
 
-            $msgText = (isset($action['content']['intro_message']) ? trim($action['content']['intro_message']) : '');
+            $msgData = explode('|||',(isset($action['content']['intro_message']) ? trim($action['content']['intro_message']) : ''));
+
+            $msgText = $msgData[0];
+
+            if (count($msgData) > 0) {
+                $msgText = trim($msgData[mt_rand(0,count($msgData)-1)]);
+            }
 
             if ($msgText != '') {
                 $msgText = erLhcoreClassGenericBotWorkflow::translateMessage($msgText, array('chat' => $chat, 'args' => $params));
             }
 
             $msg->msg = $msgText;
+            
+            if (isset($params['auto_responder']) && $params['auto_responder'] === true) {
+                $metaMessage['content']['auto_responder'] = true;
+            }
 
             $msg->meta_msg = !empty($metaMessage) ? json_encode($metaMessage) : '';
 

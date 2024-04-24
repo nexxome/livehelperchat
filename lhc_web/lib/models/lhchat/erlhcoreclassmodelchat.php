@@ -503,11 +503,17 @@ class erLhcoreClassModelChat {
                    if (isset($params['t']) && $params['t'] != '') {
                        $iconParams['t'] = $params['t'];
                    }
+                   if (isset($params['b']) && $params['b'] === 1) {
+                       $this->nb = 1;
+                   }
+                   if (isset($params['nc']) && $params['nc'] != '') {
+                       $this->nc = $params['nc'];
+                   }
                    $this->aicons[$icon] = $iconParams;
                }
            }
            if ($this->iwh_id > 0 && is_object($this->iwh) && $this->iwh->icon != '') {
-               $iconParams = ['i' => $this->iwh->icon];
+               $iconParams = ['i' => (strpos($this->iwh->icon,'.') !== false ? erLhcoreClassDesign::design('images/' . $this->iwh->icon) : $this->iwh->icon)];
                if ($this->iwh->icon_color != '') {
                    $iconParams['c'] = $this->iwh->icon_color ;
                }
@@ -593,6 +599,10 @@ class erLhcoreClassModelChat {
        case 'iwh':
            $this->iwh = $this->iwh_id > 0 ? erLhcoreClassModelChatIncomingWebhook::fetch($this->iwh_id) : null;
            return $this->iwh;
+
+       case 'referrer_params':
+           $this->referrer_params = parse_url($this->referrer);
+           return $this->referrer_params;
 
        	default:
        		break;

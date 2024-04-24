@@ -83,8 +83,25 @@ class erLhcoreClassGenericBotActionText {
                 }
 
                 if ($validButton == true) {
-                    $quickReplies[] = $quickReply;
+                    if (!isset($quickReply['content']['bot_condition']) || $quickReply['content']['bot_condition'] == "") {
+                        $quickReplies[] = $quickReply;
+                    } else {
+                        $buttonRules = explode(",",$quickReply['content']['bot_condition']);
+                        $allRulesValid = true;
+                        foreach ($buttonRules as $buttonRule) {
+                            $conditionsToValidate = \LiveHelperChat\Models\Bot\Condition::getList(['filter' => ['identifier' => trim($buttonRule)]]);
+                            foreach ($conditionsToValidate as $conditionToValidate) {
+                                if (!$conditionToValidate->isValid(['chat' => $chat, 'replace_array' => (isset($params['replace_array']) ? $params['replace_array'] : [])])) {
+                                    $allRulesValid = false;
+                                }
+                            }
+                        }
+                        if ($allRulesValid === true) {
+                            $quickReplies[] = $quickReply;
+                        }
+                    }
                 }
+
             }
 
             if (!empty($quickReplies)){
@@ -111,7 +128,7 @@ class erLhcoreClassGenericBotActionText {
             }
 
             if ($hasEvent && $softEvent === false) {
-                $action['content']['text'] = 'Please complete previous process!';
+                $action['content']['text'] = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Please complete previous process!');
             } else {
                 $event = new erLhcoreClassModelGenericBotChatEvent();
                 $event->chat_id = $chat->id;
@@ -155,6 +172,10 @@ class erLhcoreClassGenericBotActionText {
 
         if (isset($params['replace_array'])) {
             $msg->msg = @str_replace(array_keys($params['replace_array']),array_values($params['replace_array']),$msg->msg);
+        }
+
+        if (isset($params['auto_responder']) && $params['auto_responder'] === true) {
+            $metaMessage['content']['auto_responder'] = true;
         }
 
         $msg->msg = erLhcoreClassGenericBotWorkflow::translateMessage($msg->msg, array('chat' => $chat, 'args' => $params));

@@ -119,19 +119,58 @@ if (isset($_POST['Login']))
             }
         }
 
-        if ($valid == false || !$currentUser->authenticate($_POST['Username'], $_POST['Password'], isset($_POST['rememberMe']) && $_POST['rememberMe'] == 1 ? true : false))
+        // Check IP restrictions for login
+        if ($valid == true) {
+            $passwordData = (array)erLhcoreClassModelChatConfig::fetch('password_data')->data;
+
+            // We have to check can particular user login by by-pasing ip restrictions
+            if (isset($passwordData['allow_login_from_ip']) && $passwordData['allow_login_from_ip'] != '' && isset($passwordData['bypass_ip_user_id']) && !empty($passwordData['bypass_ip_user_id'])) {
+                $userToLogin = erLhcoreClassModelUser::findOne(array(
+                    'filterlor' => array(
+                        'username' => array($_POST['Username']),
+                        'email' => array($_POST['Username'])
+                    )
+                ));
+                if ($userToLogin === false) {
+                    $valid = false;
+                    $validIP = false;
+                } elseif (!in_array((string)$userToLogin->id,explode(',',str_replace(' ','',$passwordData['bypass_ip_user_id']))) && !erLhcoreClassIPDetect::isIgnored(erLhcoreClassIPDetect::getIP(),explode(',',$passwordData['allow_login_from_ip']))) {
+                    $valid = false;
+                    $validIP = false;
+                }
+            } elseif (isset($passwordData['allow_login_from_ip']) && $passwordData['allow_login_from_ip'] != '' && !erLhcoreClassIPDetect::isIgnored(erLhcoreClassIPDetect::getIP(),explode(',',$passwordData['allow_login_from_ip']))) {
+                $valid = false;
+                $validIP = false;
+            }
+        }
+
+        $Error = '';
+        $isThirdPartyLogin = false;
+
+        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.third_party_login', array(
+            'username' => $_POST['Username'],
+            'password' => $_POST['Password'],
+            'error' => & $Error,
+            'is_third_party_login' => & $isThirdPartyLogin,
+            'tpl' => & $tpl));
+
+        if ($isThirdPartyLogin === false && (!empty($Error) || $valid == false || !$currentUser->authenticate($_POST['Username'], $_POST['Password'], isset($_POST['rememberMe']) && $_POST['rememberMe'] == 1 ? true : false)))
         {
             if ($valid == false) {
-                $Error = erTranslationClassLhTranslation::getInstance()->getTranslation('user/login','Google re-captcha validation failed');
+                if (isset($validIP) && $validIP === false) {
+                    $Error = erTranslationClassLhTranslation::getInstance()->getTranslation('user/login','You can not login because of IP restrictions');
+                } else {
+                    $Error = erTranslationClassLhTranslation::getInstance()->getTranslation('user/login','Google re-captcha validation failed');
+                }
             } else {
 
-                if (erLhcoreClassModelUser::getCount(array('filter' => array('disabled' => 1,'username' => $_POST['Username']))) > 0) {
+                if (empty($Error) && erLhcoreClassModelUser::getCount(array('filter' => array('disabled' => 1,'username' => $_POST['Username']))) > 0) {
                     $Error = erTranslationClassLhTranslation::getInstance()->getTranslation('user/login','Your account is disabled!');
-                } else {
+                } else if (empty($Error)) {
                     $Error = erTranslationClassLhTranslation::getInstance()->getTranslation('user/login','Incorrect username or password');
                 }
 
-                if (($userAttempt = erLhcoreClassModelUser::findOne(array('filter' => array('username' => $_POST['Username'])))) instanceof erLhcoreClassModelUser) {
+                if ($isThirdPartyLogin === false && ($userAttempt = erLhcoreClassModelUser::findOne(array('filter' => array('username' => $_POST['Username'])))) instanceof erLhcoreClassModelUser) {
                     erLhcoreClassModelUserLogin::logUserAction(array(
                         'type' => erLhcoreClassModelUserLogin::TYPE_LOGIN_ATTEMPT,
                         'user_id' => $userAttempt->id,
@@ -149,13 +188,11 @@ if (isset($_POST['Login']))
             }
 
         } else {
-            
+
             $response = erLhcoreClassChatEventDispatcher::getInstance()->dispatch('user.login_after_success_authenticate', array('current_user' => & $currentUser, 'tpl' => & $tpl));
-            
+
             if ($response === false)
             {
-                $passwordData = (array)erLhcoreClassModelChatConfig::fetch('password_data')->data;
-
                 $pendResetPassword = erLhcoreClassModelUserLogin::getCount(array('filter' => array(
                     'type' => erLhcoreClassModelUserLogin::TYPE_PASSWORD_RESET_REQUEST,
                     'status' => erLhcoreClassModelUserLogin::STATUS_PENDING,

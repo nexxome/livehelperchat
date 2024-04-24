@@ -55,7 +55,7 @@
             lhc.loaded = false;
             lhc.connected = false;
             lhc.ready = false;
-            lhc.version = 217;
+            lhc.version = 224;
 
             const isMobileItem = require('ismobilejs');
             var isMobile = isMobileItem.default(global.navigator.userAgent).phone;
@@ -130,6 +130,7 @@
                 // Main attributes
                 var attributesWidget = {
                     terminated: false,
+                    viewport_enabled: true,
                     prefixLowercase: prefixLowercase,
                     prefixStorage: prefixStorage,
                     prefixScope: scopeScript,
@@ -432,6 +433,10 @@
 
                         if (data.chat_ui.clinst) {
                             attributesWidget.clinst = true;
+                        }
+
+                        if (data.chat_ui.viewport) {
+                            attributesWidget.viewport_enabled = data.chat_ui.viewport != 2 && data.chat_ui.viewport == 1 && isMobile === true;
                         }
 
                         if (data.chat_ui.wbottom) {
@@ -949,8 +954,17 @@
 
                 // Listed for post messages
                 const handleMessages = (e) => {
-
                     if (attributesWidget.terminated === true || typeof e.data !== 'string' || e.data.indexOf(attributesWidget.prefixLowercase + '::')) {
+                        if (typeof e.data === 'object' && typeof e.data.action === 'string' &&  e.data.action === "lhc_set_var") {
+                            Object.keys(e.data).forEach(key => {
+                                if (key !== 'action') {
+                                    if (typeof lhc_var !== 'undefined') {
+                                        lhc_var[key] = e.data[key];
+                                    }
+                                }
+                            });
+                            return;
+                        }
                         return;
                     }
 
@@ -960,7 +974,7 @@
                         var originDomain = e.origin.replace("http://", "").replace("https://", "").replace(/:(\d+)$/, '');
 
                         // We allow to send events only from chat installation or page where script is embeded.
-                        if (originDomain !== document.domain && attributesWidget.domain_lhc !== originDomain && parts[1] !== 'started' && parts[1] !== 'isstarted') {
+                        if (originDomain !== document.domain && attributesWidget.domain_lhc !== originDomain && ["started","isstarted","addTag","showWidget"].indexOf(parts[1]) === -1) {
                             return;
                         }
                     }

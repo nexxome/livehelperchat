@@ -71,6 +71,7 @@ class erLhcoreClassGenericBotActionCommand {
 
                 if (isset($filterOnline['user_id'])) {
                     $chat->user_id = (int)$filterOnline['user_id'];
+                    $chat->tslasign = time();
                 }
 
                 if ($chat->transfer_if_na == 1) {
@@ -576,10 +577,18 @@ class erLhcoreClassGenericBotActionCommand {
 
         } elseif ($action['content']['command'] == 'chatvariable') {
 
+            $db = ezcDbInstance::get();
+
+            try {
+                $db->beginTransaction();
+
+                $chat->syncAndLock('chat_variables');
+                unset($chat->chat_variables_array);
+
                 $variablesArray = (array)$chat->chat_variables_array;
 
                 if (isset($params['replace_array']) && is_array($params['replace_array'])) {
-                    $variablesAppend = @str_replace(array_keys($params['replace_array']),array_values($params['replace_array']),$action['content']['payload']);
+                    $variablesAppend = @str_replace(array_keys($params['replace_array']), array_values($params['replace_array']), $action['content']['payload']);
                 } else {
                     $variablesAppend = $action['content']['payload'];
                 }
@@ -595,7 +604,7 @@ class erLhcoreClassGenericBotActionCommand {
                         }
 
                         if (isset($value)) {
-                             $variablesArray[$key] = $value;
+                            $variablesArray[$key] = $value;
                         } elseif (isset($variablesArray[$key])) {
                             unset($variablesArray[$key]);
                         }
@@ -606,10 +615,17 @@ class erLhcoreClassGenericBotActionCommand {
                 $chat->chat_variables_array = $variablesArray;
 
                 if (isset($action['content']['update_right_column']) && $action['content']['update_right_column'] == true) {
-                    $chat->operation_admin .= "lhinst.updateVoteStatus(".$chat->id.");";
+                    $chat->operation_admin .= "lhinst.updateVoteStatus(" . $chat->id . ");";
                 }
 
-                $chat->saveThis();
+                $chat->updateThis(array('update' => array('operation_admin', 'chat_variables')));
+
+                $db->commit();
+
+            } catch (Exception $e) {
+                $db->rollback();
+                throw $e;
+            }
 
         } elseif ($action['content']['command'] == 'setchatattribute') {
 
@@ -798,6 +814,27 @@ class erLhcoreClassGenericBotActionCommand {
             $payloadProcessed = erLhcoreClassGenericBotWorkflow::translateMessage($payloadProcessed, array('chat' => $chat, 'args' => $params));
 
             $remove = isset($action['content']['remove_subject']) && $action['content']['remove_subject'] == true;
+
+            // Mail module support
+            if ($chat instanceof erLhcoreClassModelMailconvMessage) {
+                if ($remove == true && is_numeric($payloadProcessed)) {
+                    $subjectChat = erLhcoreClassModelMailconvMessageSubject::findOne(array('filter' => array('subject_id' => (int)$payloadProcessed, 'message_id' => $chat->id)));
+                    if ($subjectChat instanceof erLhcoreClassModelMailconvMessageSubject) {
+                        $subjectChat->removeThis();
+                    }
+                } else if (is_numeric($payloadProcessed) && ($subject = erLhAbstractModelSubject::fetch((int)$payloadProcessed)) instanceof erLhAbstractModelSubject) {
+                    $subjectChat = erLhcoreClassModelMailconvMessageSubject::findOne(array('filter' => array('subject_id' => (int)$payloadProcessed, 'message_id' => $chat->id)));
+                    if (!($subjectChat instanceof erLhcoreClassModelMailconvMessageSubject)) {
+                        $subjectChat = new erLhcoreClassModelMailconvMessageSubject();
+                        $subjectChat->subject_id = $subject->id;
+                        $subjectChat->message_id = $chat->id;
+                        $subjectChat->conversation_id = $chat->conversation_id;
+                        $subjectChat->saveThis();
+                    }
+                }
+                return;
+            }
+
             if ($remove == true && is_numeric($payloadProcessed)) {
                 $subjectChat = erLhAbstractModelSubjectChat::findOne(array('filter' => array('subject_id' => (int)$payloadProcessed, 'chat_id' => $chat->id)));
                 if ($subjectChat instanceof erLhAbstractModelSubjectChat) {

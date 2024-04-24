@@ -23,6 +23,66 @@ if (isset($_POST['DeleteSelected']) && !empty($_POST['canned_id']) && $currentUs
 
 $tpl = erLhcoreClassTemplate::getInstance( 'lhchat/cannedmsg.tpl.php');
 
+if (isset($_POST['CopyAsEmailTemplates']) && !empty($_POST['canned_id'])) {
+
+    if (!isset($_POST['csfr_token']) || !$currentUser->validateCSFRToken($_POST['csfr_token'])) {
+        erLhcoreClassModule::redirect('chat/cannedmsg');
+        exit;
+    }
+
+    $messagesCopied = 0;
+    $messagesSkipped = 0;
+
+    $db = ezcDbInstance::get();
+    foreach ($_POST['canned_id'] as $canned_id) {
+        $cannedMessage = erLhcoreClassModelCannedMsg::fetch($canned_id);
+        if ($cannedMessage instanceof erLhcoreClassModelCannedMsg) {
+
+            if (erLhcoreClassModelMailconvResponseTemplate::getCount(['filter' => ['unique_id' => 'cnd-' . $cannedMessage->id]]) == 0) {
+                try {
+                    $db->beginTransaction();
+
+                    // Response templates
+                    $responseTemplate = new erLhcoreClassModelMailconvResponseTemplate();
+                    $responseTemplate->unique_id = 'cnd-' . $cannedMessage->id;
+                    $responseTemplate->template = erLhcoreClassBBCode::make_clickable(htmlspecialchars($cannedMessage->msg));
+                    $responseTemplate->template_plain =  $cannedMessage->msg;
+                    $responseTemplate->name = $cannedMessage->title;
+                    $responseTemplate->dep_id = $cannedMessage->department_id; // Same department logic
+                    $responseTemplate->saveThis();
+
+                    $stmt = $db->prepare('SELECT `dep_id` FROM `lh_canned_msg_dep` WHERE `canned_id` = :canned_id');
+                    $stmt->bindValue(':canned_id', $cannedMessage->id,PDO::PARAM_INT);
+                    $stmt->execute();
+                    $departmentsIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+                    foreach ($departmentsIds as $departmentsId) {
+                        $db->query("INSERT INTO `lhc_mailconv_response_template_dep` (`template_id`,`dep_id`) VALUES ({$responseTemplate->id},{$departmentsId})");
+                    }
+
+                    // Subjects
+                    $subjects = erLhcoreClassModelCannedMsgSubject::getList(['filter' => ['canned_id' => $cannedMessage->id]]);
+                    foreach ($subjects as $subject) {
+                        $subjectTemplate = new erLhcoreClassModelMailconvResponseTemplateSubject();
+                        $subjectTemplate->template_id = $responseTemplate->id;
+                        $subjectTemplate->subject_id = $subject->subject_id;
+                        $subjectTemplate->saveThis();
+                    }
+
+                    $db->commit();
+                    $messagesCopied++;
+                } catch (Exception $e) {
+                    $tpl->set('messsages_error',$e->getMessage());
+                }
+            } else {
+                $messagesSkipped++;
+            }
+        }
+    }
+    $tpl->set('messsages_copied',$messagesCopied);
+    $tpl->set('messsages_skipped',$messagesSkipped);
+}
+
 $validTabs = array('cannedmsg','statistic');
 $tab = isset($Params['user_parameters_unordered']['tab']) && in_array($Params['user_parameters_unordered']['tab'],$validTabs) ? $Params['user_parameters_unordered']['tab'] : 'cannedmsg';
 $tpl->set('tab',$tab);
@@ -249,11 +309,20 @@ if ($tab == 'cannedmsg') {
         $filterParams['is_search'] = false;
     }
 
-    erLhcoreClassChatStatistic::formatUserFilter($filterParams);
+    erLhcoreClassChatStatistic::formatUserFilter($filterParams, 'lh_canned_msg_use','user_id',['group_id','group_ids']);
+
+    if (
+        is_array($filterParams['input_form']->department_id) && !empty($filterParams['input_form']->department_id) ||
+        is_array($filterParams['input_form']->department_group_ids) && !empty($filterParams['input_form']->department_group_ids)) {
+        $filterParams['filter']['innerjoin']['lh_canned_msg_dep'] = array('`lh_canned_msg_dep`.`canned_id`','`lh_canned_msg_use`.`canned_id`');
+    }
 
     if (is_array($filterParams['input_form']->department_id) && !empty($filterParams['input_form']->department_id)) {
-        $filterParams['filter']['innerjoin']['lh_canned_msg_dep'] = array('`lh_canned_msg_dep`.`canned_id`','`lh_canned_msg_use` . `canned_id`');
         $filterParams['filter']['filterin']['`lh_canned_msg_dep`.`dep_id`'] = $filterParams['input_form']->department_id;
+    }
+
+    if (is_array($filterParams['input_form']->department_group_ids) && !empty($filterParams['input_form']->department_group_ids)) {
+        erLhcoreClassChatStatistic::formatUserFilter($filterParams, 'lh_canned_msg_dep', 'user_id', ['department_group_ids']);
     }
 
     $append = erLhcoreClassSearchHandler::getURLAppendFromInput($filterParams['input_form']);

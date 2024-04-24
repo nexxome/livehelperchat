@@ -13,6 +13,7 @@ $webhooksEnabled = $cfg->getSetting( 'webhooks', 'enabled', false );
     <table class="table" cellpadding="0" cellspacing="0" width="100%" ng-non-bindable>
         <thead>
         <tr>
+            <th nowrap="nowrap"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('webhooks/module','Name');?></th>
             <th nowrap="nowrap"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('webhooks/module','Event');?></th>
             <th nowrap="nowrap"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('webhooks/module','Bot');?></th>
             <th nowrap="nowrap"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('webhooks/module','Trigger');?></th>
@@ -23,11 +24,14 @@ $webhooksEnabled = $cfg->getSetting( 'webhooks', 'enabled', false );
         </thead>
         <?php foreach ($items as $item) : ?>
             <tr>
+                <td><?php echo htmlspecialchars($item->name)?></td>
                 <td nowrap="nowrap">
                     <?php if ($item->type == 0) : ?>
                         <?php echo htmlspecialchars($item->event)?>
                     <?php elseif ($item->type == 1) : ?>
-                        <b><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('webhooks/module','Continuous event');?></b>
+                        <b><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('webhooks/module','Continuous chat event');?></b>
+                    <?php elseif ($item->type == 2) : ?>
+                        <b><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('webhooks/module','Continuous mail event');?></b>
                     <?php endif; ?>
                 </td>
                 <td><?php echo htmlspecialchars($item->bot)?></td>

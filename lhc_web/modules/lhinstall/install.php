@@ -408,16 +408,29 @@ try {
 
                     $db->query("CREATE TABLE `lh_chat_event_track` ( `id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(50) NOT NULL, `data` longtext NOT NULL, `department_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `department_id` (`department_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
-                    $db->query("CREATE TABLE IF NOT EXISTS `lh_chat_archive_range` (
-        	   `id` int(11) NOT NULL AUTO_INCREMENT,
-        	   `range_from` int(11) NOT NULL,
-        	   `range_to` int(11) NOT NULL,
-        	   `year_month` int(11) NOT NULL,
-        	   `older_than` int(11) NOT NULL,
-        	   `last_id` int(11) NOT NULL,
-        	   `first_id` int(11) NOT NULL,
-        	   PRIMARY KEY (`id`)
-        	   ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+                    $db->query("CREATE TABLE `lh_chat_archive_range` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `range_from` bigint(20) unsigned NOT NULL,
+  `range_to` bigint(20) unsigned NOT NULL,
+  `older_than` int(11) NOT NULL,
+  `last_id` bigint(20) NOT NULL,
+  `first_id` bigint(20) NOT NULL,
+  `year_month` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lh_mail_archive_range` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `range_from` bigint(20) unsigned NOT NULL,
+  `range_to` bigint(20) unsigned NOT NULL,
+  `older_than` int(11) NOT NULL,
+  `last_id` bigint(20) NOT NULL,
+  `first_id` bigint(20) NOT NULL,
+  `year_month` int(11) NOT NULL, 
+  `type` tinyint(1) unsigned NOT NULL,
+  `name` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
                     $db->query("CREATE TABLE `lh_notification_subscriber` ( `id` bigint(20) NOT NULL AUTO_INCREMENT, `chat_id` bigint(20) NOT NULL, `online_user_id` bigint(20) NOT NULL, `dep_id` int(11) NOT NULL, `theme_id` int(11) NOT NULL, `ctime` int(11) NOT NULL, `utime` int(11) NOT NULL, `status` int(11) NOT NULL, `params` text NOT NULL, `device_type` tinyint(1) NOT NULL,`subscriber_hash` varchar(50) NOT NULL, `uagent` varchar(250) NOT NULL, `ip` varchar(250) NOT NULL, `last_error` text NOT NULL, PRIMARY KEY (`id`), KEY `chat_id` (`chat_id`), KEY `dep_id` (`dep_id`), KEY `online_user_id` (`online_user_id`), KEY `subscriber_hash` (`subscriber_hash`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
@@ -1082,6 +1095,7 @@ try {
 				  `from_email_ac` tinyint(4) NOT NULL,
 				  `user_mail_as_sender` tinyint(4) NOT NULL,
                   `use_chat_locale` tinyint(1) NOT NULL DEFAULT '0',
+                  `only_recipient` tinyint(1) NOT NULL DEFAULT '0',
 				  `content` text NOT NULL,
                   `translations` longtext NOT NULL,
 				  `subject` varchar(250) NOT NULL,
@@ -1106,7 +1120,7 @@ try {
             	   (10,'',	'Permission request',	'Live Helper Chat',	0,	'',	0,	'Hello,\r\n\r\nOperator {user} has requested these permissions\n\r\n{permissions}\r\n\r\nSincerely,\r\nLive Support Team',	'Permission request from {user}',	0,	'',	0,	'',	'',	0),
             	   (11,'',	'You have unread messages',	'Live Helper Chat',	0,	'',	0,	'Hello,\r\n\r\nOperator {operator} has answered to you\r\n\r\n{messages}\r\n\r\nSincerely,\r\nLive Support Team',	'Operator has answered to your request',	0,	'',	0,	'',	'',	0),
             	   (12,'',	'Visitor returned',	'Live Helper Chat',	0,	'',	0,	'Hello,\r\n\r\nVisitor information\r\nName: {name}\r\nEmail: {email}\r\nPhone: {phone}\r\nDepartment: {department}\r\nCountry: {country}\r\nCity: {city}\r\nIP: {ip}\r\nCreated:	{created}\r\nUser left:	{user_left}\r\nWaited:	{waited}\r\nChat duration:	{chat_duration}\r\n\r\nSee more information at\r\n{url_accept}\r\n\r\nLast chat:\r\n{message}\r\n\r\nAdditional data, if any:\r\n{additional_data}\r\n\r\nSincerely,\r\nLive Support Team',	'Visitor returned - {username}',	0,	'',	0,	'',	'',	0),
-            	   (13,'','Report prepared',	'Live Helper Chat',	0,	'',	0,	'Hello,\r\n\r\nReport prepared - {report_name}, {date_range}\r\n\r\n{report_description}\r\n\r\nView report at:\r\n{url_report}',	'Report prepared - {report_name}',	0,	'',	0,	'',	'',	0);");
+            	   (13,'','Report prepared',	'Live Helper Chat',	0,	'',	0,	'Hello,\r\n\r\nReport prepared - {report_name}, {date_range}\r\n\r\n{report_description}\r\n\r\nView report at:\r\n{url_report}\r\nView directly: {url_report_direct}',	'Report prepared - {report_name}',	0,	'',	0,	'',	'',	0);");
 
                     $db->query("CREATE TABLE IF NOT EXISTS `lh_question` (
         	   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1497,6 +1511,7 @@ try {
 
                     $db->query("INSERT INTO `lh_chat_config` (`identifier`, `value`, `type`, `explain`, `hidden`) VALUES
                 ('tracked_users_cleanup',	'160',	0,	'How many days keep records of online users.',	0),
+                ('enable_status_cache',	'0',	0,	'Enable status check cache using Redis. PHPResque extension is required.',	0),
         	   	('list_online_operators', '1', '0', 'List online operators.', '0'),
         	   	('voting_days_limit',	'7',	0,	'How many days voting widget should not be expanded after last show',	0),
                 ('track_online_visitors',	'1',	0,	'Enable online site visitors tracking',	0),
@@ -1508,6 +1523,7 @@ try {
                 ('list_closed','0','0','List closed chats','0'),
                 ('vwait_to_long','120','0','How long we should wait before we inform operator about unanswered chat.','0'),
                 ('autoclose_activity_timeout','0','0','Automatically close active chat if from last visitor/operator message passed. 0 - disabled, n > 0 time in minutes','0'),
+                ('bbcode_options', 'a:2:{s:3:\"div\";a:0:{}s:3:\"dio\";a:0:{}}', '0', '', '1'),
                 ('mobile_options',	'a:2:{s:13:\"notifications\";i:0;s:7:\"fcm_key\";s:152:\"AAAAiF8DeNk:APA91bFVHu2ybhBUTtlEtQrUEPpM2fb-5ovgo0FVNm4XxK3cYJtSwRcd-pqcBot_422yDOzHyw2p9ZFplkHrmNXjm8f5f-OIzfalGmpsypeXvnPxhU6Db1B2Z1Acc-TamHUn2F4xBJkP\";}',	0,	'',	1),
                 ('footprint_background','0','0','Footprint updates should be processed in the background. Make sure you are running workflow background cronjob.','0'),
                 ('reverse_pending','0','0','Make default pending chats order from old to new','0'),
@@ -1711,7 +1727,12 @@ try {
                   `parent_id` int(11) NOT NULL DEFAULT '0',
         	   	  `requires_username` int(11) NOT NULL,
         	   	  `requires_phone` int(11) NOT NULL,        	   	  
-        	   	  `design_data` longtext NOT NULL,        	   	  
+        	   	  `design_data` longtext NOT NULL,
+                  `active_from` bigint(20) unsigned NOT NULL DEFAULT 0,
+                  `active_to` bigint(20) unsigned NOT NULL DEFAULT 0,
+                  `repetitiveness` tinyint(1) unsigned NOT NULL DEFAULT 0,
+                  `days_activity` text COLLATE utf8mb4_unicode_ci NOT NULL,
+                  `url_present` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
 				  PRIMARY KEY (`id`),
 				  KEY `time_on_site_pageviews_siteaccess_position` (`time_on_site`,`pageviews`,`siteaccess`,`identifier`,`position`),
         	      KEY `identifier` (`identifier`),
@@ -1750,6 +1771,11 @@ try {
 				  `archive` tinyint(1) NOT NULL DEFAULT '0',
 				  `max_load` int(11) NOT NULL DEFAULT '0',
 				  `max_load_h` int(11) NOT NULL DEFAULT '0',
+                  `max_active_mails` int(11) NOT NULL DEFAULT '0',
+                  `active_mail_balancing` tinyint(1) NOT NULL,
+                  `max_ac_dep_mails` int(11) NOT NULL,
+                  `max_timeout_seconds_mail` int(11) NOT NULL,
+                  `delay_before_assign_mail` int(11) NOT NULL,
 				  `disabled` int(11) NOT NULL,
 				  `hidden` int(11) NOT NULL,
 				  `delay_lm` int(11) NOT NULL,
@@ -1868,14 +1894,18 @@ try {
                     $db->query("CREATE TABLE `lh_canned_msg_tag_link` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `tag_id` int(11) NOT NULL,  `canned_id` int(11) NOT NULL,  PRIMARY KEY (`id`), KEY `canned_id` (`canned_id`), KEY `tag_id` (`tag_id`)) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
                     $db->query("CREATE TABLE `lh_canned_msg_tag` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `tag` varchar(40) NOT NULL, PRIMARY KEY (`id`), KEY `tag` (`tag`)) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
-                    $db->query("CREATE TABLE `lh_abstract_subject` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+                    $db->query(	"CREATE TABLE `lh_abstract_subject` (
+                    `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `internal` tinyint(1) NOT NULL DEFAULT 0,
-  `internal_type` varchar(20) NOT NULL DEFAULT '',
+  `internal_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pinned` tinyint(1) NOT NULL DEFAULT 0,
+  `widgets` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `internal` (`internal`),
-  KEY `internal_type` (`internal_type`)
+  KEY `internal_type` (`internal_type`),
+  KEY `widgets` (`widgets`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
                     $db->query("CREATE TABLE `lh_abstract_subject_dep` ( `id` int(11) NOT NULL AUTO_INCREMENT, `dep_id` int(11) NOT NULL, `subject_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `subject_id` (`subject_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
@@ -2017,6 +2047,8 @@ try {
                   `force_logout` tinyint(1) unsigned NOT NULL DEFAULT '0',
                   `llogin` bigint(20) unsigned NOT NULL DEFAULT '0',
                   `always_on` tinyint(1) NOT NULL DEFAULT '0',
+                  `exclude_autoasign_mails` tinyint(1) NOT NULL DEFAULT '0',
+                  `max_active_mails` int(11) NOT NULL DEFAULT '0',
                   PRIMARY KEY (`id`),
                   KEY `hide_online` (`hide_online`),
                   KEY `rec_per_req` (`rec_per_req`),
@@ -2058,13 +2090,19 @@ try {
                   `hide_online_ts` int(11) NOT NULL DEFAULT '0',
                   `dep_group_id` int(11) NOT NULL DEFAULT '0',
                   `always_on` tinyint(1) NOT NULL DEFAULT '0',
+                  `exclude_autoasign_mails` tinyint(1) NOT NULL DEFAULT '0',
+                  `active_mails` int(11) NOT NULL DEFAULT '0',
+                  `pending_mails` int(11) NOT NULL DEFAULT '0',
+                  `max_mails` int(11) NOT NULL DEFAULT '0',
+                  `last_accepted_mail` int(11) NOT NULL DEFAULT '0',
                   `assign_priority` int(11) NOT NULL DEFAULT '0',
                   `chat_max_priority` int(11) NOT NULL DEFAULT '0',
                   `chat_min_priority` int(11) NOT NULL DEFAULT '0',
                   PRIMARY KEY (`id`),
                   KEY `last_activity_hide_online_dep_id` (`last_activity`,`hide_online`,`dep_id`),
                   KEY `dep_id` (`dep_id`),
-                  KEY `user_id_type` (`user_id`,`type`)
+                  KEY `user_id_type` (`user_id`,`type`),
+                  KEY `online_op_widget` (`last_activity`,`user_id`,`dep_id`,`always_on`)
                 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
                     // Insert record to departament instantly
@@ -2080,6 +2118,7 @@ try {
 				  `transfer_user_id` int(11) NOT NULL,
 				  `from_dep_id` int(11) NOT NULL,
 				  `ctime` int(11) NOT NULL,
+                  `transfer_scope` int(11) NOT NULL DEFAULT '0',
 				  `transfer_to_user_id` int(11) NOT NULL,
 				  PRIMARY KEY (`id`),
 				  KEY `dep_id` (`dep_id`),
@@ -2094,6 +2133,14 @@ try {
 				 `mtime` int(11) NOT NULL,
 				 PRIMARY KEY (`id`)
 				) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $db->query("CREATE TABLE `lh_mail_continuous_event` (
+  `webhook_id` bigint(20) unsigned NOT NULL,
+  `message_id` bigint(20) unsigned NOT NULL,
+  `created_at` bigint(20) unsigned NOT NULL,
+  UNIQUE KEY `webhook_id_message_id` (`webhook_id`,`message_id`),
+  KEY `created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
                     $db->query("CREATE TABLE `lh_generic_bot_command` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -2211,7 +2258,7 @@ try {
 
                     $db->query("CREATE TABLE `lh_abstract_rest_api_key_remote` ( `id` int(11) NOT NULL AUTO_INCREMENT, `api_key` varchar(50) NOT NULL, `username` varchar(50) NOT NULL, `name` varchar(50) NOT NULL, `host` varchar(250) NOT NULL, `active` tinyint(1) NOT NULL DEFAULT '0', `position` int(11) NOT NULL DEFAULT '0', PRIMARY KEY (`id`), KEY `active` (`active`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
                     $db->query("CREATE TABLE `lh_abstract_chat_variable` ( `id` int(11) NOT NULL AUTO_INCREMENT, `var_name` varchar(255) NOT NULL, `var_identifier` varchar(255) NOT NULL,`inv` tinyint(1) NOT NULL, `old_js_id` varchar(50) NOT NULL, `change_message` varchar(250) NOT NULL, `type` tinyint(1) NOT NULL, `persistent` tinyint(1) NOT NULL, `js_variable` varchar(255) NOT NULL, `dep_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-                    $db->query("CREATE TABLE `lh_webhook` ( `id` int(11) NOT NULL AUTO_INCREMENT, `event` varchar(50) NOT NULL, `bot_id_alt` int(11) NOT NULL DEFAULT '0', `trigger_id_alt` int(11) NOT NULL DEFAULT '0', `bot_id` int(11) NOT NULL, `trigger_id` int(11) NOT NULL, `disabled` tinyint(1) NOT NULL, `configuration` longtext NOT NULL, `type` tinyint(1) NOT NULL DEFAULT 0, PRIMARY KEY (`id`), KEY `event_disabled` (`event`,`disabled`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+                    $db->query("CREATE TABLE `lh_webhook` ( `id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(50) NOT NULL, `event` varchar(50) NOT NULL, `bot_id_alt` int(11) NOT NULL DEFAULT '0', `trigger_id_alt` int(11) NOT NULL DEFAULT '0', `bot_id` int(11) NOT NULL, `trigger_id` int(11) NOT NULL, `disabled` tinyint(1) NOT NULL, `status` longtext NOT NULL,`configuration` longtext NOT NULL, `type` tinyint(1) NOT NULL DEFAULT 0, PRIMARY KEY (`id`), KEY `event_disabled` (`event`,`disabled`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
                     $db->query("CREATE TABLE `lh_generic_bot_rest_api_cache` (
   `hash` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `rest_api_id` bigint(20) unsigned NOT NULL,
@@ -2361,6 +2408,415 @@ try {
                   KEY `role_id` (`role_id`)
                 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
+                    $db->query("CREATE TABLE `lhc_mailconv_delete_item` (
+                                            `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                                            `conversation_id` bigint(20) unsigned NOT NULL,
+                                            `filter_id` bigint(20) unsigned NOT NULL,
+                                            `status` tinyint(1) unsigned NOT NULL DEFAULT 0,
+                                            PRIMARY KEY (`id`),
+                                            KEY `filter_id_status` (`filter_id`,`status`),
+                                            KEY `status` (`status`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_delete_filter` (
+                                              `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+                                              `updated_at` bigint(20) unsigned NOT NULL,
+                                              `created_at` bigint(20) unsigned NOT NULL,
+                                              `user_id` bigint(20) unsigned NOT NULL,
+                                              `archive_id` int(11) unsigned NOT NULL DEFAULT 0,
+                                              `status` tinyint(1) unsigned NOT NULL DEFAULT 0,
+                                              `last_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+                                              `started_at` bigint(20) unsigned NOT NULL DEFAULT 0,
+                                              `finished_at` bigint(20) unsigned NOT NULL DEFAULT 0,
+                                              `processed_records` bigint(20) unsigned NOT NULL DEFAULT 0,
+                                              `delete_policy` tinyint(1) unsigned NOT NULL DEFAULT 0,
+                                              `filter` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+                                              `filter_input` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+                                              PRIMARY KEY (`id`),
+                                              KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_mailing_campaign` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT 0,
+  `starts_at` bigint(20) unsigned NOT NULL,
+  `enabled` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `mailbox_id` bigint(20) unsigned NOT NULL,
+  `body` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body_alt` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `as_active` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `reply_email` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reply_name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owner_logic` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `owner_user_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `status_enabled_starts_at` (`status`,`enabled`,`starts_at`),
+  KEY `enabled` (`enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_mailing_campaign_recipient` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `campaign_id` bigint(20) unsigned NOT NULL,
+  `recipient_id` bigint(20) unsigned NOT NULL,
+  `type` tinyint(1) NOT NULL DEFAULT 0,
+  `email` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mailbox` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT 0,
+  `opened_at` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `send_at` bigint(20) unsigned NOT NULL,
+  `message_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `conversation_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_1` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_2` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_3` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_4` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_5` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_6` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `log` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `message_id` (`message_id`),
+  KEY `campaign_id_status` (`campaign_id`,`status`),
+  KEY `campaign_id_email` (`campaign_id`, `email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_mailing_list` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_recipient` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `data` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `disabled` tinyint(1) NOT NULL DEFAULT 0,
+  `email` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mailbox` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_1` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_2` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_3` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_4` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_5` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attr_str_6` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `disabled` (`disabled`),
+  KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_mailing_list_recipient` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `mailing_list_id` bigint(20) unsigned NOT NULL,
+  `mailing_recipient_id` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `mailing_list_id` (`mailing_list_id`),
+  KEY `mailing_recipient_id` (`mailing_recipient_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE IF NOT EXISTS `lhc_mailconv_personal_mailbox_group` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mails` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `active` (`active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_conversation` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `dep_id` int(11) unsigned NOT NULL,
+  `user_id` int(11) unsigned NOT NULL,
+  `status` int(11) unsigned NOT NULL,
+  `subject` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ctime` int(11) unsigned NOT NULL,
+  `priority` int(11) NOT NULL DEFAULT 0,
+  `priority_asc` int(11) NOT NULL DEFAULT 0,
+  `from_name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_address` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lang` varchar(5) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_message_id` bigint(20) unsigned NOT NULL,
+  `message_id` bigint(20) unsigned NOT NULL,
+  `udate` bigint(20) unsigned NOT NULL,
+  `date` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mailbox_id` bigint(20) unsigned NOT NULL,
+  `opened_at` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `total_messages` int(11) unsigned NOT NULL,
+  `match_rule_id` int(11) unsigned NOT NULL,
+  `cls_time` int(11) unsigned NOT NULL,
+  `pnd_time` int(11) unsigned NOT NULL,
+  `wait_time` int(11) unsigned NOT NULL,
+  `accept_time` int(11) unsigned NOT NULL,
+  `response_time` int(11) NOT NULL,
+  `interaction_time` int(11) NOT NULL,
+  `lr_time` int(11) unsigned NOT NULL,
+  `tslasign` int(11) unsigned NOT NULL,
+  `start_type` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `transfer_uid` int(11) unsigned NOT NULL,
+  `remarks` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `conv_duration` int(11) NOT NULL DEFAULT 0,
+  `mail_variables` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `has_attachment` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `pending_sync` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `follow_up_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `undelivered` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `lang` (`lang`),
+  KEY `from_address` (`from_address`),
+  KEY `mailbox_id` (`mailbox_id`),
+  KEY `dep_id` (`dep_id`),
+  KEY `mailbox_id_status_udate` (`mailbox_id`,`status`,`udate`),
+  KEY `status_priority` (`status`,`priority`),
+  KEY `status_priority_asc` (`status`,`priority_asc`),
+  KEY `has_attachment` (`has_attachment`),
+  KEY `udate` (`udate`),
+  KEY `user_id_status` (`user_id`,`status`),
+  KEY `status_dep_id` (`status`,`dep_id`),
+  KEY `undelivered` (`undelivered`),
+  KEY `phone` (`phone`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_file` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `message_id` bigint(20) unsigned NOT NULL,
+  `size` int(11) unsigned NOT NULL,
+  `name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `extension` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attachment_id` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_path` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `content_id` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `disposition` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `conversation_id` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `message_id` (`message_id`),
+  KEY `conversation_id` (`conversation_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+
+                    $db->query("CREATE TABLE `lhc_mailconv_mailbox` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `mail` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `username` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `host` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) unsigned NOT NULL DEFAULT 1,
+  `port` int(11) unsigned NOT NULL,
+  `workflow_options` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `imap` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_sync_log` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sync_started` bigint(20) unsigned NOT NULL,
+  `last_sync_time` bigint(20) unsigned NOT NULL,
+  `user_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `mailbox_sync` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sync_status` int(11) unsigned NOT NULL,
+  `sync_interval` int(11) unsigned NOT NULL,
+  `signature` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `signature_under` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `import_since` int(11) unsigned NOT NULL DEFAULT 0,
+  `dep_id` int(11) unsigned NOT NULL DEFAULT 0,
+  `delete_mode` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `reopen_timeout` int(11) unsigned NOT NULL DEFAULT 4,
+  `failed` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `uuid_status` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `create_a_copy` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `import_priority` int(11) unsigned NOT NULL DEFAULT 0,
+  `assign_parent_user` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `mail_smtp` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name_smtp` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `username_smtp` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password_smtp` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `no_pswd_smtp` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `auth_method` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `reopen_reset` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `delete_on_archive` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `delete_policy` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `last_process_time` bigint(20) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `active` (`active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_match_rule` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `dep_id` int(11) unsigned NOT NULL,
+  `conditions` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `active` tinyint(1) unsigned NOT NULL DEFAULT 1,
+  `mailbox_id` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_name` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_mail` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject_contains` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `priority` int(11) NOT NULL,
+  `priority_rule` int(11) NOT NULL,
+  `options` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`),  
+  KEY `active_priority` (`active`,`priority`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_msg_open` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `opened_at` bigint(20) unsigned NOT NULL,
+  `hash` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `hash` (`hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_oauth_ms` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `mailbox_id` bigint(20) unsigned NOT NULL,
+  `oauth_uid` varchar(50) NOT NULL,
+  `name` varchar(200) NOT NULL,
+  `email` varchar(200) NOT NULL,
+  `surname` varchar(200) NOT NULL,
+  `display_name` varchar(200) NOT NULL,
+  `txtSessionKey` varchar(255) NOT NULL,
+  `txtCodeVerifier` varchar(255) NOT NULL,
+  `dtExpires` bigint(20) unsigned NOT NULL,
+  `txtRefreshToken` text NOT NULL,
+  `txtToken` text NOT NULL,
+  `txtIDToken` text NOT NULL,
+  `completed` tinyint(1) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `oauth_uid` (`oauth_uid`),
+  KEY `user_id_completed` (`mailbox_id`,`completed`)
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4
+;");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_msg` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `status` int(11) unsigned NOT NULL,
+  `opened_at` bigint(20) unsigned NOT NULL DEFAULT '0',
+  `conversation_id` bigint(20) unsigned NOT NULL,
+  `conversation_id_old` bigint(20) unsigned NOT NULL DEFAULT '0',
+  `message_hash` varchar(40) NOT NULL,
+  `message_id` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `in_reply_to` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lang` varchar(5) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alt_body` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `references` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ctime` int(11) unsigned NOT NULL,
+  `udate` int(11) unsigned NOT NULL,
+  `date` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `flagged` int(11) unsigned NOT NULL,
+  `recent` int(11) unsigned NOT NULL,
+  `msgno` bigint(20) unsigned NOT NULL,
+  `uid` bigint(20) unsigned NOT NULL,
+  `size` int(11) unsigned NOT NULL,
+  `from_host` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_address` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sender_host` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sender_name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sender_address` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `to_data` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reply_to_data` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mailbox_id` bigint(20) unsigned NOT NULL,
+  `response_time` bigint(20) unsigned NOT NULL,
+  `cls_time` bigint(20) unsigned NOT NULL,
+  `priority` int(11) NOT NULL DEFAULT 0,
+  `is_external` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `wait_time` bigint(20) unsigned NOT NULL,
+  `accept_time` bigint(20) unsigned NOT NULL,
+  `interaction_time` bigint(20) NOT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `conv_user_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `lr_time` bigint(20) unsigned NOT NULL,
+  `response_type` int(11) unsigned NOT NULL,
+  `bcc_data` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cc_data` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `dep_id` int(11) unsigned NOT NULL,
+  `mb_folder` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `conv_duration` int(11) NOT NULL DEFAULT 0,
+  `has_attachment` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `undelivered` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `rfc822_body` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `delivery_status` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `message_hash` (`message_hash`),
+  KEY `lang` (`lang`),
+  KEY `message_id` (`message_id`),
+  KEY `response_type` (`response_type`),
+  KEY `user_id` (`user_id`),
+  KEY `conversation_id` (`conversation_id`),
+  KEY `conversation_id_old` (`conversation_id_old`),
+  KEY `mailbox_id` (`mailbox_id`),
+  KEY `dep_id` (`dep_id`),
+  KEY `has_attachment` (`has_attachment`),
+  KEY `udate` (`udate`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_msg_internal` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `msg` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `time` bigint(20) unsigned NOT NULL,
+  `chat_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `user_id` bigint(20) NOT NULL DEFAULT 0,
+  `name_support` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `meta_msg` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `chat_id_id` (`chat_id`,`id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_msg_subject` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `subject_id` int(11) unsigned NOT NULL,
+  `message_id` bigint(20) unsigned NOT NULL,
+  `conversation_id` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `message_id` (`message_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_response_template` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `template` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `dep_id` int(11) NOT NULL DEFAULT 0,
+  `template_plain` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `unique_id` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `disabled` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `unique_id` (`unique_id`),
+  KEY `disabled` (`disabled`),
+  KEY `dep_id` (`dep_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_remarks` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `email` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `remarks` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_response_template_dep` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `template_id` bigint(20) NOT NULL,
+  `dep_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `template_id` (`template_id`),
+  KEY `dep_id` (`dep_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+                    $db->query("CREATE TABLE `lhc_mailconv_response_template_subject` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `template_id` bigint(20) unsigned NOT NULL,
+  `subject_id` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `template_id` (`template_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
                     // Admin role and function
                     $RoleFunction = new erLhcoreClassModelRoleFunction();
                     $RoleFunction->role_id = $Role->id;
@@ -2410,6 +2866,7 @@ try {
                         array('module' => 'lhchat',  'function' => 'chat_see_email'),
                         array('module' => 'lhchat',  'function' => 'chat_see_unhidden_email'),
                         array('module' => 'lhchat',  'function' => 'see_sensitive_information'),
+                        array('module' => 'lhchat',  'function' => 'whispermode'),
                         array('module' => 'lhpermission',   'function' => 'see_permissions'),
                         array('module' => 'lhquestionary',  'function' => 'manage_questionary'),
                         array('module' => 'lhfaq',   		'function' => 'manage_faq'),
@@ -2425,6 +2882,7 @@ try {
                         array('module' => 'lhcannedmsg', 'function' => 'use'),
                         array('module' => 'lhcannedmsg', 'function' => 'see_global'),
                         array('module' => 'lhchat', 'function' => 'prev_chats'),
+                        array('module' => 'lhchat', 'function' => 'allowopenclosedchats'),
                         array('module' => 'lhtheme', 'function' => 'personaltheme'),
                         array('module' => 'lhuser', 'function' => 'userlistonline'),
                         array('module' => 'lhspeech', 'function' => 'change_chat_recognition'),
@@ -2434,8 +2892,6 @@ try {
                         array('module' => 'lhtheme', 'function' => 'use_operator'),
                         array('module' => 'lhgenericbot', 'function' => 'use_operator'),
                     );
-
-
 
                     foreach ($permissionsArray as $paramsPermission) {
                         $RoleFunctionOperator = new erLhcoreClassModelRoleFunction();

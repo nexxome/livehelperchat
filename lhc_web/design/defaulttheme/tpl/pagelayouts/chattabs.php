@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 
-<html <?php if (($detect = new Mobile_Detect()) && ($detect->isMobile() || $detect->isTablet())) : ?>data-mobile="true"<?php endif; ?> lang="<?php echo erConfigClassLhConfig::getInstance()->getDirLanguage('content_language')?>" <?php if (!isset($Result['anonymous']) && (int)erLhcoreClassModelUserSetting::getSetting('dark_mode',0) == 1) : ?>dark="true" data-bs-theme="dark"<?php endif;?> dir="<?php echo erConfigClassLhConfig::getInstance()->getDirLanguage('dir_language')?>" ng-app="lhcApp">
+<html <?php if (($detect = new Mobile_Detect()) && ($detect->isMobile() || $detect->isTablet())) : ?>data-mobile="true"<?php endif; ?> lang="<?php echo erConfigClassLhConfig::getInstance()->getDirLanguage('content_language')?>" <?php if (!isset($Result['anonymous']) && (int)erLhcoreClassModelUserSetting::getSetting('dark_mode',0) == 1) : ?>dark="true" data-bs-theme="dark"<?php else : ?>bright="true" data-bs-theme="bright"<?php endif;?> dir="<?php echo erConfigClassLhConfig::getInstance()->getDirLanguage('dir_language')?>" ng-app="lhcApp">
 <head>
 <?php include_once(erLhcoreClassDesign::designtpl('pagelayouts/parts/page_head.tpl.php'));?>
 </head>
 <body id="admin-body" class="dashboard-height h-100 <?php isset($Result['body_class']) ? print $Result['body_class'] : ''?>" ng-controller="LiveHelperChatCtrl as lhc">
-
+<lhc-app></lhc-app>
 <div id="wrapper">
     <div class="container-fluid<?php if (isset($Result['container_class'])) : ?> <?php echo $Result['container_class']?><?php endif; ?>" id="page-content-wrapper">
         <div class="row">

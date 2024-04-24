@@ -17,7 +17,8 @@ class erLhcoreClassChatWorkflow {
             $msg->name_support = $name_support;
             $msg->user_id = -2;
             $msg->time = time();
-
+            $msg->meta_msg = json_encode(['content' => ['auto_responder' => true]]);
+            
             \LiveHelperChat\Models\Departments\UserDepAlias::getAlias(array('scope' => 'msg', 'msg' => & $msg, 'chat' => & $chat));
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_auto_responder_msg_saved', array('ignore_times' => true,'msg' => & $msg, 'chat' => & $chat));
 
@@ -242,6 +243,11 @@ class erLhcoreClassChatWorkflow {
                     $chat->cls_us = $chat->user_status_front + 1;
                 }
 
+                if (in_array($chat->status,[erLhcoreClassModelChat::STATUS_ACTIVE_CHAT,erLhcoreClassModelChat::STATUS_BOT_CHAT]) && $chat->auto_responder !== false) {
+                    $chat->auto_responder->chat = $chat;
+                    $chat->auto_responder->processClose();
+                }
+
                 $chat->status = erLhcoreClassModelChat::STATUS_CLOSED_CHAT;
 
                 $msg = new erLhcoreClassModelmsg();
@@ -281,6 +287,11 @@ class erLhcoreClassChatWorkflow {
 
                 if ($chat->cls_us == 0) {
                     $chat->cls_us = $chat->user_status_front + 1;
+                }
+
+                if (in_array($chat->status,[erLhcoreClassModelChat::STATUS_ACTIVE_CHAT,erLhcoreClassModelChat::STATUS_BOT_CHAT]) && $chat->auto_responder !== false) {
+                    $chat->auto_responder->chat = $chat;
+                    $chat->auto_responder->processClose();
                 }
 
                 $chat->status = erLhcoreClassModelChat::STATUS_CLOSED_CHAT;
@@ -369,6 +380,11 @@ class erLhcoreClassChatWorkflow {
                     $chat->cls_us = $chat->user_status_front + 1;
                 }
 
+                if (in_array($chat->status,[erLhcoreClassModelChat::STATUS_ACTIVE_CHAT,erLhcoreClassModelChat::STATUS_BOT_CHAT]) && $chat->auto_responder !== false) {
+                    $chat->auto_responder->chat = $chat;
+                    $chat->auto_responder->processClose();
+                }
+
                 $chat->status = erLhcoreClassModelChat::STATUS_CLOSED_CHAT;
 
                 $msg = new erLhcoreClassModelmsg();
@@ -410,6 +426,11 @@ class erLhcoreClassChatWorkflow {
 
                 if ($chat->cls_us == 0) {
                     $chat->cls_us = $chat->user_status_front + 1;
+                }
+
+                if (in_array($chat->status,[erLhcoreClassModelChat::STATUS_ACTIVE_CHAT,erLhcoreClassModelChat::STATUS_BOT_CHAT]) && $chat->auto_responder !== false) {
+                    $chat->auto_responder->chat = $chat;
+                    $chat->auto_responder->processClose();
                 }
 
                 $chat->status = erLhcoreClassModelChat::STATUS_CLOSED_CHAT;
@@ -458,6 +479,11 @@ class erLhcoreClassChatWorkflow {
 
                 if ($chat->cls_us == 0) {
                     $chat->cls_us = $chat->user_status_front + 1;
+                }
+
+                if (in_array($chat->status,[erLhcoreClassModelChat::STATUS_ACTIVE_CHAT,erLhcoreClassModelChat::STATUS_BOT_CHAT]) && $chat->auto_responder !== false) {
+                    $chat->auto_responder->chat = $chat;
+                    $chat->auto_responder->processClose();
                 }
 
                 $chat->status = erLhcoreClassModelChat::STATUS_CLOSED_CHAT;
@@ -539,6 +565,11 @@ class erLhcoreClassChatWorkflow {
                     $chat->cls_us = $chat->user_status_front + 1;
                 }
 
+                if (in_array($chat->status,[erLhcoreClassModelChat::STATUS_ACTIVE_CHAT,erLhcoreClassModelChat::STATUS_BOT_CHAT]) && $chat->auto_responder !== false) {
+                    $chat->auto_responder->chat = $chat;
+                    $chat->auto_responder->processClose();
+                }
+
                 $statusOriginal = $chat->status;
 
                 $chat->status = erLhcoreClassModelChat::STATUS_CLOSED_CHAT;
@@ -610,6 +641,98 @@ class erLhcoreClassChatWorkflow {
         }
 
         return $purgedChatsNumber;
+    }
+
+    public static function autoAssignMail(& $chat, $department, $params = array())
+    {
+        if (is_object($department) && $department->active_mail_balancing == 1 && ($department->max_ac_dep_mails == 0 || $department->active_mails_counter < $department->max_ac_dep_mails) && ($chat->user_id == 0 || ($department->max_timeout_seconds_mail > 0 && $chat->tslasign < time()-$department->max_timeout_seconds_mail)) ){
+
+            $isOnlineUser = (int)erLhcoreClassModelChatConfig::fetch('sync_sound_settings')->data['online_timeout'];
+
+            $db = ezcDbInstance::get();
+
+            try {
+
+                $db->beginTransaction();
+
+                // Lock chat record for update untill we finish this procedure
+                erLhcoreClassChat::lockDepartment($department->id, $db);
+
+                if ($chat->status == erLhcoreClassModelMailconvConversation::STATUS_PENDING && ($chat->user_id == 0 || ($department->max_timeout_seconds_mail > 0 && $chat->tslasign < time()-$department->max_timeout_seconds_mail))) {
+
+                    $condition = '(active_mails + pending_mails)';
+
+                    if ($department->max_active_mails > 0) {
+                        $appendSQL = " AND ((max_mails = 0 AND {$condition} < :max_active_chats) OR (max_mails > 0 AND {$condition} < max_mails))";
+                    } else {
+                        $appendSQL = " AND ((max_mails > 0 AND {$condition} < max_mails) OR (max_mails = 0))";
+                    }
+
+                    if (!isset($params['include_ignored_users']) || $params['include_ignored_users'] == false) {
+                        $appendSQL .= " AND exclude_autoasign_mails = 0";
+                    }
+
+                    // Allow limit by provided user_ids
+                    // Usefull for extension which has custom auto assign workflow
+                    if (isset($params['user_ids'])) {
+                        if (empty($params['user_ids'])) {
+                            return array('status' => erLhcoreClassChatEventDispatcher::STOP_WORKFLOW, 'user_id' => 0);
+                        }
+
+                        $appendSQL .= ' AND `lh_userdep`.`user_id` IN (' . implode(', ',$params['user_ids']) . ')';
+                    }
+
+                    $sql = "SELECT user_id FROM lh_userdep WHERE last_accepted_mail < :last_accepted_mail AND ro = 0 AND hide_online = 0 AND dep_id = :dep_id AND (`lh_userdep`.`last_activity` > :last_activity OR `lh_userdep`.`always_on` = 1) AND user_id != :user_id {$appendSQL} ORDER BY last_accepted_mail ASC LIMIT 1";
+
+                    $db = ezcDbInstance::get();
+                    $stmt = $db->prepare($sql);
+                    $stmt->bindValue(':dep_id',$department->id,PDO::PARAM_INT);
+                    $stmt->bindValue(':last_activity',(time()-$isOnlineUser),PDO::PARAM_INT);
+                    $stmt->bindValue(':user_id',$chat->user_id,PDO::PARAM_INT);
+                    $stmt->bindValue(':last_accepted_mail',(time() - $department->delay_before_assign_mail),PDO::PARAM_INT);
+
+                    //
+                    if ($department->max_active_mails > 0) {
+                        $stmt->bindValue(':max_active_chats',$department->max_active_mails,PDO::PARAM_INT);
+                    }
+
+                    $stmt->execute();
+
+                    $user_id = $stmt->fetchColumn();
+
+                    if ($user_id > 0) {
+
+                        $previousMessage = '';
+
+                        // Update previously assigned operator statistic
+                        if ($chat->user_id > 0) {
+                            erLhcoreClassChat::updateActiveChats($chat->user_id);
+
+                            $userOld = erLhcoreClassModelUser::fetch($chat->user_id);
+                            $previousMessage = '[' . $chat->user_id . '] ' . $userOld->name_support . ' '.  erTranslationClassLhTranslation::getInstance()->getTranslation('chat/adminchat','did not accepted mail in time.') . ' ';
+                        }
+
+                        $chat->tslasign = time();
+                        $chat->user_id = $user_id;
+                        $chat->updateThis(array('update' => array('tslasign','user_id')));
+
+                        erLhcoreClassUserDep::updateLastAcceptedByUser($user_id, time(), '_mail');
+
+                        // Update fresh user statistic
+                        erLhcoreClassChat::updateActiveChats($chat->user_id);
+
+                        $userData = erLhcoreClassModelUser::fetch($chat->user_id);
+                        erLhcoreClassMailconvWorkflow::logInteraction($previousMessage . $userData->name_support . ' [' . $userData->id.'] '.erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','was assigned as a mail owner from auto assignment workflow'), $userData->name_support, $chat->id);
+                    }
+                }
+
+                $db->commit();
+
+            } catch (Exception $e) {
+                $db->rollback();
+                throw $e;
+            }
+        }
     }
 
     public static function autoAssign(& $chat, $department, $params = array()) {
@@ -945,7 +1068,56 @@ class erLhcoreClassChatWorkflow {
             // Set proper message by language
             $cannedMsg->setMessageByChatLocale($chat->chat_locale);
 
+            $replaceCustomArgs = [];
+
+            foreach (['msg','fallback_msg'] as $metaMsg) {
+                $matchesMessage = [];
+                preg_match_all('/\{[A-Za-z0-9\_]+\}/is',$cannedMsg->{$metaMsg}, $matchesMessage);
+                if (isset($matchesMessage[0]) && !empty($matchesMessage[0])) {
+                    foreach ($matchesMessage[0] as $replaceItem) {
+                        if (key_exists($replaceItem,$replaceArray) == false) {
+                            $replaceCustomArgs[] = $replaceItem;
+                        }
+                    }
+                }
+            }
+
+            $replaceCustomArgs = array_unique($replaceCustomArgs);
+
+            if (!empty($replaceCustomArgs)) {
+
+                $identifiers = [];
+                $identifiersApplied = [];
+                foreach ($replaceCustomArgs as $replaceArg) {
+                    $identifiers[] = str_replace(['{','}'],'', $replaceArg);
+                }
+
+                $replaceRules = erLhcoreClassModelCannedMsgReplace::getList(array(
+                        'sort' => 'repetitiveness DESC', // Default translation will be the last one if more than one same identifier is found
+                        'limit' => false,
+                        'filterin' => array('identifier' => $identifiers))
+                );
+
+                foreach ($replaceRules as $replaceRule) {
+                    if ($replaceRule->is_active && !in_array($replaceRule->identifier,$identifiersApplied)) {
+                        $replaceArray['{' . $replaceRule->identifier . '}'] = $replaceRule->getValueReplace(['chat' => $chat, 'user' => $chat->user]);
+                        $identifiersApplied[] = $replaceRule->identifier;
+                    }
+                }
+            }
+
             $cannedMsg->setReplaceData($replaceArray);
+
+            if (strpos($cannedMsg->msg, '{args.') !== false) {
+                $matchesValues = array();
+                preg_match_all('~\{args\.((?:[^\{\}\}]++|(?R))*)\}~', $cannedMsg->msg, $matchesValues);
+                if (!empty($matchesValues[0])) {
+                    foreach ($matchesValues[0] as $indexElement => $elementValue) {
+                        $valueAttribute = erLhcoreClassGenericBotActionRestapi::extractAttribute(array('user' => $cannedMsg->user, 'chat' => $chat), $matchesValues[1][$indexElement], '.');
+                        $cannedMsg->msg = str_replace($elementValue, $valueAttribute['found'] == true ? $valueAttribute['value'] : '', $cannedMsg->msg);
+                    }
+                }
+            }
 
             $msg = new erLhcoreClassModelmsg();
             $msg->msg = $cannedMsg->msg_to_user;

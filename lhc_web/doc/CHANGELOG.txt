@@ -1,3 +1,75 @@
+4.36v
+
+1. Colored subject support for mail modules
+2. Views were missing subjects and some lists colors
+3. Online status check now has option to cache it's status for one minute.
+4. Fixed bold style in some places which were using old bootstrap bold text class.
+5. Add icon bot response type now has possibility to change nick bold style and color.
+6. Offline e-mail template now can strictly send all e-mails to one recipient and ignore department e-mail.
+
+execute doc/update_db/update_307.sql for update
+
+4.35v
+
+1. Audit log was recoding errors in incorrect time zone.
+2. Subjects now can be pinned and be shown on Pending/Bot/Active/My Chats widgets chats
+3. Incoming webhook fixes for base64decode files
+4. Department stats were missing if department group was not used.
+5. Audit log now has an export function.
+6. Audit log time filter was fixed.
+
+execute doc/update_db/update_306.sql for update
+
+4.34v
+
+1. Notification for assigned pending chat was missing.
+2. Continuous webhooks for mails finished.
+3. Check for CSV file encoding during import.
+4. Option to filter for agents statistic who were online.
+5. Country flag icon always will be the first icon in the widget.
+
+execute doc/update_db/update_305.sql for update
+
+4.33v
+
+1. Delete and Delete and archive options has option to ignore imap delete independently.
+2. Bugfix for "impossible to edit previous message".
+3. Preparation for continuous mails webhook
+3. [code] ``` long code ``` or ` inline code ` support
+4. `chat.webhook_incoming_chat_before_save` event before saving intial chat.
+5. Various Svelte improvements for `cbscheduler` extension.
+
+execute doc/update_db/update_304.sql for update
+
+4.32v
+
+1. Background delete workflow if you have a lot of mails to delete.
+2. Active schedule for department was not working after migration to Svelte.
+3. Mail delete scheduler. Usefull in case you want to delete hundreds of thousands of emails.
+4. Widget images now has a size defined which avoids flickering while images are loading in the widget or in Live Helper Chat back office.
+5. Telegram extension now supports commands from operator who is using telegram as a support client.
+6. There is new permission to allow operator edit only last his message or all his messages per chat. By default he will be able to edit only last his message.
+7. Proactive invitation now has URL filter and activity period.
+8. Search in some pages were broken if # was used as search argument.
+9. Now you can set Time Zone for the database. Usefull in case you want to set everywhere same time zone to avoid any issues.
+10. Mailbox has more options for delete policy. Move mail or purge completely. Also delete can be activated for archive process.
+
+execute doc/update_db/update_303.sql for update
+
+4.31v
+
+1. Optimisation online visitors widget.
+2. Svelte fixes for Nan being presented in departments load widget.
+3. Various small fixes.
+
+execute doc/update_db/update_302.sql for update
+
+4.30v
+
+Brand new mail module and svelte based dashboard.
+
+execute doc/update_db/update_301.sql for update
+
 4.29v
 
 1. New chat attribute `First response time (agent)` attribute `frt`.

@@ -18,6 +18,11 @@ class erLhcoreClassBBCode
     */
    public static function _make_url_clickable_cb( $matches ) {
        $url = $matches[2];
+
+       $parts = explode('&lt;',$url);
+
+       $url = array_shift($parts);
+
        if ( ')' == $matches[3] && strpos( $url, '(' ) ) {
            // If the trailing character is a closing parethesis, and the URL has an opening parenthesis in it, add the closing parenthesis to the URL.
            // Then we can let the parenthesis balancer do its thing below.
@@ -31,10 +36,11 @@ class erLhcoreClassBBCode
            $suffix = strrchr( $url, ')' ) . $suffix;
            $url = substr( $url, 0, strrpos( $url, ')' ) );
        }
+
        $url = self::esc_url($url);
        if ( empty($url) )
            return $matches[0];
-       return $matches[1] . "<a href=\"$url\" class=\"link\" rel=\"noreferrer\" target=\"_blank\">$url</a>" . $suffix;
+       return $matches[1] . "<a href=\"$url\" class=\"link\" rel=\"noreferrer\" target=\"_blank\">$url</a>" . $suffix . (!empty($parts) ? '&lt;'.implode('', $parts) : '');
    }
    
    /**
@@ -591,7 +597,7 @@ class erLhcoreClassBBCode
        return $text;
    }
 
-   public static function BBCode2Html($text) {
+   public static function BBCode2Html($text, $paramsMessage = []) {
     	$text = trim($text);
 
        $text = self::parseEmoji($text);
@@ -603,43 +609,54 @@ class erLhcoreClassBBCode
        // And replace them by...
        $out = array(
        );
-    	
-    	$in[] = '[/*]';
-    	$in[] = '[*]';
-    	$out[] = '</li>';
-    	$out[] = '<li>';
-    	    	
-    	$text = str_replace($in, $out, $text);
+
+       if (self::isBBCodeTagSupported('[li]', $paramsMessage)) {
+           $in[] = '[/*]';
+           $in[] = '[*]';
+           $out[] = '</li>';
+           $out[] = '<li>';
+
+           $text = str_replace($in, $out, $text);
+       }
 
     	// BBCode to find...
-    	$in = array( 	 '/\[b\](.*?)\[\/b\]/ms',
-    					 '/\[i\](.*?)\[\/i\]/ms',
-    					 '/\[u\](.*?)\[\/u\]/ms',
-    					 '/\[mark\](.*?)\[\/mark\]/ms',
-    					 '/\[s\](.*?)\[\/s\]/ms',
-    					 '/\[list\=([0-9]+)\](.*?)\[\/list\]/ms',
-    					 '/\[list\](.*?)\[\/list\]/ms',
-    					 '/\[\*\]\s?(.*?)\n/ms',
-    					 '/\[fs([0-9]+)\](.*?)\[\/fs\]/ms',
-    					 '/\[color\=([A-Za-z0-9]{2,6})\](.*?)\[\/color\]/ms',
-    					 '/\[level\=([A-Za-z0-9\-\s]{2,60})\](.*?)\[\/level\]/ms'
+    	$in = array( 	  '/\[b\](.*?)\[\/b\]/ms' => '[b]',
+    					 '/\[i\](.*?)\[\/i\]/ms' => '[i]',
+    					 '/\[u\](.*?)\[\/u\]/ms' => '[u]',
+    					 '/\[mark\](.*?)\[\/mark\]/ms' => '[mark]',
+    					 '/\[s\](.*?)\[\/s\]/ms' => '[s]',
+    					 '/\[list\=([0-9]+)\](.*?)\[\/list\]/ms' => '[listol]',
+    					 '/\[list\](.*?)\[\/list\]/ms' => '[list]',
+    					 '/\[\*\]\s?(.*?)\n/ms' => '[li]',
+    					 '/\[fs([0-9]+)\](.*?)\[\/fs\]/ms' => '[fs12]',
+    					 '/\[color\=([A-Za-z0-9]{2,6})\](.*?)\[\/color\]/ms' => '[color]',
+    					 '/\[level\=([A-Za-z0-9\-\s]{2,60})\](.*?)\[\/level\]/ms' => '[level]'
     	);
 
-    	// And replace them by...
-    	$out = array(	 '<strong>\1</strong>',
-    					 '<em>\1</em>',
-    					 '<u>\1</u>',
-    					 '<mark>\1</mark>',
-    					 '<strike>\1</strike>',
-    					 '<ol class="default-list" start="\1">\2</ol>',
-    					 '<ul class="default-list" >\1</ul>',
-    					 '<li>\1</li>',
-    					 '<span style="font-size:\1pt">\2</span>',
-    					 '<span style="color:#\1">\2</span>',
-    					 '<span class="\1">\2</span>'
-    	);
+       // And replace them by...
+       $out = array(   '[b]' => '<strong>\1</strong>',
+                       '[i]' => '<em>\1</em>',
+                       '[u]' => '<u>\1</u>',
+                       '[mark]' => '<mark>\1</mark>',
+                       '[s]' => '<strike>\1</strike>',
+                       '[listol]' => '<ol class="default-list" start="\1">\2</ol>',
+                       '[list]' => '<ul class="default-list" >\1</ul>',
+                       '[li]' => '<li>\1</li>',
+                       '[fs12]' => '<span style="font-size:\1pt">\2</span>',
+                       '[color]' => '<span style="color:#\1">\2</span>',
+                       '[level]' => '<span class="\1">\2</span>'
+       );
 
-    	$text = preg_replace($in, $out, $text);
+
+        $filteredBBCode = ['search' => [],'replace' => []];
+        foreach ($in as $matchRule => $bbCode) {
+            if (self::isBBCodeTagSupported($bbCode, $paramsMessage)) {
+                $filteredBBCode['search'][] = $matchRule;
+                $filteredBBCode['replace'][] = $out[$bbCode];
+            }
+        }
+
+    	$text = preg_replace($filteredBBCode['search'], $filteredBBCode['replace'], $text);
 
     	// Prepare quote's
     	$text = str_replace("\r\n","\n",$text);
@@ -657,6 +674,7 @@ class erLhcoreClassBBCode
     	}
 
     	$text = preg_replace_callback('/<pre>(.*?)<\/pre>/ms', "removeBr", $text);
+    	$text = preg_replace_callback('/<code>(.*?)<\/code>/ms', "removeBr", $text);
     	$text = preg_replace('/<p><pre>(.*?)<\/pre><\/p>/ms', "<pre>\\1</pre>", $text);
 
     	$text = preg_replace_callback('/<ul>(.*?)<\/ul>/ms', "removeBr", $text);
@@ -681,7 +699,7 @@ class erLhcoreClassBBCode
             $append = '</a>';
         }
 
-        return  "<div class=\"img_embed\">{$prepend}<img title=\"\" onclick='lhinst.zoomImage(this)' class='action-image img-fluid' src=\"".$url."\" alt=\"\" />{$append}</div>";
+        return  "<div class=\"img_embed\">{$prepend}<img title=\"\" onclick='lhinst.zoomImage(this)' class='action-image img-fluid img-remote' src=\"".$url."\" alt=\"\" />{$append}</div>";
    }
 
    public static function _make_embed_map($matches)
@@ -706,6 +724,10 @@ class erLhcoreClassBBCode
             return '[url='.$matches[1].']' . $matches[2] . '[/url]';
 				
         return '<a class="link" target="_blank" rel="noreferrer" href="'.$url.'">' . $matches[2] . '</a>';
+   }
+   
+   public static function _make_code($matches){
+        return '<pre class="blockquote blockquote-code"><code>'.trim($matches[1]).'</code></pre>';
    }
       
    /**
@@ -831,10 +853,15 @@ class erLhcoreClassBBCode
                             $append = '';
                             if (isset($mainData[1])) {
                                 $subpartParts = explode('=',$mainData[1]);
-                                if ($subpartParts[0] == 'link') {
+                                if ($subpartParts[0] == 'link' || $subpartParts[0] == 'linkdirect') {
                                     if (!isset($subpartParts[1])) {
                                         $prepend = '<a class="link" rel="noreferrer" target="_blank" href="'. self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}/(inline)/true\">";
                                         $append = '</a>';
+
+                                        if ($subpartParts[0] == 'linkdirect') {
+                                            return"<a href=\"" . self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}\" target=\"_blank\" rel=\"noreferrer\" class=\"link\" >" . erTranslationClassLhTranslation::getInstance()->getTranslation('file/file', 'Download file') . ' - ' . htmlspecialchars($file->upload_name) . ' [' . $file->extension . ']' . "</a>";
+                                        }
+
                                     } else {
                                         $url = self::esc_url($subpartParts[1]);
                                         if ($url != ''){
@@ -847,7 +874,20 @@ class erLhcoreClassBBCode
                                 $prepend = '<div class="position-relative">';
                                 $append = '<a class="hidden-download" target="_blank" rel="noreferrer" href="'. self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}".'/(inline)/true"></a></div>';
                             }
-                            return $prepend . '<img onclick="lhinst.zoomImage(this)" id="img-file-' . $file->id . '" title="'.htmlspecialchars($file->upload_name).'" class="action-image img-fluid" src="' . self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}" . '" alt="'.htmlspecialchars($file->upload_name).'" />' . $append;
+
+                            $imageSizeAttr = '';
+                            if (in_array($fileExtension,['jpg','jpeg','png'])) {
+                                list($width, $height) = getimagesize($file->file_path_server);
+                                if ($width > 0 && $height > 0 && $width < 10000 && $height < 10000) {
+                                    $imageSizeAttr = ' width="'.(int)$width.'" height="'.(int)$height.'" ';
+                                }
+                            }
+
+                            if (isset($displayType) && $displayType == 'rawimg') {
+                                return '<img onclick="lhinst.zoomImage(this)" '.$imageSizeAttr.' id="img-file-' . $file->id . '" title="'.htmlspecialchars($file->upload_name).'" class="action-image img-fluid" src="' . self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}" . '" alt="'.htmlspecialchars($file->upload_name).'" />';
+                            } else {
+                                return $prepend . '<img onclick="lhinst.zoomImage(this)" '.$imageSizeAttr.' id="img-file-' . $file->id . '" title="'.htmlspecialchars($file->upload_name).'" class="action-image img-fluid" src="' . self::getHost() . erLhcoreClassDesign::baseurl('file/downloadfile') . "/{$file->id}/{$hash}" . '" alt="'.htmlspecialchars($file->upload_name).'" />' . $append;
+                            }
                         }
 
                         $audio = '';
@@ -984,6 +1024,7 @@ class erLhcoreClassBBCode
 				)
 				(\)?)                                                  # 3: Trailing closing parenthesis (for parethesis balancing post processing)
 			~xS'; // The regex is a non-anchored pattern and does not have a single fixed starting character.
+
                // Tell PCRE to spend more time optimizing since, when used on a page load, it will probably be used several times.
                $ret = preg_replace_callback( $url_clickable, 'erLhcoreClassBBCode::_make_url_clickable_cb', $ret );
                $ret = preg_replace_callback( '#([\s>])((www|ftp)\.[\w\\x80-\\xff\#$%&~/.\-;:=,?@\[\]+]+)#is', 'erLhcoreClassBBCode::_make_web_ftp_clickable_cb', $ret );
@@ -1008,7 +1049,7 @@ class erLhcoreClassBBCode
 
    public static function extractMetaByMessage(& $msg) {
        $meta = array();
-       if (strpos($msg,'[html_snippet]') !== false) {
+       if ($msg != "" && strpos($msg,'[html_snippet]') !== false) {
            $matches = array();
            preg_match_all('/\[html_snippet\](.*?)\[\/html_snippet\]/is',$msg,$matches);
            foreach ($matches[0] as $index => $match) {
@@ -1088,6 +1129,25 @@ class erLhcoreClassBBCode
        return $messagesData;
    }
 
+   public static function isBBCodeTagSupported($bbcode, $paramsMessage) {
+       static $dataBBCode = null;
+       if ($dataBBCode === null) {
+           $dataBBCode = erLhcoreClassModelChatConfig::fetch('bbcode_options')->data;
+           if (!isset($dataBBCode['div'])) {
+               $dataBBCode['div'] = [];
+           }
+           if (!isset($dataBBCode['dio'])) {
+               $dataBBCode['dio'] = [];
+           }
+       }
+
+       if ((isset($paramsMessage['sender']) && $paramsMessage['sender'] == 0) || (isset($paramsMessage['user_id_raw']) && $paramsMessage['user_id_raw'] == 0) ) {
+           return !in_array($bbcode,$dataBBCode['div']);
+       } else {
+           return !in_array($bbcode,$dataBBCode['dio']);
+       }
+   }
+
    // Converts bbcode and general links to hmtl code
    public static function make_clickable($ret, $paramsMessage = array()) {
         $ret = ' ' . $ret;
@@ -1100,15 +1160,33 @@ class erLhcoreClassBBCode
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_make_clickable',array('msg' => & $ret, 'makeLinksClickable' => & $makeLinksClickable));
 
-        // Make base URL
-        $ret = preg_replace_callback('#\[baseurl\](.*?)\[/baseurl\]#is', 'erLhcoreClassBBCode::_make_base_link', $ret);
+        /*
+         * BBCode options
+         * */
+        if (self::isBBCodeTagSupported('[baseurl]',$paramsMessage)) {
+            $ret = preg_replace_callback('#\[baseurl\](.*?)\[/baseurl\]#is', 'erLhcoreClassBBCode::_make_base_link', $ret);
+        }
 
-        $ret = preg_replace_callback('/\[img=?(.*?)\](.*?)\[\/img\]/ms', "erLhcoreClassBBCode::_make_url_embed_image", $ret);
+        if (self::isBBCodeTagSupported('[img]',$paramsMessage)) {
+            $ret = preg_replace_callback('/\[img=?(.*?)\](.*?)\[\/img\]/ms', "erLhcoreClassBBCode::_make_url_embed_image", $ret);
+        }
 
-        $ret = preg_replace_callback('/\[loc\](.*?)\[\/loc\]/ms', "erLhcoreClassBBCode::_make_embed_map", $ret);
+        if (self::isBBCodeTagSupported('[loc]',$paramsMessage)) {
+            $ret = preg_replace_callback('/\[loc\](.*?)\[\/loc\]/ms', "erLhcoreClassBBCode::_make_embed_map", $ret);
+        }
 
-        $ret = preg_replace_callback('/\[url\="?(.*?)"?\](.*?)\[\/url\]/ms', "erLhcoreClassBBCode::_make_url_embed", $ret);
+        if (self::isBBCodeTagSupported('[url]',$paramsMessage)) {
+            $ret = preg_replace_callback('/\[url\="?(.*?)"?\](.*?)\[\/url\]/ms', "erLhcoreClassBBCode::_make_url_embed", $ret);
+        } else {
+            $makeLinksClickable = false;
+        }
 
+        if (self::isBBCodeTagSupported('[code]',$paramsMessage)) {
+            $ret = str_replace("```\n", '```', $ret);
+            $ret = preg_replace_callback('/\[code\](.*?)\[\/code\]/ms', "erLhcoreClassBBCode::_make_code", $ret);
+            $ret = preg_replace_callback('/```(.*?)```/ms', "erLhcoreClassBBCode::_make_code", $ret);
+            $ret = preg_replace('/`(.*?)`/ms', '<code>\1</code>', $ret);
+        }
 
         if (isset($paramsMessage['sender']) && $paramsMessage['sender'] == 0) {
             $ret = preg_replace('/\[html\](.*?)\[\/html\]/ms','',$ret);
@@ -1135,28 +1213,39 @@ class erLhcoreClassBBCode
 
         }, $ret);
 
-
-        if ($makeLinksClickable) {
-            $ret = self::make_clickable_text($ret);           
+        if ($makeLinksClickable == true) {
+            $ret = self::make_clickable_text($ret);
         }
 
-    	$ret = self::BBCode2Html($ret);
+    	$ret = self::BBCode2Html($ret, $paramsMessage);
 
-    	// Paypal button
-    	$ret = preg_replace_callback('#\[paypal\](.*?)\[/paypal\]#is', 'erLhcoreClassBBCode::_make_paypal_button', $ret);
+       if (self::isBBCodeTagSupported('[paypal]',$paramsMessage)) {
+           // Paypal button
+           $ret = preg_replace_callback('#\[paypal\](.*?)\[/paypal\]#is', 'erLhcoreClassBBCode::_make_paypal_button', $ret);
+       }
 
-    	// Quote
-    	$ret = preg_replace_callback('#\[quote\](.*?)\[/quote\]#is', 'erLhcoreClassBBCode::makeQuote', $ret);
+        if (self::isBBCodeTagSupported('[quote]',$paramsMessage)) {
+            // Quote
+            $ret = preg_replace_callback('#\[quote\](.*?)\[/quote\]#is', 'erLhcoreClassBBCode::makeQuote', $ret);
+        }
 
-    	// Youtube block
-    	$ret = preg_replace_callback('#\[youtube\](.*?)\[/youtube\]#is', 'erLhcoreClassBBCode::_make_youtube_block', $ret);
+        if (self::isBBCodeTagSupported('[youtube]',$paramsMessage)) {
+            // Youtube block
+            $ret = preg_replace_callback('#\[youtube\](.*?)\[/youtube\]#is', 'erLhcoreClassBBCode::_make_youtube_block', $ret);
+        }
 
-    	// File upload link directly in chat message
-    	$ret = preg_replace_callback('#\[fupload\](.*?)\[/fupload\]#is', 'erLhcoreClassBBCode::_make_upload_link', $ret);
+        if (self::isBBCodeTagSupported('[fupload]',$paramsMessage)) {
+            // File upload link directly in chat message
+            $ret = preg_replace_callback('#\[fupload\](.*?)\[/fupload\]#is', 'erLhcoreClassBBCode::_make_upload_link', $ret);
+        }
 
-    	$ret = preg_replace_callback('#\[button_action="?(.*?)"?\](.*?)\[/button_action\]#is', 'erLhcoreClassBBCode::_make_button_action', $ret);
+        if (self::isBBCodeTagSupported('[button_action]',$paramsMessage)) {
+            $ret = preg_replace_callback('#\[button_action="?(.*?)"?\](.*?)\[/button_action\]#is', 'erLhcoreClassBBCode::_make_button_action', $ret);
+        }
 
-    	$ret = preg_replace_callback('#\[link_trigger="?([0-9]+)"?\](.*?)\[/link_trigger\]#is', 'erLhcoreClassBBCode::_make_link_trigger', $ret);
+        if (self::isBBCodeTagSupported('[link_trigger]',$paramsMessage)) {
+            $ret = preg_replace_callback('#\[link_trigger="?([0-9]+)"?\](.*?)\[/link_trigger\]#is', 'erLhcoreClassBBCode::_make_link_trigger', $ret);
+        }
 
     	if (strpos($ret,'[translation]') !== false) {
             // For the admin we show original and translated text
@@ -1178,11 +1267,15 @@ class erLhcoreClassBBCode
             }
         }
 
-    	// File block
-    	$ret = preg_replace_callback('#\[file="?(.*?)"?\]#is', 'erLhcoreClassBBCode::_make_url_file', $ret);
-    	
-    	// Survey
-    	$ret = preg_replace_callback('#\[survey="?(.*?)"?\]#is', 'erLhcoreClassBBCode::_make_url_survey', $ret);
+        if (self::isBBCodeTagSupported('[file]',$paramsMessage)) {
+            // File block
+            $ret = preg_replace_callback('#\[file="?(.*?)"?\]#is', 'erLhcoreClassBBCode::_make_url_file', $ret);
+        }
+
+        if (self::isBBCodeTagSupported('[survey]',$paramsMessage)) {
+            // Survey
+            $ret = preg_replace_callback('#\[survey="?(.*?)"?\]#is', 'erLhcoreClassBBCode::_make_url_survey', $ret);
+        }
 
     	$ret = trim($ret);
 

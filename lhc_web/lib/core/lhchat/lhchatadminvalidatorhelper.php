@@ -1429,6 +1429,9 @@ class erLhcoreClassAdminChatValidatorHelper {
             'event' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
             ),
+            'name' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+            ),
             'configuration' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
             ),
@@ -1445,7 +1448,7 @@ class erLhcoreClassAdminChatValidatorHelper {
                 ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 1)
             ),
             'type' => new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'max_range' => 1)
+                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'max_range' => 2)
             ),
             'disabled' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
@@ -1457,6 +1460,10 @@ class erLhcoreClassAdminChatValidatorHelper {
 
         if ($form->hasValidData( 'event' )) {
             $webhook->event = $form->event;
+        }
+
+        if ($form->hasValidData( 'name' )) {
+            $webhook->name = $form->name;
         }
 
         if ( $form->hasValidData( 'configuration' )) {

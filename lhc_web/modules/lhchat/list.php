@@ -92,7 +92,7 @@ erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.list_filter',arr
 
 if ($Params['user_parameters_unordered']['print'] == 1) {
 	$tpl = erLhcoreClassTemplate::getInstance('lhchat/printchats.tpl.php');
-	$items = erLhcoreClassChat::getList(array_merge($filterParams['filter'],array('limit' => 100000,'offset' => 0)));
+	$items = erLhcoreClassModelChat::getList(array_merge($filterParams['filter'],array('limit' => 100000,'offset' => 0)));
 	$tpl->set('items',$items);
 	$Result['content'] = $tpl->fetch();
 	$Result['pagelayout'] = 'popup';
@@ -219,6 +219,11 @@ try {
     $pages->items_total = is_numeric($rowsNumber) ? $rowsNumber : erLhcoreClassModelChat::getCount($filterParams['filter']);
     $pages->translationContext = 'chat/pendingchats';
     $pages->serverURL = erLhcoreClassDesign::baseurl('chat/list').$append;
+    if ($filterParams['input']->ipp > 0) {
+        $pages->setItemsPerPage($filterParams['input']->ipp);
+    } else {
+        $pages->setItemsPerPage(60);
+    }
     $pages->paginate();
     $tpl->set('pages',$pages);
 

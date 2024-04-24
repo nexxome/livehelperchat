@@ -73,7 +73,7 @@ class erLhcoreClassAbstract
                     $value = $attr['default_value'];
                 }
 
-                return '<div class="input-group input-group-sm" ng-init=\'bactract_bg_color_' . $name . '=' . json_encode($value, JSON_HEX_APOS) . '\'><div class="input-group-prepend"><span style="background-color:#{{bactract_bg_color_' . $name . '}}" class="input-group-text">#</span></div><input class="form-control" class="abstract_input" ng-model="bactract_bg_color_' . $name . '" id="id_AbstractInput_' . $name . '" name="AbstractInput_' . $name . '" type="text" value="' . htmlspecialchars($value) . '" /></div><script>$(\'#id_AbstractInput_' . $name . '\').ColorPicker({	onSubmit: function(hsb, hex, rgb, el) {		$(el).val(hex);	$(el).trigger(\'input\'); $(el).trigger(\'change\'); $(el).ColorPickerHide();	},	onBeforeShow: function () {		$(this).ColorPickerSetColor(this.value);	}});</script>';
+                return '<div class="input-group input-group-sm" ng-init=\'bactract_bg_color_' . $name . '=' . json_encode($value, JSON_HEX_APOS) . '\'><span style="background-color:#{{bactract_bg_color_' . $name . '}}" class="input-group-text">#</span><input class="form-control" class="abstract_input" ng-model="bactract_bg_color_' . $name . '" id="id_AbstractInput_' . $name . '" name="AbstractInput_' . $name . '" type="text" value="' . htmlspecialchars($value) . '" /></div><script>$(\'#id_AbstractInput_' . $name . '\').ColorPicker({	onSubmit: function(hsb, hex, rgb, el) {		$(el).val(hex);	$(el).trigger(\'input\'); $(el).trigger(\'change\'); $(el).ColorPickerHide();	},	onBeforeShow: function () {		$(this).ColorPickerSetColor(this.value);	}});</script>';
                 break;
 
             case 'textarea':
@@ -218,7 +218,7 @@ class erLhcoreClassAbstract
                 foreach ($items as $item) {
                     $selected = in_array($item->id, $object->$name) ? 'checked="checked"' : '';
                     $nameAttr = isset($attr['name_attr']) ? $item->{$attr['name_attr']} : ((string)$item);
-                    $return .= '<div ng-non-bindable class="col-' . $attr['col_size'] . '"><label><input class="mr-1" type="checkbox" name="AbstractInput_' . $name . '[]" ' . $selected . ' value="' . $item->id . '">' . htmlspecialchars($nameAttr) . '</label></div>';
+                    $return .= '<div ng-non-bindable class="col-' . $attr['col_size'] . '"><label><input class="me-1" type="checkbox" name="AbstractInput_' . $name . '[]" ' . $selected . ' value="' . $item->id . '">' . htmlspecialchars($nameAttr) . '</label></div>';
 
                     /*$nameAttr = isset($attr['name_attr']) ? $item->{$attr['name_attr']} : ((string)$item);
                     $return .= '<option value="'.$item->id.'" '.$selected.'>'.((string)$nameAttr).'</option>';*/
@@ -363,6 +363,10 @@ class erLhcoreClassAbstract
                 if (erLhcoreClassSearchHandler::isFile('AbstractInput_' . $key)) {
                     $object->{$field['backend_call']}();
                 }
+
+            } elseif ($field['type'] == 'datepicker') {
+
+                $object->{$key} = strtotime($form->{'AbstractInput_' . $key});
 
             } elseif ($field['type'] == 'textarea' || $field['type'] == 'number') {
 

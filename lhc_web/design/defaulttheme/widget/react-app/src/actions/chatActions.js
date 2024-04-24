@@ -168,6 +168,9 @@ export function initProactive(data) {
             if (response.data.chat_id && response.data.chat_hash) {
                 dispatch({type: "ONLINE_SUBMITTED", data: {
                         success : true,
+                        chatLiveData : {
+                            message_id_first : response.data.message_id_first
+                        },
                         chatData : {
                             id : response.data.chat_id,
                             hash : response.data.chat_hash
@@ -260,6 +263,9 @@ export function initOnlineForm(obj) {
             if (response.data.paid.continue && response.data.paid.continue === true) {
                 dispatch({type: "ONLINE_SUBMITTED", data: {
                         success : true,
+                        chatLiveData : {
+                            message_id_first : 0
+                        },
                         chatData : {
                             id : response.data.paid.id,
                             hash : response.data.paid.hash
@@ -508,7 +514,15 @@ export function parseScript(domNode, inst, obj, dispatch, getState) {
             if (typeof attr['data-bot-args'] !== 'undefined') {
                 args = JSON.parse(attr['data-bot-args']);
             }
-            helperFunctions.emitEvent(attr['data-bot-emit'],[args]);
+            if (attr['data-bot-emit-parent']) {
+                if (attr['data-bot-emit'] == 'minWidget') {
+                    inst.props.dispatch(minimizeWidget());
+                } else {
+                    helperFunctions.sendMessageParent(attr['data-bot-emit'],[args]);
+                }
+            } else {
+                helperFunctions.emitEvent(attr['data-bot-emit'],[args]);
+            }
         } else if (attr['data-bot-event']) {
             inst.props[attr['data-bot-event']]();
         } else {

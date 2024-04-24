@@ -15,7 +15,31 @@ class erLhcoreClassGenericBotActionButtons {
         $metaMessage = array();
 
         if (isset($action['content']['buttons']) && !empty($action['content']['buttons'])) {
-            $metaMessage['content']['buttons_generic'] = $action['content']['buttons'];
+
+            $buttonsValid = [];
+            foreach ($action['content']['buttons'] as $button) {
+                if (!isset($button['content']['bot_condition']) || $button['content']['bot_condition'] == "") {
+                    $buttonsValid[] = $button;
+                } else {
+                    $buttonRules = explode(",",$button['content']['bot_condition']);
+                    $allRulesValid = true;
+                    foreach ($buttonRules as $buttonRule) {
+                        $conditionsToValidate = \LiveHelperChat\Models\Bot\Condition::getList(['filter' => ['identifier' => trim($buttonRule)]]);
+                        foreach ($conditionsToValidate as $conditionToValidate) {
+                            if (!$conditionToValidate->isValid(['chat' => $chat, 'replace_array' => (isset($params['replace_array']) ? $params['replace_array'] : [])])) {
+                                $allRulesValid = false;
+                            }
+                        }
+                    }
+                    if ($allRulesValid === true) {
+                        $buttonsValid[] = $button;
+                    }
+                }
+            }
+
+            if (!empty($buttonsValid)) {
+                $metaMessage['content']['buttons_generic'] = $buttonsValid;
+            }
         }
 
         if (isset($action['content']['buttons_options']['hide_text_area']) && $action['content']['buttons_options']['hide_text_area'] == true) {
@@ -30,6 +54,10 @@ class erLhcoreClassGenericBotActionButtons {
 
         if ($msgText != '') {
             $msgText = erLhcoreClassGenericBotWorkflow::translateMessage($msgText, array('chat' => $chat, 'args' => $params));
+        }
+        
+        if (isset($params['auto_responder']) && $params['auto_responder'] === true) {
+            $metaMessage['content']['auto_responder'] = true;
         }
 
         $msg->msg = $msgText;

@@ -98,6 +98,158 @@ class erLhcoreClassChat {
     	return self::getList($filter);
     }
 
+    public static function getMyMails($limit = 50, $offset = 0, $filterAdditional = array(), $filterAdditionalMainAttr = array(), $limitationDepartment = array())
+    {
+        $limitation = self::getDepartmentLimitation('lhc_mailconv_conversation',$limitationDepartment);
+
+        // Does not have any assigned department
+        if ($limitation === false) { return array(); }
+
+        $filter = array();
+        $filter['filterin'] = array('status' => array(0,1));
+
+        if ($limitation !== true) {
+            $filter['customfilter'][] = $limitation;
+        }
+
+        $filter['limit'] = $limit;
+        $filter['offset'] = $offset;
+        $filter['smart_select'] = true;
+        $filter['sort'] = 'status DESC, priority DESC';
+
+        if (!empty($filterAdditional)) {
+            $filter = array_merge_recursive($filter,$filterAdditional);
+        }
+
+        return erLhcoreClassModelMailconvConversation::getList($filter);
+    }
+
+    public static function getPendingMails($limit = 50, $offset = 0, $filterAdditional = array(), $filterAdditionalMainAttr = array(), $limitationDepartment = array())
+    {
+    	$limitation = self::getDepartmentLimitation('lhc_mailconv_conversation',$limitationDepartment);
+
+    	// Does not have any assigned department
+    	if ($limitation === false) { return array(); }
+
+    	$filter = array();
+    	$filter['filter'] = array('status' => 0);
+        //$filter['use_index'] = 'status_priority';
+
+    	if ($limitation !== true) {
+    		$filter['customfilter'][] = $limitation;
+    	}
+
+        $filter['customfilter'][] = '(id >= (SELECT MAX(id) FROM ( (SELECT id FROM `lhc_mailconv_conversation` WHERE status = 0 ORDER BY `id` DESC LIMIT 1000,1) UNION SELECT 0 ) AS max_id))';
+
+    	$filter['limit'] = $limit;
+    	$filter['offset'] = $offset;
+    	$filter['smart_select'] = true;
+    	$filter['sort'] = isset($filterAdditionalMainAttr['sort']) ? $filterAdditionalMainAttr['sort'] : 'priority DESC, id DESC';
+
+    	if (!empty($filterAdditional)) {
+    		$filter = array_merge_recursive($filter,$filterAdditional);
+    	}
+
+    	return erLhcoreClassModelMailconvConversation::getList($filter);
+    }
+
+    public static function getActiveMails($limit = 50, $offset = 0, $filterAdditional = array(), $filterAdditionalMainAttr = array(), $limitationDepartment = array())
+    {
+    	$limitation = self::getDepartmentLimitation('lhc_mailconv_conversation',$limitationDepartment);
+
+    	// Does not have any assigned department
+    	if ($limitation === false) { return array(); }
+
+    	$filter = array();
+    	$filter['filter'] = array('status' => 1);
+        //$filter['use_index'] = 'status_priority';
+
+    	if ($limitation !== true) {
+    		$filter['customfilter'][] = $limitation;
+    	}
+
+    	$filter['limit'] = $limit;
+    	$filter['offset'] = $offset;
+    	$filter['smart_select'] = true;
+    	$filter['sort'] = isset($filterAdditionalMainAttr['sort']) ? $filterAdditionalMainAttr['sort'] : 'priority DESC, id DESC';
+
+    	if (!empty($filterAdditional)) {
+    		$filter = array_merge_recursive($filter,$filterAdditional);
+    	}
+
+    	return erLhcoreClassModelMailconvConversation::getList($filter);
+    }
+
+    public static function getAlarmMails($limit = 50, $offset = 0, $filterAdditional = array(), $filterAdditionalMainAttr = array(), $limitationDepartment = array())
+    {
+        $limitation = self::getDepartmentLimitation('lhc_mailconv_conversation',$limitationDepartment);
+
+        // Does not have any assigned department
+        if ($limitation === false) { return array(); }
+
+        $pendingAlert = (int)erLhcoreClassModelUserSetting::getSetting('malarm_p', -1);
+        $pendingAlertResponse = (int)erLhcoreClassModelUserSetting::getSetting('malarm_pr', -1);
+        $mailPastHour = (int)erLhcoreClassModelUserSetting::getSetting('malarm_h', -1);
+
+        $filterOptions = [];
+        if ($pendingAlert > 0) {
+            $filterOptions[] = "(status = 0 AND user_id = 0 AND (UNIX_TIMESTAMP() - pnd_time) > {$pendingAlert})";
+        }
+
+        if ($pendingAlertResponse > 0) {
+            $filterOptions[] = "((status = 1 OR (status = 0 AND user_id > 0)) AND lr_time = 0 && (UNIX_TIMESTAMP() - accept_time) > {$pendingAlertResponse})";
+        }
+
+        $filter = array();
+
+        if ($mailPastHour > 0) {
+            $filter['filtergt']['udate'] = time() - $mailPastHour;
+        }
+
+        if (!empty($filterOptions)){
+            $filter['customfilter'] = array(' ( '.implode(' OR ',$filterOptions). ' ) ');
+        }
+
+        $filterString = '[]';
+        $subjectIds = [];
+        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('subject.default_filter_mail', array('filter' => & $filterString, 'subject_id' => & $subjectIds));
+
+        if (empty($subjectIds)) {
+            $subjectIds = json_decode(erLhcoreClassModelUserSetting::getSetting('subject_mail_id', $filterString), true);
+        }
+
+        $filterSubject = '';
+        if (!empty($subjectIds)) {
+            erLhcoreClassChat::validateFilterIn($subjectIds);
+            $filterSubject = ' WHERE `subject_id` IN (' . implode(',',$subjectIds) . ')';
+        }
+
+        if (!empty($filterSubject)){
+            $filter['customfilter'][] = "(`lhc_mailconv_conversation`.`id` IN (SELECT `id` FROM (SELECT `conversation_id` AS `id` FROM `lhc_mailconv_msg_subject` {$filterSubject} ORDER BY `id` DESC LIMIT 150 ) AS `sq`))";
+        }
+
+        if (empty($filter)) {
+            return [];
+        }
+
+        $filter['filter'] = array('status' => array(0,1));
+
+        if ($limitation !== true) {
+            $filter['customfilter'][] = $limitation;
+        }
+
+        $filter['limit'] = $limit;
+        $filter['offset'] = $offset;
+        $filter['smart_select'] = true;
+        $filter['sort'] = 'udate DESC';
+
+        if (!empty($filterAdditional)) {
+            $filter = array_merge_recursive($filter,$filterAdditional);
+        }
+
+        return erLhcoreClassModelMailconvConversation::getList($filter);
+    }
+
     /**
      * @desc returns chats list for my active chats
      * 
@@ -552,11 +704,20 @@ class erLhcoreClassChat {
         $limitationPermission = true;
 
         if (isset($params['check_list_permissions'])) {
-            if (!erLhcoreClassUser::instance()->hasAccessTo('lhchat','list_all_chats')) {
+            
+            $scope = 'chats';
+            $module = 'lhchat';
+
+            if (isset($params['check_list_scope']) && $params['check_list_scope'] == 'mails'){
+                $scope = 'mails';
+                $module = 'lhmailconv';
+            }
+
+            if (!erLhcoreClassUser::instance()->hasAccessTo($module,'list_all_'.$scope)) {
                 $limitationPermission = false;
-                if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','list_my_chats')) {
+                if (erLhcoreClassUser::instance()->hasAccessTo($module,'list_my_'.$scope)) {
                     $limitationPermission = '(`user_id` = ' . (int)erLhcoreClassUser::instance()->getUserID() . ')';
-                    if (erLhcoreClassUser::instance()->hasAccessTo('lhchat','list_pending_chats')) {
+                    if (erLhcoreClassUser::instance()->hasAccessTo($module,'list_pending_'.$scope)) {
                         $limitationPermission = '(`user_id` = ' . (int)erLhcoreClassUser::instance()->getUserID() . ' OR (`user_id` = 0 AND `status` = 0))';
                     }
                 }
@@ -829,7 +990,23 @@ class erLhcoreClassChat {
     {
        $isOnlineUser = isset($params['online_timeout']) ? $params['online_timeout'] : (int)erLhcoreClassModelChatConfig::fetch('sync_sound_settings')->data['online_timeout'];
        $ignoreUserStatus = (isset($params['ignore_user_status']) && $params['ignore_user_status'] == 1) ? true : false;
-       
+
+       // Redis Cache support
+       $enableCache = false;
+
+       if (!(isset($params['disable_cache']) && $params['disable_cache'] === true) && class_exists('erLhcoreClassRedis')) {
+          $cacheKey = 'is_online_' . $exclipic . '_' . (new class { use erLhcoreClassDBTrait; })::multi_implode('_',$dep_id) . '_' . md5((new class { use erLhcoreClassDBTrait; })::multi_implode('_',$params));
+          $contentCache = erLhcoreClassRedis::instance()->get($cacheKey);
+          if ($contentCache !== false) {
+              $parts = explode('_', $contentCache);
+              if (isset($parts[1]) && isset($parts[1]) == 1) {
+                  self::$botOnlyOnline = true;
+              }
+              return (int)$parts[0] > 0;
+          }
+          $enableCache = true;
+       }
+
        $db = ezcDbInstance::get();
 	   $rowsNumber = 0;
        $userFilter = (isset($params['user_id']) && is_numeric($params['user_id'])) ? ' AND `lh_userdep`.`user_id` = '.(int)$params['user_id'] : '';
@@ -970,7 +1147,11 @@ class erLhcoreClassChat {
                }
            }
        }
-       
+
+       if ($enableCache === true) {
+           erLhcoreClassRedis::instance()->setex($cacheKey, 60, $rowsNumber . '_' . (self::$botOnlyOnline === true ? 1 : 0));
+       }
+
        return $rowsNumber >= 1;
     }
 
@@ -1331,6 +1512,10 @@ class erLhcoreClassChat {
              * Finally decided to keep this check, it allows more advance permissions configuration
              * */
 
+            if (!$currentUser->hasAccessTo('lhchat','allowopenclosedchats') && $chat->status == erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
+                return false;
+            }
+
        		if ($chat->user_id == $currentUser->getUserID()) return true;
 
             $userDepartaments = erLhcoreClassUserDep::getUserDepartaments($currentUser->getUserID(), $userData->cache_version);
@@ -1338,7 +1523,6 @@ class erLhcoreClassChat {
             if (count($userDepartaments) == 0) return false;
 
             if (in_array($chat->dep_id,$userDepartaments)) {
-
             	if ($currentUser->hasAccessTo('lhchat','allowopenremotechat') == true || $chat->status == erLhcoreClassModelChat::STATUS_OPERATORS_CHAT){
             		return true;
             	} elseif ($chat->user_id == 0 || $chat->user_id == $currentUser->getUserID()) {
@@ -1354,10 +1538,14 @@ class erLhcoreClassChat {
            return false;
        }
 
+       if (!$currentUser->hasAccessTo('lhchat','allowopenclosedchats') && $chat->status == erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
+           return false;
+       }
+
        return true;
    }
 
-   public static function formatSeconds($seconds) {
+   public static function formatSeconds($seconds, $biggestReturn = false) {
 
 	    $y = floor($seconds / (86400*365.25));
 	    $d = floor(($seconds - ($y*(86400*365.25))) / 86400);
@@ -1398,7 +1586,12 @@ class erLhcoreClassChat {
 	    	$parts[] = $s . ' s.';
 	    }
 
-	    return implode(' ',$parts);
+	    if ($biggestReturn == true) {
+	        return array_shift($parts);
+        }
+
+	    return implode(' ', $parts);
+
    }
 
    /**
@@ -1544,7 +1737,7 @@ class erLhcoreClassChat {
        }
 
        if (empty($group_id_by_group[$key])) {
-           return [-1];
+           return [];
        }
        
        return $group_id_by_group[$key];
@@ -1908,6 +2101,9 @@ class erLhcoreClassChat {
        $pendingChats = null;
        $inactiveChats = null;
 
+       $activeMails = null;
+       $pendingMails = null;
+
        if (!empty($ids)) {
 
            // Try 3 times to update table
@@ -1915,7 +2111,7 @@ class erLhcoreClassChat {
            {
                try {
 
-                   if ($activeChats === null){
+                   if ($activeChats === null) {
                        $activeChats = erLhcoreClassChat::getCount(array('filter' => array('user_id' => $user_id, 'status' => erLhcoreClassModelChat::STATUS_ACTIVE_CHAT)));
                    }
 
@@ -1927,10 +2123,20 @@ class erLhcoreClassChat {
                        $inactiveChats = erLhcoreClassChat::getCount(array('filterin' => array('status' => array(erLhcoreClassModelChat::STATUS_PENDING_CHAT, erLhcoreClassModelChat::STATUS_ACTIVE_CHAT), 'status_sub' => array(erLhcoreClassModelChat::STATUS_SUB_SURVEY_COMPLETED, erLhcoreClassModelChat::STATUS_SUB_USER_CLOSED_CHAT, erLhcoreClassModelChat::STATUS_SUB_SURVEY_SHOW)), 'filter' => array('user_id' => $user_id)));
                    }
 
-                   $stmt = $db->prepare('UPDATE lh_userdep SET active_chats = :active_chats, pending_chats = :pending_chats, inactive_chats = :inactive_chats WHERE id IN (' . implode(',', $ids) . ');');
+                   if ($activeMails === null) {
+                       $activeMails = erLhcoreClassModelMailconvConversation::getCount(array('filter' => array('user_id' => $user_id, 'status' => erLhcoreClassModelMailconvConversation::STATUS_ACTIVE)));
+                   }
+
+                   if ($pendingMails === null) {
+                       $pendingMails = erLhcoreClassModelMailconvConversation::getCount(array('filter' => array('user_id' => $user_id, 'status' => erLhcoreClassModelMailconvConversation::STATUS_PENDING)));
+                   }
+
+                   $stmt = $db->prepare('UPDATE lh_userdep SET active_mails = :active_mails, pending_mails = :pending_mails, active_chats = :active_chats, pending_chats = :pending_chats, inactive_chats = :inactive_chats WHERE id IN (' . implode(',', $ids) . ');');
                    $stmt->bindValue(':active_chats',(int)$activeChats,PDO::PARAM_INT);
                    $stmt->bindValue(':pending_chats',(int)$pendingChats,PDO::PARAM_INT);
                    $stmt->bindValue(':inactive_chats',(int)$inactiveChats,PDO::PARAM_INT);
+                   $stmt->bindValue(':active_mails',(int)$activeMails,PDO::PARAM_INT);
+                   $stmt->bindValue(':pending_mails',(int)$pendingMails,PDO::PARAM_INT);
                    $stmt->execute();
 
                    // Finish cycle
@@ -2158,6 +2364,29 @@ class erLhcoreClassChat {
                 }
             }
         }
+   }
+
+   public static function getChatSubjects($chats, $type)
+   {
+       $subjectsSelected = erLhAbstractModelSubjectChat::getList(array('filter' => array('chat_id' => array_keys($chats))));
+       $subjectByChat = [];
+       $subject_ids = [];
+       foreach ($subjectsSelected as $subjectSelected) {
+           $subject_ids[] = $subjectSelected->subject_id;
+       }
+       if (!empty($subject_ids)) {
+           $subjectsMeta = erLhAbstractModelSubject::getList(array('customfilter' => ['`widgets` & ' . (int)$type],'filterin' => array('id' => array_unique($subject_ids))));
+       }
+       foreach ($subjectsSelected as $subjectSelected) {
+           if (isset( $subjectsMeta[$subjectSelected->subject_id])) {
+               $subjectByChat[$subjectSelected->chat_id][] = [
+                   'n' => $subjectsMeta[$subjectSelected->subject_id]->name,
+                   'c' => $subjectsMeta[$subjectSelected->subject_id]->color
+               ];
+           }
+       }
+
+       return $subjectByChat;
    }
 
    public static function extractDepartment($departments, $logInvalidRequest = true) {

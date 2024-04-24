@@ -34,25 +34,30 @@
         <td><?php echo htmlspecialchars($item->inopchats_cnt)?></td>
         <td><?php echo htmlspecialchars($item->max_load)?></td>
         <td>
-            <?php echo count(erLhcoreClassModelUserDep::getList([
+            <?php
+            $filter['ignore_fields'] = array('chat_max_priority','chat_min_priority','assign_priority', 'max_mails','last_accepted_mail','exc_indv_autoasign','exclude_autoasign_mails','active_mails','pending_mails','exclude_autoasign','max_chats','dep_group_id','type','ro','id','dep_id','hide_online_ts','hide_online','last_activity','lastd_activity','always_on','last_accepted','active_chats','pending_chats','inactive_chats','ro');
+            echo count(erLhcoreClassModelUserDep::getList([
                     'filter' => ['dep_group_id' => $item->id],
-                    'group' => 'user_id',
+                    'ignore_fields' => $filter['ignore_fields'],
+                    'group' => 'user_id, id',
                     'customfilter' => ['(`hide_online` = 0 AND (`last_activity` > ' . (int)(time() - (int)erLhcoreClassModelChatConfig::fetchCache('sync_sound_settings')->data['online_timeout']) . ' OR `always_on` = 1))']
             ])); ?>
         </td>
         <td>
             <?php echo count(erLhcoreClassModelUserDep::getList([
                     'filter' => ['dep_group_id' => $item->id, 'hide_online' => 1],
-                    'group' => 'user_id',
+                    'ignore_fields' => $filter['ignore_fields'],
+                    'group' => 'user_id, id',
                     'customfilter' => ['(`last_activity` > ' . (int)(time() - (int)erLhcoreClassModelChatConfig::fetchCache('sync_sound_settings')->data['online_timeout']) . ')']
             ])); ?>
         </td>
         <td>
-            <?php echo count(erLhcoreClassModelUserDep::getList([
+            <?php $assignedOperator = count(erLhcoreClassModelUserDep::getList([
                     'filter' => ['dep_group_id' => $item->id],
-                    'group' => 'user_id',
+                    'ignore_fields' => $filter['ignore_fields'],
+                    'group' => 'user_id, id',
                     'customfilter' => ['(`last_activity` > ' . (int)(time() - (int)erLhcoreClassModelChatConfig::fetchCache('sync_sound_settings')->data['online_timeout']) . ')']
-            ])); ?>
+            ]));echo $assignedOperator; ?>
         </td>
         <td nowrap ng-non-bindable>
             <a class="btn btn-secondary btn-xs action-image text-white csfr-required" href="<?php echo erLhcoreClassDesign::baseurl('department/editgroup')?>/<?php echo $item->id?>/(action)/updatestats"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/departments','Update stats');?></a>
@@ -66,7 +71,15 @@
         </td>
         <?php endif; ?>
         <td nowrap><a class="btn btn-secondary btn-xs" href="<?php echo erLhcoreClassDesign::baseurl('department/editgroup')?>/<?php echo $item->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/departments','Edit');?></a></td>
-        <td nowrap><a class="btn btn-danger btn-xs csfr-required" onclick="return confirm('<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('gallery/album_list_admin','Are you sure?');?>')" href="<?php echo erLhcoreClassDesign::baseurl('department/deletegroup')?>/<?php echo $item->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Delete');?></a></td>
+
+        <td nowrap>
+            <?php if ($assignedOperator == 0) : ?>
+                <a class="btn btn-danger btn-xs csfr-required" onclick="return confirm('<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('gallery/album_list_admin','Are you sure?');?>')" href="<?php echo erLhcoreClassDesign::baseurl('department/deletegroup')?>/<?php echo $item->id?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Delete');?></a>
+            <?php else : ?>
+                <button class="btn btn-danger btn-xs" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/departments','Disabled because there is assigned operators to it!');?>" disabled ><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Delete');?></button>
+            <?php endif; ?>
+        </td>
+
     </tr>
 <?php endforeach; ?>
 </table>

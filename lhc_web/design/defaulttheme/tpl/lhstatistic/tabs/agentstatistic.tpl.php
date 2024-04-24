@@ -165,6 +165,12 @@
         </div>
     </div>
 
+    <div class="col-md-2">
+        <div class="form-group">
+            <label><input type="checkbox" <?php if ($input->has_online_hours == 1) : ?>checked="checked"<?php endif;?> name="has_online_hours" value="1"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Only operators who were online during selected period')?></label>
+        </div>
+    </div>
+
     <input type="hidden" name="doSearch" value="on" />
 
     <div class="col-12">
@@ -202,17 +208,21 @@
 <table class="table statistic-table" cellpadding="0" cellspacing="0" width="100%">
 	<tr>
 		<th><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Agent');?></th>
-		<th colspan="10"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Chats');?></th>
+		<th colspan="<?php is_array($input->subject_ids) && !empty($input->subject_ids) ? print count($input->subject_ids) + 10 : print 10 ?>"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Chats');?></th>
+		<th colspan="5"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/lists/search_panel','Mails');?></th>
 	</tr>
 	<tr>
         <?php include(erLhcoreClassDesign::designtpl('lhstatistic/tabs/part/agentstatistic/table_header.tpl.php'));?>
+        <?php include(erLhcoreClassDesign::designtpl('lhstatistic/tabs/part/agentstatistic/table_header_mails.tpl.php'));?>
 	</tr>
 <?php foreach ($agentStatistic as $info) : ?>
 	<tr>
         <?php include(erLhcoreClassDesign::designtpl('lhstatistic/tabs/part/agentstatistic/table_content.tpl.php'));?>
+        <?php include(erLhcoreClassDesign::designtpl('lhstatistic/tabs/part/agentstatistic/table_content_mail.tpl.php'));?>
 	</tr>
 <?php endforeach; ?>
     <?php include(erLhcoreClassDesign::designtpl('lhstatistic/tabs/part/agentstatistic/table_average.tpl.php'));?>
+    <?php include(erLhcoreClassDesign::designtpl('lhstatistic/tabs/part/agentstatistic/table_average_mail.tpl.php'));?>
 </table>
 <?php else : ?>
 <br/>

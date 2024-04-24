@@ -16,6 +16,7 @@ class erLhcoreClassModelChatWebhook {
     {
         return array(
             'id'            => $this->id,
+            'name'          => $this->name,
             'event'         => $this->event,
             'bot_id'        => $this->bot_id,
             'trigger_id'    => $this->trigger_id,
@@ -24,7 +25,18 @@ class erLhcoreClassModelChatWebhook {
             'disabled'      => $this->disabled,
             'type'          => $this->type,
             'configuration' => $this->configuration,
+            'status'        => $this->status,
         );
+    }
+
+    public function beforeRemove()
+    {
+        foreach (['lh_mail_continuous_event'] as $table) {
+            $q = ezcDbInstance::get()->createDeleteQuery();
+            $q->deleteFrom($table)->where( $q->expr->eq( 'webhook_id', $this->id ) );
+            $stmt = $q->prepare();
+            $stmt->execute();
+        }
     }
 
     public function __get($var) {
@@ -47,6 +59,14 @@ class erLhcoreClassModelChatWebhook {
                 $this->conditions_array = $conditions_array;
                 return $this->conditions_array;
 
+            case 'status_array':
+                $conditions_array = json_decode($this->status,true);
+                if ($conditions_array === null) {
+                    $conditions_array = [];
+                }
+                $this->status_array = $conditions_array;
+                return $this->status_array;
+
             default:
                 break;
         }
@@ -54,6 +74,7 @@ class erLhcoreClassModelChatWebhook {
 
     public $id = null;
     public $event = '';
+    public $name = '';
     public $bot_id = 0;
     public $trigger_id = 0;
     public $bot_id_alt = 0;
@@ -61,6 +82,7 @@ class erLhcoreClassModelChatWebhook {
     public $disabled = 0;
     public $type = 0;
     public $configuration = '';
+    public $status = '';
 }
 
 ?>

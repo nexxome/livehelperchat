@@ -27,7 +27,7 @@ class StartChat extends Component {
         this.apiLoaded = false;
         this.customHTMLPriority = false;
 
-        this.state = {showBBCode : null, Question:'', changeLanguage: false, hasBotData : false};
+        this.state = {showBBCode : null, Question:'', changeLanguage: false, hasBotData : false, textAreaHidden: false};
         this.botPayload = null;
         this.handleSubmit = this.handleSubmit.bind(this);
         this.enterKeyDown = this.enterKeyDown.bind(this);
@@ -257,7 +257,11 @@ class StartChat extends Component {
         this.updateOnlineFields();
 
         if (this.props.botPayload !== null) {
-            this.setBotPayload(this.props.botPayload);
+            // This is required because prefill fields can be one of the required
+            // If we just submit form instantly it might require one of prefilled fields.
+            setTimeout(() => {
+                this.setBotPayload(this.props.botPayload);
+            },10);
         }
 
         // Just remove element if it exists
@@ -470,7 +474,7 @@ class StartChat extends Component {
     }
 
     if (this.props.chatwidget.getIn(['onlineData','fields']).size > 0 && !(this.props.chatwidget.hasIn(['chat_ui','show_messages_box']) && this.props.chatwidget.getIn(['onlineData','fields_visible']) == 1 && this.props.chatwidget.getIn(['customData','fields']).size == 0)) {
-        var mappedFields = this.props.chatwidget.getIn(['onlineData','fields']).map(field =><ChatField chatUI={this.props.chatwidget.get('chat_ui')} key={field.get('identifier')} isInvalid={this.props.chatwidget.hasIn(['validationErrors',field.get('identifier')])} defaultValueField={this.state[field.get('name')] || field.get('value')} attrPrefill={{'attr_prefill_admin' : this.props.chatwidget.get('attr_prefill_admin'), 'attr_prefill' : this.props.chatwidget.get('attr_prefill')}} onChangeContent={this.handleContentChange} field={field} />);
+        var mappedFields = this.props.chatwidget.getIn(['onlineData','fields']).map(field =><ChatField chatUI={this.props.chatwidget.get('chat_ui')} key={field.get('identifier')} validationError={this.props.chatwidget.hasIn(['validationErrors',field.get('identifier')]) ? this.props.chatwidget.getIn(['validationErrors',field.get('identifier')]) : null} isInvalid={this.props.chatwidget.hasIn(['validationErrors',field.get('identifier')])} defaultValueField={this.state[field.get('name')] || field.get('value')} attrPrefill={{'attr_prefill_admin' : this.props.chatwidget.get('attr_prefill_admin'), 'attr_prefill' : this.props.chatwidget.get('attr_prefill')}} onChangeContent={this.handleContentChange} field={field} />);
     } else {
         var mappedFields = "";
     }
@@ -481,7 +485,7 @@ class StartChat extends Component {
     if (this.props.chatwidget.getIn(['customData','fields']).size > 0) {
         this.props.chatwidget.getIn(['customData','fields']).map(field => hasVisibleCustomFields = !(field.has('type') && field.get('type') === 'hidden') ? true : hasVisibleCustomFields);
         if (hasVisibleCustomFields == true) {
-            mappedFieldsCustom = this.props.chatwidget.getIn(['customData','fields']).map(field =><ChatField chatUI={this.props.chatwidget.get('chat_ui')} key={field.get('identifier')} isInvalid={this.props.chatwidget.hasIn(['validationErrors',field.get('identifier')])} defaultValueField={field.get('value')} onChangeContent={this.handleContentChangeCustom} field={field} />);
+            mappedFieldsCustom = this.props.chatwidget.getIn(['customData','fields']).map(field =><ChatField chatUI={this.props.chatwidget.get('chat_ui')} key={field.get('identifier')} validationError={this.props.chatwidget.hasIn(['validationErrors',field.get('identifier')]) ? this.props.chatwidget.getIn(['validationErrors',field.get('identifier')]) : null} isInvalid={this.props.chatwidget.hasIn(['validationErrors',field.get('identifier')])} defaultValueField={field.get('value')} onChangeContent={this.handleContentChangeCustom} field={field} />);
         }
     }
 
@@ -525,7 +529,7 @@ class StartChat extends Component {
                             <div className={bottom_messages} id="messages-scroll" ref={this.messagesAreaRef}>
                                 {(this.props.chatwidget.getIn(['proactive','has']) === true && !this.props.chatwidget.getIn(['chat_ui','custom_html_priority'])) && <ChatInvitationMessage mode="message" setBotPayload={this.setBotPayload} invitation={this.props.chatwidget.getIn(['proactive','data'])} />}
 
-                                {!this.props.chatwidget.getIn(['proactive','has']) && this.props.chatwidget.hasIn(['chat_ui','cmmsg_widget']) && <ChatBotIntroMessage printButton={this.props.chatwidget.getIn(['chat_ui','print_btn_msg'])} processStatus={this.props.chatwidget.get('processStatus')} setBotPayload={this.setBotPayload} content={this.props.chatwidget.getIn(['chat_ui','cmmsg_widget'])} />}
+                                {!this.props.chatwidget.getIn(['proactive','has']) && this.props.chatwidget.hasIn(['chat_ui','cmmsg_widget']) && <ChatBotIntroMessage setTextAreaHidden={(e) => {this.state.textAreaHidden === false && this.setState({textAreaHidden:true});}} printButton={this.props.chatwidget.getIn(['chat_ui','print_btn_msg'])} processStatus={this.props.chatwidget.get('processStatus')} setBotPayload={this.setBotPayload} content={this.props.chatwidget.getIn(['chat_ui','cmmsg_widget'])} />}
 
                                 {this.props.chatwidget.get('processStatus') == 1 && this.state.Question != '' && <div data-op-id="0" className="message-row response msg-to-store">
                                     {this.props.chatwidget.hasIn(['chat_ui','show_ts']) && !this.props.chatwidget.hasIn(['chat_ui','show_ts_below']) && <div className="msg-date">&nbsp;</div>}
@@ -539,7 +543,7 @@ class StartChat extends Component {
 
                         {(!this.props.chatwidget.getIn(['proactive','has']) || this.props.chatwidget.getIn(['chat_ui','custom_html_priority']) === 1) && this.props.chatwidget.hasIn(['chat_ui','custom_html_widget']) && <div className={"custom-html-container "+(this.state.Question != "" ? "visitor-started-type" : "")} dangerouslySetInnerHTML={{__html:this.props.chatwidget.getIn(['chat_ui','custom_html_widget'])}}></div>}
 
-                        {(this.props.chatwidget.getIn(['onlineData','fields_visible']) == 1 || (this.props.chatwidget.getIn(['onlineData','fields_visible']) == 0 && !this.props.chatwidget.hasIn(['chat_ui','hstr_btn']))) && <div className="d-flex flex-row border-top position-relative message-send-area">
+                        {(this.props.chatwidget.getIn(['onlineData','fields_visible']) == 1 || (this.props.chatwidget.getIn(['onlineData','fields_visible']) == 0 && !this.props.chatwidget.hasIn(['chat_ui','hstr_btn']))) && this.state.textAreaHidden === false && <div className="d-flex flex-row border-top position-relative message-send-area">
 
                             {(this.props.chatwidget.hasIn(['validationErrors','question'])) && <div id="id-operator-typing" className="bg-white ps-1">{this.props.chatwidget.getIn(['validationErrors','question'])}</div>}
 
@@ -551,7 +555,7 @@ class StartChat extends Component {
                                 </div>
                                 <div className="disable-select" id="send-button-wrapper">
                                     <div className="user-chatwidget-buttons pt-2" id="ChatSendButtonContainer">
-                                        {this.props.chatwidget.get('processStatus') != 1 && <a onClick={this.handleSubmit} title={t('button.start_chat')}>
+                                        {this.props.chatwidget.get('processStatus') != 1 && <a tabIndex="0" onKeyPress={(e) => { e.key === "Enter" ? this.handleSubmit() : '' }} onClick={this.handleSubmit} title={t('button.start_chat')}>
                                             <i className={"send-icon material-icons settings" + (this.state.Question.length == 0 ? ' text-muted-light' : ' text-muted')}>&#xf107;</i>
                                         </a>}
 

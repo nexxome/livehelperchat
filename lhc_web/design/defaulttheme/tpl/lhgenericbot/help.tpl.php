@@ -66,6 +66,7 @@
                         <li>Few examples
                                 <ul>
                                     <li><strong>^.{5,}+$</strong> string with minimum 5 characters</li>
+                                    <li><strong>^[1-2]{1}$</strong> Only 1 or 2 is accepted</li>
                                     <li><strong>foo</strong> The string “foo”</li>
                                     <li><strong>^foo</strong> “foo” at the start of a string</li>
                                     <li><strong>foo$</strong> “foo” at the end of a string</li>
@@ -85,5 +86,31 @@
                         </li>
                     </ul>
                 <?php endif; ?>
+
+            <?php if ($context == 'matchingruleconditions') : ?>
+                <ul>
+                    <li>Few examples
+                        <?php include(erLhcoreClassDesign::designtpl('lhmailconv/help/matchingrule.tpl.php'));?>
+                    </li>
+                </ul>
+            <?php endif; ?>
+
+            <?php if ($context == 'personalmailbox') : ?>
+                <ul>
+                    <li>Once you setup personal mailbox group each time mail comes to any of the defined mailbox conversation mailbox will be changed to the operator mailbox if he has one defined in mailbox groups.</li>
+                    <li>Example. Mailbox group consists of these combinations
+                        <ul>
+                            <li>Mailbox group consist of <b>a@example.com</b> who belongs to operator <b>A</b></li>
+                            <li>Mailbox group consist of <b>b@example.com</b> who belongs to operator <b>B</b></li>
+                        </ul>
+                    </li>
+                    <li>
+                        If mail is send to <b>a@example.com</b> but operator <b>B</b> accepts it. Conversation mailbox upon chat acceptance will be changed to <b>b@example.com</b>. So reply send will be seen as send from <b>b@example.com</b>
+                    </li>
+                </ul>
+            <?php endif; ?>
+
+            <?php include(erLhcoreClassDesign::designtpl('lhgenericbot/helpattributes/mailtemplates.tpl.php'));?>
+
             </p>
 <?php include(erLhcoreClassDesign::designtpl('lhkernel/modal_footer.tpl.php'));?>

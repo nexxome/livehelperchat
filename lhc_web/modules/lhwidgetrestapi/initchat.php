@@ -272,6 +272,10 @@ try {
             $outputResponse['chat_ui']['survey_id'] = $chat->department->bot_configuration_array['survey_id'];
         };
 
+        if (isset($chat->department->bot_configuration_array['hide_survey_bot']) && $chat->department->bot_configuration_array['hide_survey_bot'] == true) {
+            $outputResponse['chat_ui']['hide_survey_bot'] = true;
+        }
+
         $soundData = erLhcoreClassModelChatConfig::fetch('sync_sound_settings')->data_value;
         $outputResponse['chat_ui']['sync_interval'] = (int)($soundData['chat_message_sinterval']*1000);
 
@@ -313,7 +317,7 @@ try {
 
         $outputResponse['chat_ui']['open_timeout'] = (int)erLhcoreClassModelChatConfig::fetch('open_closed_chat_timeout')->current_value;
 
-        $outputResponse['chat_ui']['max_length'] = (int)erLhcoreClassModelChatConfig::fetch('max_message_length')->current_value - 1;
+        $outputResponse['chat_ui']['max_length'] = (int)erLhcoreClassModelChatConfig::fetch('max_message_length')->current_value;
 
         $fileData = (array)erLhcoreClassModelChatConfig::fetch('file_configuration')->data;
 
