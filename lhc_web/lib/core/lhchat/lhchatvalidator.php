@@ -87,6 +87,8 @@ class erLhcoreClassChatValidator {
 	}
 
     public static function getVisitorLocale() {
+        return null;
+
         // Detect user locale
         if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
             $parts = explode(';',$_SERVER['HTTP_ACCEPT_LANGUAGE']);
