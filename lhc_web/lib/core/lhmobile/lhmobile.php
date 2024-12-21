@@ -8,7 +8,12 @@ class erLhcoreClassLHCMobile {
         $db->reconnect(); // Because it timeouts automatically, this calls to reconnect to database, this is implemented in 2.52v
 
         if (isset($this->args['inst_id']) && $this->args['inst_id'] > 0) {
-            $cfg = erConfigClassLhConfig::getInstance();
+            $cfg = \erConfigClassLhConfig::getInstance();
+            $db->query('USE ' . $cfg->getSetting('db', 'database'));
+
+            $instance = \erLhcoreClassModelInstance::fetch($this->args['inst_id']);
+            \erLhcoreClassInstance::$instanceChat = $instance;
+
             $db->query('USE ' . $cfg->getSetting('db', 'database_user_prefix') . $this->args['inst_id']);
         }
 
@@ -442,29 +447,45 @@ class erLhcoreClassLHCMobile {
             throw new Exception('FCM Key is not set');
         }
 
-        // API access key from Google API's Console
-        $registrationIds = array( $session->device_token );
+        $accessToken = explode('__',$options['fcm_key']);
 
+        if (count($accessToken) != 2 || (int)$accessToken[1] < time() + 60) {
+            $newAccessToken = json_decode(erLhcoreClassModelChatOnlineUser::executeRequest('https://mobiletoken.livehelperchat.com/', [], ['timeout' => 7, 'connect_timeout' => 7]),true);
+            if (isset($newAccessToken['accessToken']) && isset($newAccessToken['exp'])) {
+                $accessToken[0] = $newAccessToken['accessToken'];
+                $mbOptions = erLhcoreClassModelChatConfig::fetch('mobile_options');
+                $options['fcm_key'] = $newAccessToken['accessToken'] . '__' . $newAccessToken['exp'];
+                $mbOptions->explain = '';
+                $mbOptions->type = 0;
+                $mbOptions->hidden = 1;
+                $mbOptions->identifier = 'mobile_options';
+                $mbOptions->value = serialize($options);
+                $mbOptions->saveThis();
+            } else {
+                erLhcoreClassLog::write('Fetching AccessToken failed. Make sure you server can connect to https://mobiletoken.livehelperchat.com/');
+                return false;
+            }
+        }
+
+        // API access key from Google API's Console
         $chatSimplified = $chat->getState();
 
-        $fields = array
-        (
-            'registration_ids' 	=> $registrationIds,
-            'notification'=>array(
-                "title" => $params['title'],
-                "sound" => "default",
-                "body" => isset($params['msg']) ? preg_replace('#\[[^\]]+\]#', '',strip_tags($params['msg'])) : preg_replace('#\[[^\]]+\]#', '', erLhcoreClassChat::getGetLastChatMessagePending($chat->id))
-            ),
-            'data' => array(
-                "click_action"=> "FLUTTER_NOTIFICATION_CLICK",
-                "server_id" => $session->token,
-                "m" =>  $params['title'],
-                "chat_type" => $params['chat_type'],
-                "msg" => isset($params['msg']) ? preg_replace('#\[[^\]]+\]#', '',strip_tags($params['msg'])) : preg_replace('#\[[^\]]+\]#', '', erLhcoreClassChat::getGetLastChatMessagePending($chat->id)),
-                "chat" => json_encode($chatSimplified)
-            ),
-            "priority" => "high"
-        );
+        $fields = ["message" => [
+                'token' => $session->device_token,
+                'notification' => array(
+                    "title" => $params['title'],
+                    "body" => isset($params['msg']) ? preg_replace('#\[[^\]]+\]#', '',strip_tags($params['msg'])) : preg_replace('#\[[^\]]+\]#', '', erLhcoreClassChat::getGetLastChatMessagePending($chat->id))
+                ),
+                'data' => array(
+                    "click_action"=> "FLUTTER_NOTIFICATION_CLICK",
+                    "server_id" => $session->token,
+                    "m" =>  $params['title'],
+                    "chat_type" => $params['chat_type'],
+                    "msg" => isset($params['msg']) ? preg_replace('#\[[^\]]+\]#', '',strip_tags($params['msg'])) : preg_replace('#\[[^\]]+\]#', '', erLhcoreClassChat::getGetLastChatMessagePending($chat->id)),
+                    "chat" => json_encode($chatSimplified)
+                )
+            ]
+        ];
 
         $channelName = '';
 
@@ -479,42 +500,50 @@ class erLhcoreClassLHCMobile {
         }
 
         if ($channelName != '') {
-            $fields['android'] = [
+            $fields['message']['android'] = [
+                "priority" => "high",
                 'notification' =>  [
+                    "click_action" => "FLUTTER_NOTIFICATION_CLICK",
                     "channel_id" => $channelName,
-                    "android_channel_id" => $channelName
+                    "sound" => "default"
                 ]
             ];
-            $fields['notification']['channel_id'] = $channelName;
-            $fields['notification']['android_channel_id'] = $channelName;
+            $fields['message']['apns']['payload']['aps']['category'] = 'FLUTTER_NOTIFICATION_CLICK';
+            $fields['message']['apns']['headers']['apns-priority'] = "10";
+            $fields['message']['apns']['payload']['aps']['sound'] = "default";
         }
 
 
         $headers = array
         (
-            'Authorization: key=' . $options['fcm_key'],
+            'Authorization: Bearer ' . $accessToken[0],
             'Content-Type: application/json'
         );
 
         $ch = curl_init();
-        curl_setopt( $ch,CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send' );
-        curl_setopt( $ch,CURLOPT_POST, true );
-        curl_setopt( $ch,CURLOPT_HTTPHEADER, $headers );
-        curl_setopt( $ch,CURLOPT_RETURNTRANSFER, true );
-        curl_setopt( $ch,CURLOPT_SSL_VERIFYPEER, false );
-        curl_setopt( $ch,CURLOPT_POSTFIELDS, json_encode( $fields ) );
+        curl_setopt($ch,CURLOPT_URL, 'https://fcm.googleapis.com/v1/projects/livehelperchat-85489/messages:send' );
+        curl_setopt($ch,CURLOPT_POST, true );
+        curl_setopt($ch,CURLOPT_HTTPHEADER, $headers );
+        curl_setopt($ch,CURLOPT_RETURNTRANSFER, true );
+        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, false );
+        curl_setopt($ch,CURLOPT_POSTFIELDS, json_encode( $fields ) );
+        curl_setopt($ch,CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,  10);
+        curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch,CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch,CURLOPT_USERAGENT, 'curl/7.29.0');
+
         $result = curl_exec($ch );
         curl_close( $ch );
 
         $data = json_decode($result,true);
-        if ($data['failure'] == 1) {
-            foreach ($data['results'] as $item) {
-                if (isset($item['error']) && ($item['error'] == 'NotRegistered' || $item['error'] == 'InvalidRegistration')) {
-                    $session->error = 1;
-                    $session->last_error = json_encode($data['results']);
-                    $session->updateThis();
-                }
-            }
+        if (isset($data['error']) && $data['error']['status'] == 'NOT_FOUND') {
+            $session->error = 1;
+            $session->last_error = json_encode($data);
+            $session->updateThis();
+        } elseif (isset($data['error'])) {
+            $session->last_error = json_encode($data);
+            $session->updateThis();
         }
 
         return $data;

@@ -799,6 +799,19 @@ class erLhcoreClassChatValidator {
                         }
                     }
 
+                    if ($jsVar->type == 6 && $val !== null && $val !== '') {
+                        $jwtTokenParts = explode('.',$val);
+                        if (isset($jwtTokenParts[1])) {
+                            $val = base64_decode($jwtTokenParts[1]);
+                            if ($jsVar->content_field != '') {
+                                $valueAttribute = erLhcoreClassGenericBotActionRestapi::extractAttribute(array('content_item' => json_decode($val,true)), 'content_item.' . $jsVar->content_field, '.');
+                                $val = $valueAttribute['found'] == true ? $valueAttribute['value'] : null;
+                            }
+                        } else {
+                            $val = null;
+                        }
+                    }
+
                     $chatVariables = $chat->chat_variables_array;
 
                     if ($secure === true) {
@@ -824,9 +837,22 @@ class erLhcoreClassChatValidator {
                         $val = isset($form->jsvar[$jsVar->id]) ? $additionalParams['payload_data']['jsvar'][$jsVar->id] : "";
                     }
 
+                    if ($jsVar->type == 6 && $val !== null && $val !== '') {
+                        $jwtTokenParts = explode('.',$val);
+                        if (isset($jwtTokenParts[1])) {
+                            $val = base64_decode($jwtTokenParts[1]);
+                            if ($jsVar->content_field != '') {
+                                $valueAttribute = erLhcoreClassGenericBotActionRestapi::extractAttribute(array('content_item' => json_decode($val,true)), 'content_item.' . $jsVar->content_field, '.');
+                                $val = $valueAttribute['found'] == true ? $valueAttribute['value'] : null;
+                            }
+                        } else {
+                            $val = null;
+                        }
+                    }
+
                     if (is_bool($val)) {
                         // Do nothing
-                    } elseif ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5) {
+                    } elseif ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5 || $jsVar->type == 6) {
                         $val = (string)$val;
                     } elseif ($jsVar->type == 1) {
                         $val = (int)$val;
@@ -990,12 +1016,25 @@ class erLhcoreClassChatValidator {
                 $val = trim($data['prefill_' . $jsVar->old_js_id]);
             }
 
+            if ($jsVar->type == 6 && $val !== null && $val !== '') {
+                $jwtTokenParts = explode('.',$val);
+                if (isset($jwtTokenParts[1])) {
+                    $val = base64_decode($jwtTokenParts[1]);
+                    if ($jsVar->content_field != '') {
+                        $valueAttribute = erLhcoreClassGenericBotActionRestapi::extractAttribute(array('content_item' => json_decode($val,true)), 'content_item.' . $jsVar->content_field, '.');
+                        $val = $valueAttribute['found'] == true ? $valueAttribute['value'] : null;
+                    }
+                } else {
+                    $val = null;
+                }
+            }
+
             if ($val !== null && $val !== '') {
                 $secure = false;
                 $variableSet[] = $jsVar->var_identifier;
                 if (is_bool($val)) {
                     // Do nothing
-                } elseif ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5) {
+                } elseif ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5 || $jsVar->type == 6) {
                     $val = (string)$val;
                 } elseif ($jsVar->type == 1) {
                     $val = (int)$val;
@@ -1096,6 +1135,19 @@ class erLhcoreClassChatValidator {
                     $val = null;
                 }
 
+                if ($jsVar->type == 6 && $val !== null && $val !== '') {
+                    $jwtTokenParts = explode('.',$val);
+                    if (isset($jwtTokenParts[1])) {
+                        $val = base64_decode($jwtTokenParts[1]);
+                        if ($jsVar->content_field != '') {
+                            $valueAttribute = erLhcoreClassGenericBotActionRestapi::extractAttribute(array('content_item' => json_decode($val,true)), 'content_item.' . $jsVar->content_field, '.');
+                            $val = $valueAttribute['found'] == true ? $valueAttribute['value'] : null;
+                        }
+                    } else {
+                        $val = null;
+                    }
+                }
+
                 if (($val === null || $val === '') && $jsVar->persistent == 0) {
                     $removeVars[] = $jsVar->var_identifier;
                 }
@@ -1141,7 +1193,7 @@ class erLhcoreClassChatValidator {
                         $secure = false;
                         if (is_bool($val)) {
                             // Do nothing
-                        } elseif ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5) {
+                        } elseif ($jsVar->type == 0 || $jsVar->type == 4 || $jsVar->type == 5 || $jsVar->type == 6) {
                             $val = (string)$val;
                         } elseif ($jsVar->type == 1) {
                             $val = (int)$val;
@@ -2635,6 +2687,14 @@ class erLhcoreClassChatValidator {
     }
 
     public static function validatePreconditions($precondition, $params) {
+
+        if (isset($precondition['maintenance_mode']) && $precondition['maintenance_mode'] == 1) {
+            return [
+                'mode' => 'disable',
+                'sub_mode' => 'maintenance',
+                'show_widget' => (isset($precondition['maintenance_mode_widget']) && $precondition['maintenance_mode_widget'] == 1),
+                'message' => !empty($precondition['maintenance_mode_message']) ? $precondition['maintenance_mode_message'] : erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','At this moment you can contact us via email only. Sorry for the inconveniences.')];
+        }
 
         if (isset($precondition['online']) && !empty($precondition['online'])) {
             $onlineMode = self::conditionsMatches($precondition['online'], $params);

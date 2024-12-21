@@ -7,7 +7,6 @@ if (isset($_POST['mail'])){
 
     $conversation = $chat->conversation;
 
-
     if ($conversation instanceof erLhcoreClassModelMailconvConversation && erLhcoreClassChat::hasAccessToRead($conversation)) {
 
         if (isset($_POST['extract_action'])) {
@@ -21,7 +20,7 @@ if (isset($_POST['mail'])){
                     'conv_duration_front','wait_time_response','wait_time_pending','department_name','can_delete','subject_front','mailbox','mailbox_front','department',
                     'opened_at_front', 'pnd_time_front' , 'ctime_front', 'udate_front', 'accept_time_front', 'cls_time_front'
                     , 'lr_time_front', 'pnd_time_front_ago', 'ctime_front_ago', 'udate_front_ago', 'accept_time_front_ago', 'cls_time_front_ago' , 'lr_time_front_ago'],
-                'department' => ['bot_configuration_array'],
+                'department' => ['bot_configuration_array','is_overloaded','is_online'],
             ];
 
             foreach (['conversation','ctime_front','udate_front','accept_time_front','cls_time_front','lr_time_front','opened_at_front','udate_ago',',conv_duration_front','user','mailbox',
@@ -50,6 +49,16 @@ if (isset($_POST['mail'])){
 
             $response = implode("\n",$patterns);
 
+        } elseif (isset($_POST['text_pattern'])) {
+
+            if ($_POST['test_pattern'][0] === "{") {
+                $attribute = erLhcoreClassGenericBotWorkflow::translateMessage($_POST['test_pattern'], array('as_json' => true, 'chat' => $chat, 'args' => ['chat' => $chat]));
+            } else {
+                $attribute = $_POST['test_pattern'];
+            }
+
+            $response = var_export(erLhcoreClassChatValidator::conditionsMatches([['field' => $attribute, 'comparator' => $_POST['comparator'], 'value' => $_POST['text_pattern']]],[]), true);
+
         } else {
             $response = erLhcoreClassGenericBotWorkflow::translateMessage($_POST['test_pattern'], array('as_json' => true, 'chat' => $chat, 'args' => ['chat' => $chat]));
             if (strpos($response,'{') === 0) {
@@ -74,8 +83,8 @@ if (isset($_POST['mail'])){
             }
 
             $subAttributes = [
-                'online_user' => ['online_attr_system_array','online_attr_array','current_page_params'],
-                'department' => ['bot_configuration_array'],
+                'online_user' => ['online_attr_system_array','online_attr_array','current_page_params','previous_chat','chat'],
+                'department' => ['bot_configuration_array','is_overloaded','is_online'],
                 'iwh' => ['conditions_array'],
                 'incoming_chat' => ['incoming']
             ];
@@ -94,7 +103,19 @@ if (isset($_POST['mail'])){
                     $patterns[] = '{debug.'.$dynamicAttr .'} = ' . ($chat->lsync > ($chat->pnd_time + $chat->wait_time) && $chat->has_unread_op_messages == 1 && $chat->user_id > 0 ? 1 : 0) . $debugString . ' Visitor was online while chat was accepted, but left before operator replied';
                 } elseif (is_object($chat->{$dynamicAttr})) {
                     foreach ($chat->{$dynamicAttr}->getState() as $stateKey => $stateAttr) {
-                        $patterns[] = '{args.chat.' . $dynamicAttr .'.' . $stateKey .'} = ' . ((is_array($stateAttr) || is_object($stateAttr)) ? json_encode($stateAttr) : $stateAttr);
+                        if (is_array($stateAttr) || is_object($stateAttr)) {
+                            foreach ($stateAttr as $stateAttrKey => $stateAttrValue) {
+                                if (is_array($stateAttrValue) || is_object($stateAttrValue)){
+                                    foreach ($stateAttrValue as $stateSubAttrValueKey => $stateSubAttrValue){
+                                        $patterns[] = '{args.chat.' . $dynamicAttr . '.' . $stateKey . ' .' . $stateAttrKey . '.' . $stateSubAttrValueKey . '} = ' . ((is_array($stateSubAttrValue) || is_object($stateSubAttrValue)) ? json_encode($stateSubAttrValue) : $stateSubAttrValue);
+                                    }
+                                } else {
+                                    $patterns[] = '{args.chat.' . $dynamicAttr . '.' . $stateKey . ' .' . $stateAttrKey .' } = ' . ((is_array($stateAttrValue) || is_object($stateAttrValue)) ? json_encode($stateAttrValue) : $stateAttrValue);
+                                }
+                            }
+                        } else {
+                            $patterns[] = '{args.chat.' . $dynamicAttr .'.' . $stateKey .'} = ' . $stateAttr;
+                        }
                     }
                     if (isset($subAttributes[$dynamicAttr])){
                         foreach ($subAttributes[$dynamicAttr] as $subStateAttr) {
@@ -113,6 +134,16 @@ if (isset($_POST['mail'])){
             }
 
             $response = implode("\n",$patterns);
+
+        } elseif (isset($_POST['text_pattern'])) {
+
+            if ($_POST['test_pattern'][0] === "{") {
+                $attribute = erLhcoreClassGenericBotWorkflow::translateMessage($_POST['test_pattern'], array('as_json' => true, 'chat' => $chat, 'args' => ['chat' => $chat]));
+            } else {
+                $attribute = $_POST['test_pattern'];
+            }
+
+            $response = var_export(erLhcoreClassChatValidator::conditionsMatches([['field' => $attribute, 'comparator' => $_POST['comparator'], 'value' => $_POST['text_pattern']]],[]), true);
 
         } else {
             $response = erLhcoreClassGenericBotWorkflow::translateMessage($_POST['test_pattern'], array('as_json' => true, 'chat' => $chat, 'args' => ['chat' => $chat]));

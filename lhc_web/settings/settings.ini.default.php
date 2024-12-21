@@ -26,10 +26,13 @@ return array (
                     'date_hour_format' => 'H:i:s',
                     'date_date_hour_format' => 'Y-m-d H:i:s',
                     'default_site_access' => 'eng',
+                    'default_site_access_list' => ['eng'],
                     'maps_api_key' => false,
                     'default_group' => '',
                     'default_user' => '',
                     'site_address' => '',
+                    'allow_iframe' => false,
+                    'allow_iframe_domain' => '',
                     'trusted_host_patterns' => [
                     ],
                     'extensions' =>

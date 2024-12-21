@@ -39,7 +39,10 @@ echo json_encode(array(
         "no" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','No'),
         "sure_close" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Are you sure?'),
         "subject" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Subject'),
-        "previous_messages" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Previous messages')
+        "previous_messages" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Previous messages'),
+        "block" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Block sender'),
+        "is_blocked" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Sender is blocked!'),
+        "rsp_type" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Response type')
     ],
     "status" => [
         "pending" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','New'),
@@ -61,7 +64,8 @@ echo json_encode(array(
         "mailed_by" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','mailed-by'),
         "nrr" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','No reply required'),
         "orm" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','This is our response message'),
-        "rbe" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Responeded by e-mail'),
+        "rbe" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Responded by e-mail'),
+        "unr" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Un-responded'),
         "ago" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','ago'),
         "ar_label" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Add/Remove label'),
         "send" => erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','Send'),

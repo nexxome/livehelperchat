@@ -25,6 +25,7 @@ class erLhcoreClassModelMailconvConversation
             'subject' => $this->subject,
             'from_name' => $this->from_name,
             'from_address' => $this->from_address,
+            'from_address_clean' => $this->from_address_clean,
             'body' => $this->body,
             'ctime' => $this->ctime,
             'priority' => $this->priority,
@@ -75,6 +76,13 @@ class erLhcoreClassModelMailconvConversation
             $this->total_messages = erLhcoreClassModelMailconvMessage::getCount(['filter' => ['conversation_id' => $this->id]]);
         }
 
+        if ($this->from_address_clean == '' && $this->from_address != '') {
+            $atPos = strrpos($this->from_address, "@");
+            $name =  str_replace('.','',substr($this->from_address, 0, $atPos));
+            $domain = substr($this->from_address, $atPos);
+            $this->from_address_clean = strtolower($name . $domain);
+        }
+        
         // For reverse index
         $this->priority_asc = $this->priority * -1;
     }
@@ -240,6 +248,7 @@ class erLhcoreClassModelMailconvConversation
                 }
                 return $this->customer_email;
 
+            case 'chat_variables_array':
             case 'mail_variables_array':
                 if (!empty($this->mail_variables)) {
                     $jsonData = json_decode($this->mail_variables,true);
@@ -282,6 +291,7 @@ class erLhcoreClassModelMailconvConversation
     public $body = '';
     public $from_name = '';
     public $from_address = '';
+    public $from_address_clean = '';
     public $remarks = '';
     public $last_message_id = 0;
     public $message_id = 0;
@@ -321,6 +331,7 @@ class erLhcoreClassModelMailconvConversation
     public $opened_at = 0;
     public $phone = '';
     public $is_archive = false;
+    public $archive = null;
     public $ignore_imap = false;
 }
 

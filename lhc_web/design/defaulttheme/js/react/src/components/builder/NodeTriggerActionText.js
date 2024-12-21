@@ -189,7 +189,7 @@ class NodeTriggerActionText extends Component {
                         <div className="pe-2">
                             <div className="input-group input-group-sm">
                                 <span className="input-group-text" id="basic-addon1"><span className="material-icons">vpn_key</span></span>
-                                <input type="text" className="form-control" readOnly="true" value={this.props.action.getIn(['_id'])} title="Action ID"/>
+                                <input type="text" className="form-control" readOnly={true} value={this.props.action.getIn(['_id'])} title="Action ID"/>
                             </div>
                         </div>
                         <div className="pe-2 pt-1 text-nowrap">
@@ -239,6 +239,9 @@ class NodeTriggerActionText extends Component {
                         <div className="col-6">
                             <div role="group">
                                 <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','as_system'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','as_system'])} /> Save as a system message.</label> <i className="material-icons" title="Message will be saved as system message and will be invisible by visitor.">info</i>
+                            </div>
+                            <div role="group">
+                                <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','json_replace'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','json_replace'])} /> Encode arrays and objects replaceable variables as JSON.</label>
                             </div>
                             <div role="group">
                                 <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','as_visitor'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','as_visitor'])} /> Save as a visitor message.</label> <i className="material-icons" title="Message will be saved as a visitor message.">info</i>

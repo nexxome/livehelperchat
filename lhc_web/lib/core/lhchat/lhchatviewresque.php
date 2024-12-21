@@ -7,6 +7,16 @@ class erLhcoreClassViewResque {
         $db = ezcDbInstance::get();
         $db->reconnect(); // Because it timeouts automatically, this calls to reconnect to database, this is implemented in 2.52v
 
+        if (isset($this->args['inst_id']) && $this->args['inst_id'] > 0) {
+            $cfg = \erConfigClassLhConfig::getInstance();
+            $db->query('USE ' . $cfg->getSetting('db', 'database'));
+
+            $instance = \erLhcoreClassModelInstance::fetch($this->args['inst_id']);
+            \erLhcoreClassInstance::$instanceChat = $instance;
+
+            $db->query('USE ' . $cfg->getSetting('db', 'database_user_prefix') . $this->args['inst_id']);
+        }
+
         $viewId = $this->args['view_id'];
 
         $search = erLhAbstractModelSavedSearch::fetch($viewId);
@@ -52,6 +62,8 @@ class erLhcoreClassViewResque {
                 $filterSearch['filtergte']['time'] = time() - $search->days * 24 * 3600;
             }
 
+            $search->getDateRangeFilter($filterSearch);
+
             $totalRecords = erLhcoreClassModelChat::getCount($filterSearch);
 
             $search->updated_at = time();
@@ -68,6 +80,8 @@ class erLhcoreClassViewResque {
             if ($search->days > 0) {
                 $filterSearch['filtergte']['udate'] = time() - $search->days * 24 * 3600;
             }
+
+            $search->getDateRangeFilter($filterSearch);
 
             $totalRecords = erLhcoreClassModelMailconvConversation::getCount($filterSearch);
 

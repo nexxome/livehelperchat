@@ -41,7 +41,7 @@ $icons = array(
 
             <ul class="nav nav-pills nav-pills-bbcode"  role="tablist">
                 <?php foreach ($icons as $index => $iconGroup) : ?>
-                    <li class="nav-item" role="presentation" ><a class="nav-link px-2 py-1 small <?php if ($index == 0) : ?>active<?php endif;?>" href="#bbcode-smiley-<?php echo $index?><?php if (isset($bbcodeParams['tab_prefix'])) : ?><?php echo $bbcodeParams['tab_prefix']?><?php endif; ?>" aria-controls="bbcode-smiley-<?php echo $index?><?php if (isset($bbcodeParams['tab_prefix'])) : ?><?php echo $bbcodeParams['tab_prefix']?><?php endif; ?>" role="tab" data-bs-toggle="tab"><?php echo htmlspecialchars($iconGroup['title'])?></a></li>
+                    <li class="nav-item" role="presentation" ><a class="nav-link px-2 py-1 small <?php if ($index == 0) : ?>active<?php endif;?>" href="#bbcode-smiley-<?php echo $index?><?php if (isset($bbcodeParams['tab_prefix'])) : ?><?php echo $bbcodeParams['tab_prefix']?><?php endif; ?>" aria-controls="bbcode-smiley-<?php echo $index?><?php if (isset($bbcodeParams['tab_prefix'])) : ?><?php echo $bbcodeParams['tab_prefix']?><?php endif; ?>" role="tab" data-bs-toggle="tab"><?php echo $iconGroup['title']?></a></li>
                 <?php endforeach; ?>
             </ul>
             <div class="tab-content nav-pills-bbcode-content bbtab-content<?php if (isset($bbcodeParams['tab_prefix'])) : ?><?php echo $bbcodeParams['tab_prefix']?><?php endif; ?>">
@@ -93,31 +93,55 @@ $icons = array(
 
             var textAreaElement = jQuery(selectorInsert);
 
-            var caretPos = textAreaElement[0].selectionStart;
-            var textAreaTxt = jQuery(selectorInsert).val();
+            if (textAreaElement.prop('nodeName') == 'LHC-EDITOR') {
 
-            var txtToAdd = $(this).attr('data-bb-code');
-            if (typeof $(this).attr('data-promt') != 'undefined' && $(this).attr('data-promt') == 'img') {
-                var link = prompt("<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Please enter link to an image')?>");
-                if (link) {
-                    txtToAdd = '[' + txtToAdd + ']' + link + '[/' + txtToAdd + ']';
-                    textAreaElement.val(textAreaTxt.substring(0, caretPos) + txtToAdd + textAreaTxt.substring(caretPos));
+                var txtToAdd = $(this).attr('data-bb-code');
+                if (typeof $(this).attr('data-promt') != 'undefined' && $(this).attr('data-promt') == 'img') {
+                    var link = prompt("<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Please enter link to an image')?>");
+                    if (link) {
+                        txtToAdd = '[' + txtToAdd + ']' + link + '[/' + txtToAdd + ']';
+                        textAreaElement[0].insertContent(txtToAdd);
+                        $('#myModal').modal('hide');
+                    }
+                } else if (typeof $(this).attr('data-promt') != 'undefined' && $(this).attr('data-promt') == 'url') {
+                    var link = prompt("<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Please enter a link')?>");
+                    if (link) {
+                        txtToAdd = '[url=' + link + ']<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Here is a link')?>[/url]';
+                        textAreaElement[0].insertContent(txtToAdd);
+                        $('#myModal').modal('hide');
+                    }
+                } else {
+                    textAreaElement[0].insertContent(txtToAdd);
                     $('#myModal').modal('hide');
                 }
-            } else if (typeof $(this).attr('data-promt') != 'undefined' && $(this).attr('data-promt') == 'url') {
-                var link = prompt("<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Please enter a link')?>");
-                if (link) {
-                    txtToAdd = '[url=' + link + ']<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Here is a link')?>[/url]';
-                    textAreaElement.val(textAreaTxt.substring(0, caretPos) + txtToAdd + textAreaTxt.substring(caretPos));
-                    $('#myModal').modal('hide');
-                }
+
             } else {
-                textAreaElement.val(textAreaTxt.substring(0, caretPos) + txtToAdd + textAreaTxt.substring(caretPos)).focus();
-                $('#myModal').modal('hide');
-                setTimeout(function () {
-                    textAreaElement.focus();
-                },500)
-            };
+                var caretPos = textAreaElement[0].selectionStart;
+                var textAreaTxt = jQuery(selectorInsert).val();
+
+                var txtToAdd = $(this).attr('data-bb-code');
+                if (typeof $(this).attr('data-promt') != 'undefined' && $(this).attr('data-promt') == 'img') {
+                    var link = prompt("<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Please enter link to an image')?>");
+                    if (link) {
+                        txtToAdd = '[' + txtToAdd + ']' + link + '[/' + txtToAdd + ']';
+                        textAreaElement.val(textAreaTxt.substring(0, caretPos) + txtToAdd + textAreaTxt.substring(caretPos));
+                        $('#myModal').modal('hide');
+                    }
+                } else if (typeof $(this).attr('data-promt') != 'undefined' && $(this).attr('data-promt') == 'url') {
+                    var link = prompt("<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Please enter a link')?>");
+                    if (link) {
+                        txtToAdd = '[url=' + link + ']<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/bbcodeinsert', 'Here is a link')?>[/url]';
+                        textAreaElement.val(textAreaTxt.substring(0, caretPos) + txtToAdd + textAreaTxt.substring(caretPos));
+                        $('#myModal').modal('hide');
+                    }
+                } else {
+                    textAreaElement.val(textAreaTxt.substring(0, caretPos) + txtToAdd + textAreaTxt.substring(caretPos)).focus();
+                    $('#myModal').modal('hide');
+                    setTimeout(function () {
+                        textAreaElement.focus();
+                    },500)
+                }
+            }
 
             return false;
         });</script>

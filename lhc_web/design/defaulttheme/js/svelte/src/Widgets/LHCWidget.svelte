@@ -83,7 +83,7 @@
         <div class={custom_card_class + " card-header"}>
 
             {#if custom_settings_url}
-                <i class="material-icons me-0 action-image" on:click={(e) => lhcServices.openModal(WWW_DIR_JAVASCRIPT + custom_settings_url)}>{custom_settings_url_icon || 'settings_applications'}</i>
+                <i class="material-icons me-0 action-image" on:click={(e) => lhcServices.openModal(custom_settings_url)}>{custom_settings_url_icon || 'settings_applications'}</i>
             {/if}
 
             {#if !no_link}
@@ -137,7 +137,7 @@
                 {/if}
 
                 {#if $lhcList[type].list.length === 0 && type !== 'onlineusers' && type !== 'depgroups_stats'}
-                    <div class="m-1 alert alert-light"><i class="material-icons">search</i>All items will appear here.</div>
+                    <div class="m-1 alert alert-light"><i class="material-icons">search</i>{$t("widget.items_appear_here")}</div>
                 {/if}
 
             </div>

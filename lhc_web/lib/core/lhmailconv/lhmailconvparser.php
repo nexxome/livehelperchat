@@ -558,6 +558,12 @@ class erLhcoreClassMailconvParser {
                             continue;
                         }
 
+                        // Check is mail blocked only if matched rule is not a blocked one rule is not a blocking one
+                        if ((!(isset($matchingRuleSelected->options_array['block_rule']) && $matchingRuleSelected->options_array['block_rule'] == true)) && erLhcoreClassModelChatBlockedUser::isBlocked(array('email_conv' => $message->from_address))) {
+                            $statsImport[] = 'Skipping e-mail because of block for e-mail - ' . $message->from_address . ' - ' . $vars['message_id'] . ' - ' . $mailInfo->uid;
+                            continue;
+                        }
+
                         $rfc822RawBody = '';
                         if ($mailbox->auth_method == erLhcoreClassModelMailconvMailbox::AUTH_OAUTH2) {
                             foreach ($mailInfoRaw->getStructure()->find_parts() as $part) {
@@ -702,6 +708,10 @@ class erLhcoreClassMailconvParser {
                             $conversations->user_id = $mailbox->user_id;
                         }
 
+                        if ($message->user_id == 0) {
+                            $message->user_id = $conversations->user_id;
+                        }
+
                         // It was just a send e-mail. We can mark conversations as finished. Until someone replies back to us.
                         if ($internalInit == true) {
 
@@ -734,7 +744,7 @@ class erLhcoreClassMailconvParser {
                         $message->priority = $priorityConversation;
                         $message->conversation_id = $conversations->id;
                         $message->dep_id = $conversations->dep_id;
-                        $message->updateThis(['update' =>  ['dep_id','conversation_id','response_type','status','lr_time','accept_time','cls_time','is_external','conv_user_id']]);
+                        $message->updateThis(['update' =>  ['dep_id','conversation_id','response_type','status','lr_time','accept_time','cls_time','is_external','conv_user_id','user_id']]);
 
                         // Save initial message
                         if (!empty($logImport)) {
@@ -857,8 +867,12 @@ class erLhcoreClassMailconvParser {
                             $message->conv_user_id = $conversation->user_id;
                         }
 
+                        if ($message->user_id == 0) {
+                            $message->user_id = $conversation->user_id;
+                        }
+
                         $message->mb_folder = $mailboxFolder['path'];
-                        $message->updateThis(['update' => ['mb_folder','conv_user_id']]);
+                        $message->updateThis(['update' => ['mb_folder', 'conv_user_id', 'user_id']]);
 
                         $messages[] = $message;
 
@@ -977,6 +991,11 @@ class erLhcoreClassMailconvParser {
                     ($matchingPriorityRuleSelected instanceof erLhcoreClassModelMailconvMatchRule && isset($matchingPriorityRuleSelected->options_array['skip_message']) && $matchingPriorityRuleSelected->options_array['skip_message'] == true)
                 ) {
                     $statsImport[] = 'Skipping e-mail because of matching rule - ' . $message->message_id . ' - ' . $message->uid;
+                    continue;
+                }
+
+                if (!(isset($matchingRuleSelected->options_array['block_rule']) && $matchingRuleSelected->options_array['block_rule'] == true) && erLhcoreClassModelChatBlockedUser::isBlocked(array('email_conv' => $message->from_address))) {
+                    $statsImport[] = 'Skipping e-mail because of block for e-mail - ' . $message->from_address;
                     continue;
                 }
 
@@ -1219,6 +1238,11 @@ class erLhcoreClassMailconvParser {
             $from_mail_array = $matchingRule->from_mail_array;
 
             if (!empty($from_mail_array) && !in_array($message->from_address, $from_mail_array)) {
+                $matched = false;
+            }
+
+            // If it is block rule but e-mail is not blocked. Skip the rule.
+            if (isset($matchingRule->options_array['block_rule']) && $matchingRule->options_array['block_rule'] == true && !erLhcoreClassModelChatBlockedUser::isBlocked(array('email_conv' => $message->from_address))) {
                 $matched = false;
             }
 

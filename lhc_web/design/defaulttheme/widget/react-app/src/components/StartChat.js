@@ -324,6 +324,7 @@ class StartChat extends Component {
             var messagesScroll = document.getElementById('messagesBlock');
             if (messagesScroll !== null) {
                 this.props.setMessages(messagesScroll.innerHTML);
+                this.scrollBottom();
             }
 
             var profileBody = document.getElementById('lhc-profile-body');
@@ -493,10 +494,18 @@ class StartChat extends Component {
         return <p className="p-2">{this.props.chatwidget.getIn(['onlineData','paid','message'])}</p>
     }
 
+    if (this.props.chatwidget.getIn(['chat_ui','disabled'])) {
+        return <ChatAbort closeText={t('button.close')} full_height={true} close={(e) => this.props.dispatch(minimizeWidget(true))} as_html={true} text={this.props.chatwidget.getIn(['chat_ui','disabled'])} />;
+    }
+
+    if (this.props.chatwidget.hasIn(['validationErrors','blocked_user'])) {
+        return <ChatAbort closeText={t('button.close')} full_height={true} close={(e) => this.props.dispatch(minimizeWidget(true))} as_html={true} text={this.props.chatwidget.getIn(['validationErrors','blocked_user'])} />;
+    }
+
     if (this.props.chatwidget.get('processStatus') == 0 || this.props.chatwidget.get('processStatus') == 1) {
             if (this.props.chatwidget.hasIn(['chat_ui','show_messages_box']) && this.props.chatwidget.getIn(['onlineData','department','departments']).size <= 1 && this.props.chatwidget.getIn(['onlineData','fields_visible']) <= 1 && (this.props.chatwidget.getIn(['customData','fields']).size == 0 || hasVisibleCustomFields === false)) {
 
-                var classMessageInput = "ps-0 no-outline form-control rounded-0 form-control rounded-start-0 rounded-end-0 border-0 " + (this.props.chatwidget.get('shown') === true && this.textMessageRef.current && (/\r|\n/.exec(this.state.Question) || (this.state.Question.length > this.textMessageRef.current.offsetWidth/8.6)) ? 'msg-two-line' : 'msg-one-line');
+                var classMessageInput = (!this.props.chatwidget.hasIn(['chat_ui','bbc_btnh']) || this.props.chatwidget.hasIn(['chat_ui','lng_btnh']) ? 'ps-0' : 'ps-2')+" no-outline form-control rounded-0 form-control rounded-start-0 rounded-end-0 border-0 " + (this.props.chatwidget.get('shown') === true && this.textMessageRef.current && (/\r|\n/.exec(this.state.Question) || (this.state.Question.length > this.textMessageRef.current.offsetWidth/8.6)) ? 'msg-two-line' : 'msg-one-line');
 
                 var msg_expand = "flex-grow-1 overflow-scroll position-relative";
                 var bottom_messages = "bottom-message px-1";
@@ -506,18 +515,12 @@ class StartChat extends Component {
                     bottom_messages += " position-relative";
                 }
 
-                if (this.props.chatwidget.getIn(['chat_ui','disabled'])) {
-                    return <ChatAbort closeText={t('button.close')} full_height={true} close={(e) => this.props.dispatch(minimizeWidget(true))} as_html={true} text={this.props.chatwidget.getIn(['chat_ui','disabled'])} />;
-                }
-
                 return (
                     <React.Fragment>
 
                         {this.state.showBBCode && <ChatModal showModal={this.state.showBBCode} insertText={this.insertText} toggle={this.toggleModal} dataUrl={"/chat/bbcodeinsert?react=1"} />}
 
                         {this.state.changeLanguage && <ChatModal showModal={this.state.changeLanguage} setLanguage={this.setLanguageAction} toggle={this.changeLanguage} dataUrl={"/widgetrestapi/chooselanguage"} />}
-
-                        {this.props.chatwidget.hasIn(['validationErrors','blocked_user']) && <ChatAbort closeText={t('button.close')} as_html={true} close={(e) => this.props.dispatch(minimizeWidget(true))} text={this.props.chatwidget.getIn(['validationErrors','blocked_user'])} />}
 
                         {
                             (this.props.chatwidget.getIn(['proactive','has']) === true && !this.props.chatwidget.hasIn(['proactive','data','std_header'])  && <ChatInvitationMessage mode='profile_only' invitation={this.props.chatwidget.getIn(['proactive','data'])} />)

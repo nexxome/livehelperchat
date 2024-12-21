@@ -71,6 +71,9 @@ class erLhcoreClassMailconvValidator {
             'skip_message' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
             ),
+            'block_rule' => new ezcInputFormDefinitionElement(
+                ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+            ),
             'mailbox_ids' => new ezcInputFormDefinitionElement(
                 ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1), FILTER_REQUIRE_ARRAY
             ),
@@ -171,6 +174,12 @@ class erLhcoreClassMailconvValidator {
             $options['skip_message'] = 1;
         } else {
             $options['skip_message'] = 0;
+        }
+        
+        if ($form->hasValidData( 'block_rule' ) && $form->block_rule == true) {
+            $options['block_rule'] = 1;
+        } else {
+            $options['block_rule'] = 0;
         }
 
         $item->options_array = $options;
@@ -800,15 +809,17 @@ class erLhcoreClassMailconvValidator {
                 // Generate message_id upfront
                 $mailReply->MessageID = sprintf('<%s@%s>', $mailReply->generateId(), $mailReply->serverHostname());
 
-                // Update body with pixel image
-                $mailReply->Body = self::generatePixel($mailReply->Body,sha1($mailReply->MessageID));
+                // Update body with pixel image if body is not empty
+                if ($mailReply->AltBody != '') {
+                    $mailReply->Body = self::generatePixel($mailReply->Body, sha1($mailReply->MessageID));
+                }
 
                 $response['send'] = $mailReply->Send();
 
                 // Create a copy if required
                 if ($mailbox->create_a_copy == true) {
                     self::setWebPHPIMAPTimeouts();
-                    $response['copy'] = self::makeSendCopy($mailReply, $mailbox);
+                    $response['copy'] = self::makeSendCopy($mailReply, $mailbox, ['background' => true]);
                 }
 
                 // Now we can set appropriate attributes for the message itself.
@@ -844,7 +855,7 @@ class erLhcoreClassMailconvValidator {
         imap_timeout(IMAP_READTIMEOUT, 15);
     }
 
-    public static function sendEmail($item, & $response, $user_id = 0) {
+    public static function sendEmail($item, & $response, $user_id = 0, $params = []) {
         try {
             $mailReply = new PHPMailer(true);
             $mailReply->CharSet = "UTF-8";
@@ -882,13 +893,15 @@ class erLhcoreClassMailconvValidator {
             // Generate message_id upfront
             $mailReply->MessageID = sprintf('<%s@%s>', $mailReply->generateId(), $mailReply->serverHostname());
 
-            // Update body with pixel image
-            $mailReply->Body = self::generatePixel($mailReply->Body,sha1($mailReply->MessageID));
+            // Update body with pixel image if body is not empty
+            if ($mailReply->AltBody != '') {
+                $mailReply->Body = self::generatePixel($mailReply->Body,sha1($mailReply->MessageID));
+            }
 
             $response['send'] = $mailReply->Send();
 
             if ($item->mailbox->create_a_copy == true) {
-                $response['copy'] = self::makeSendCopy($mailReply, $item->mailbox);
+                $response['copy'] = self::makeSendCopy($mailReply, $item->mailbox, $params);
             }
 
         } catch (Exception $e) {
@@ -914,7 +927,7 @@ class erLhcoreClassMailconvValidator {
     }
 
     // Save a copy in send folder
-    public static function makeSendCopy($mail, $mailbox) {
+    public static function makeSendCopy($mail, $mailbox, $params = []) {
 
         $path = null;
 
@@ -927,6 +940,20 @@ class erLhcoreClassMailconvValidator {
 
         if ($path === null) {
             return ['success' => false, 'reason' => 'No send folder defined!'];
+        }
+
+        // Delegate copy part to copy worker to speed up UI
+        if (isset($params['background']) && $params['background'] === true && class_exists('erLhcoreClassExtensionLhcphpresque')) {
+            
+            $copyRecord = new \LiveHelperChat\Models\mailConv\SentCopy();
+            $copyRecord->body = $mail->getSentMIMEMessage();
+            $copyRecord->mailbox_id = $mailbox->id;
+            $copyRecord->saveThis();
+
+            $inst_id = class_exists('\erLhcoreClassInstance') ? \erLhcoreClassInstance::$instanceChat->id : 0;
+            erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhcphpresque')->enqueue('lhc_imap_copy', '\LiveHelperChat\mailConv\workers\SentCopyWorker', array('inst_id' => $inst_id));
+
+            return ['success' => true, 'message_id' => $mail->getLastMessageID()];
         }
 
         if ($mailbox->auth_method == \erLhcoreClassModelMailconvMailbox::AUTH_OAUTH2) {

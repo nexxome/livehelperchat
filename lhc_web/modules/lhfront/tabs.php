@@ -46,7 +46,7 @@ if (!empty($id)) {
                     'has_popup' => $iconAdditional->has_popup,
                     'icon_id' => $iconAdditional->id,
                     'title' => (isset($chat->{'cc_' . $iconAdditional->id . '_tt'})) ? $chat->{'cc_' . $iconAdditional->id . '_tt'} : (isset($chat->{'cc_' . $iconAdditional->id}) ? $chat->{'cc_' . $iconAdditional->id} : ''),
-                    'icon' => ($iconAdditional->column_icon != "" && strpos($iconAdditional->column_icon, '"') !== false) ? $columnIconData[$chat->{'cc_' . $iconAdditional->id}]['icon'] : $iconAdditional->column_icon,
+                    'icon' => ($iconAdditional->column_icon != "" && strpos($iconAdditional->column_icon, '"') !== false) ? (isset($columnIconData[$chat->{'cc_' . $iconAdditional->id}]['icon']) ? $columnIconData[$chat->{'cc_' . $iconAdditional->id}]['icon'] : 'unknown_document') : $iconAdditional->column_icon,
                     'color' => isset($columnIconData[$chat->{'cc_' . $iconAdditional->id}]['color']) ? $columnIconData[$chat->{'cc_' . $iconAdditional->id}]['color'] : '#CECECE'
                 ];
             }
@@ -75,12 +75,18 @@ if (is_array($id)) {
 
     if (!empty($id)) {
         $chats = erLhcoreClassModelMailconvConversation::getList(array('sort' => 'id DESC', 'filterin' => array('id' => $id)));
+
+        $sensitive = false;
+        if (!erLhcoreClassUser::instance()->hasAccessTo('lhmailconv','mail_see_unhidden_email')) {
+            $sensitive = true;
+        }
+
         $idFound = [];
         foreach ($chats as $chat) {
             $item = array(
                 'id' => $chat->id,
                 'from_name' => $chat->from_name,
-                'from_address' => $chat->from_address,
+                'from_address' => ($sensitive === true ? \LiveHelperChat\Helpers\Anonymizer::maskEmail($chat->from_address) : $chat->from_address),
                 'nick' => $chat->subject,
                 'cs' => $chat->status,
                 'co' => $chat->user_id,
@@ -98,7 +104,7 @@ if (is_array($id)) {
                     $item = array(
                         'id' => $mailData['mail']->id,
                         'from_name' => $mailData['mail']->from_name,
-                        'from_address' => $mailData['mail']->from_address,
+                        'from_address' =>  ($sensitive === true ? \LiveHelperChat\Helpers\Anonymizer::maskEmail($mailData['mail']->from_address) : $mailData['mail']->from_address),
                         'nick' => $mailData['mail']->subject,
                         'cs' => $mailData['mail']->status,
                         'co' => $mailData['mail']->user_id,

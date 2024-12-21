@@ -2,6 +2,7 @@ import { helperFunctions } from "../../lib/helperFunctions";
 import { fetchMessages, checkChatStatus, updateMessage } from "../../actions/chatActions"
 
 import socketCluster from "socketcluster-client";
+import i18n from "../../i18n";
 
 
 class _nodeJSChat {
@@ -22,11 +23,13 @@ class _nodeJSChat {
         const chatId = state.chatwidget.getIn(['chatData','id']);
         const chatHash = state.chatwidget.getIn(['chatData','hash']);
         const syncDefault = state.chatwidget.getIn(['chat_ui','sync_interval']);
+        var streamFlowStarted = null;
 
         var socketOptions = {
             protocolVersion: 1,
             hostname: params.hostname,
             path: params.path,
+            disconnectOnUnload: false,
             autoReconnectOptions: {initialDelay: 5000, randomness: 5000}
         }
 
@@ -200,7 +203,7 @@ class _nodeJSChat {
                                 if (op.data.status == true) {
                                     dispatch({
                                         'type': 'chat_status_changed',
-                                        'data': {text: op.data.ttx}
+                                        'data': {text: op.data.typer ? op.data.typer + " " + i18n.t('chat.typing'): op.data.ttx}
                                     });
                                 } else {
                                     dispatch({
@@ -208,7 +211,28 @@ class _nodeJSChat {
                                         'data': {text: ''}
                                     });
                                 }
+                            } else if (op.op == 'sflow') {
+
+                                // We don't have any
+                                if (streamFlowStarted === null) {
+                                    streamFlowStarted = document.querySelector('#messages-scroll > div.message-row-typing > .msg-body');
+                                    if (streamFlowStarted) {
+                                        streamFlowStarted.innerHTML = "";
+                                        streamFlowStarted.parentElement.classList.add('message-row-typing-stream');
+                                    }
+                                }
+
+                                if (streamFlowStarted) {
+                                    if (op.as_html === true){
+                                        streamFlowStarted.innerHTML += op.msg.replaceAll('__SL__',"/");
+                                    } else {
+                                        streamFlowStarted.innerText += op.msg.replaceAll('__SL__',"/");
+                                    }
+                                    streamFlowStarted.scrollIntoView();
+                                }
+
                             } else if (op.op == 'cmsg' || op.op == 'schange') {
+                                streamFlowStarted = null;
                                 const state = getState();
                                 if (state.chatwidget.hasIn(['chatData','id'])){
                                     dispatch(fetchMessages({
@@ -222,7 +246,15 @@ class _nodeJSChat {
                             } else if (op.op == 'umsg') {
                                 const state = getState();
                                 if (state.chatwidget.hasIn(['chatData','id'])) {
-                                    updateMessage({'msg_id' :  op.msid,'id' : state.chatwidget.getIn(['chatData','id']), 'hash' : state.chatwidget.getIn(['chatData','hash'])})(dispatch, getState);
+                                    updateMessage({
+                                        'msg_id' :  op.msid,
+                                        'lmgsid' : state.chatwidget.getIn(['chatLiveData','lmsgid']),
+                                        'mode' : state.chatwidget.get('mode'),
+                                        'theme' : state.chatwidget.get('theme'),
+                                        'id' : state.chatwidget.getIn(['chatData','id']),
+                                        'hash' : state.chatwidget.getIn(['chatData','hash']),
+                                        'no_scroll' : true
+                                    })(dispatch, getState);
                                 }
                             } else if (op.op == 'schange' || op.op == 'cclose') {
                                 const state = getState();

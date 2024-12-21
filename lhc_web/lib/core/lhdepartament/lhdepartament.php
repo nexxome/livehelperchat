@@ -179,6 +179,9 @@ class erLhcoreClassDepartament{
                 'hide_send_email' => new ezcInputFormDefinitionElement(
 	   					ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
 	   			),
+                'dep_offline' => new ezcInputFormDefinitionElement(
+	   					ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+	   			),
                 // Bot attributes
                 'bot_id' => new ezcInputFormDefinitionElement(
                         ezcInputFormDefinitionElement::OPTIONAL, 'int', array('min_range' => 1)
@@ -247,22 +250,22 @@ class erLhcoreClassDepartament{
 
             $key = 'StartHour'.ucfirst($dayShort);
             $definition[$key] = new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'mx_range' => 24)
+                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'mx_range' => 23)
             );
 
             $key = 'StartMinutes'.ucfirst($dayShort);
             $definition[$key] = new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'mx_range' => 60)
+                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'mx_range' => 59)
             );
 
             $key = 'EndHour'.ucfirst($dayShort);
             $definition[$key] = new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'mx_range' => 24)
+                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'mx_range' => 23)
             );
 
             $key = 'EndMinutes'.ucfirst($dayShort);
             $definition[$key] = new ezcInputFormDefinitionElement(
-                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'mx_range' => 60)
+                ezcInputFormDefinitionElement::OPTIONAL, 'int',array('min_range' => 0, 'mx_range' => 59)
             );
         }
 
@@ -475,7 +478,13 @@ class erLhcoreClassDepartament{
 	   	} else {
 	   		$department->delay_lm = 0;
 	   	}
-	   	
+
+	   	if ( $form->hasValidData( 'dep_offline' ) ) {
+	   		$department->dep_offline = 1;
+	   	} else {
+	   		$department->dep_offline = 0;
+	   	}
+
 	   	if ( $form->hasValidData( 'pending_max' ) )
 	   	{
 	   		$department->pending_max = $form->pending_max;
@@ -824,6 +833,12 @@ class erLhcoreClassDepartament{
            'customPeriodEndHourMin' => new ezcInputFormDefinitionElement(
                ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw', null, FILTER_REQUIRE_ARRAY
            ),
+           'customPeriodRepetitiveness' => new ezcInputFormDefinitionElement(
+               ezcInputFormDefinitionElement::OPTIONAL, 'int', null, FILTER_REQUIRE_ARRAY
+           ),
+           'customPeriodDayOfWeek' => new ezcInputFormDefinitionElement(
+               ezcInputFormDefinitionElement::OPTIONAL, 'int', null, FILTER_REQUIRE_ARRAY
+           ),
        );
 
        $form = new ezcInputForm( INPUT_POST, $definition );
@@ -835,10 +850,11 @@ class erLhcoreClassDepartament{
                    $newDepartamentCustomWorkHours = new erLhcoreClassModelDepartamentCustomWorkHours();
                    $newDepartamentCustomWorkHours->setState(array(
                        'dep_id'         => $departament->id,
-                       'date_from'      => strtotime($form->customPeriodDateFrom[$key]),
+                       'date_from'      => ($form->customPeriodRepetitiveness[$key] == 0 ? strtotime($form->customPeriodDateFrom[$key]) : $form->customPeriodDayOfWeek[$key]),
                        'date_to'        => strtotime($form->customPeriodDateTo[$key]),
                        'start_hour'     => $form->customPeriodStartHour[$key] . (($form->customPeriodStartHourMin[$key] > 0) ? str_pad($form->customPeriodStartHourMin[$key], 2, '0', STR_PAD_LEFT) : '00'),
                        'end_hour'       => $form->customPeriodEndHour[$key] . (($form->customPeriodEndHourMin[$key] > 0) ? str_pad($form->customPeriodEndHourMin[$key], 2, '0', STR_PAD_LEFT) : '00'),
+                       'repetitiveness' => $form->customPeriodRepetitiveness[$key]
                    ));
 
                    erLhcoreClassDepartament::getSession()->save($newDepartamentCustomWorkHours);
@@ -1086,9 +1102,19 @@ class erLhcoreClassDepartament{
                'start_hour'     => $departamentCustomWorkHour->start_hour_front,
                'start_hour_min' => $departamentCustomWorkHour->start_minutes_front,
                'end_hour'       => $departamentCustomWorkHour->end_hour_front,
-               'end_hour_min'   => $departamentCustomWorkHour->end_minutes_front
+               'end_hour_min'   => $departamentCustomWorkHour->end_minutes_front,
+               'repetitiveness' => $departamentCustomWorkHour->repetitiveness,
+               'day_of_week'    => $departamentCustomWorkHour->date_from
            );
        }
+
+       usort($data, function ($a, $b) {
+            if ($a['day_of_week'] > $b['day_of_week'] || ($a['day_of_week'] == $b['day_of_week'] && $a['start_hour'] > $b['start_hour'])) {
+                return 1;
+            } else {
+                return -1;
+            }
+       });
 
        return $data;
    }

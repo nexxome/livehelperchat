@@ -24,7 +24,7 @@ $ViewList['testpattern'] = array(
 );
 
 $ViewList['commands'] = array(
-    'params' => array('id'),
+    'params' => array(),
     'uparams' => array(),
     'functions' => array( 'use' )
 );
@@ -109,7 +109,7 @@ $ViewList['nodegroups'] = array(
 
 $ViewList['list'] = array(
     'params' => array(),
-    'uparams' => array(),
+    'uparams' => array('name'),
     'functions' => array( 'use' )
 );
 

@@ -72,11 +72,15 @@
                     </div>
 
                         <div class="form-group">
-						<label><?php echo erLhcoreClassAbstract::renderInput('modern_look', $fields['modern_look'], $object)?><?php echo $fields['modern_look']['trans'];?>*</label>
+						<label><?php echo erLhcoreClassAbstract::renderInput('modern_look', $fields['modern_look'], $object)?><?php echo $fields['modern_look']['trans'];?></label>
+						</div>
+
+                        <div class="form-group">
+						<label><?php echo erLhcoreClassAbstract::renderInput('drag_enabled', $fields['drag_enabled'], $object)?><?php echo $fields['drag_enabled']['trans'];?></label>
 						</div>
                     
                         <div class="form-group">
-						<label><?php echo erLhcoreClassAbstract::renderInput('load_w2', $fields['load_w2'], $object)?><?php echo $fields['load_w2']['trans'];?>*</label>
+						<label><?php echo erLhcoreClassAbstract::renderInput('load_w2', $fields['load_w2'], $object)?><?php echo $fields['load_w2']['trans'];?></label>
 						</div>
 
 						<div class="form-group">		
@@ -689,6 +693,10 @@
         		        <label><?php echo erLhcoreClassAbstract::renderInput('hide_mobile_nh', $fields['hide_mobile_nh'], $object)?> <?php echo $fields['hide_mobile_nh']['trans'];?></label>
 						</div>
 
+                        <div class="form-group">
+        		        <label><?php echo erLhcoreClassAbstract::renderInput('animate_nh', $fields['animate_nh'], $object)?> <?php echo $fields['animate_nh']['trans'];?></label>
+						</div>
+
         		        <div class="form-group">
         		        <label><?php echo erLhcoreClassAbstract::renderInput('always_present_nh', $fields['always_present_nh'], $object)?> <?php echo $fields['always_present_nh']['trans'];?></label>
 						</div>
@@ -948,6 +956,36 @@
                     <div class="row">
                         <div class="col-6">
                             <div class="form-group">
+                                <label><?php echo $fields['buble_reaction_background_vi']['trans'];?></label>
+                                <?php echo erLhcoreClassAbstract::renderInput('buble_reaction_background_vi', $fields['buble_reaction_background_vi'], $object)?>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label><?php echo $fields['buble_reaction_color_vi']['trans'];?></label>
+                                <?php echo erLhcoreClassAbstract::renderInput('buble_reaction_color_vi', $fields['buble_reaction_color_vi'], $object)?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label><?php echo $fields['buble_reaction_background_op']['trans'];?></label>
+                                <?php echo erLhcoreClassAbstract::renderInput('buble_reaction_background_op', $fields['buble_reaction_background_op'], $object)?>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label><?php echo $fields['buble_reaction_color_op']['trans'];?></label>
+                                <?php echo erLhcoreClassAbstract::renderInput('buble_reaction_color_op', $fields['buble_reaction_color_op'], $object)?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
                                 <label><?php echo $fields['custom_tb_reactions']['trans'];?></label>
                                 <?php echo erLhcoreClassAbstract::renderInput('custom_tb_reactions', $fields['custom_tb_reactions'], $object)?>
                                 <div>
@@ -1016,8 +1054,13 @@
                     <?php $translatableItem = array('identifier' => 'custom_html_header'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
 
+                    <div class="form-group">
+                        <label><?php echo erLhcoreClassAbstract::renderInput('custom_html_footer_raw', $fields['custom_html_footer_raw'], $object)?> <?php echo $fields['custom_html_footer_raw']['trans'];?></label>
+                    </div>
+
                     <?php $translatableItem = array('identifier' => 'custom_html_footer'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
+
 
                     <?php $translatableItem = array('identifier' => 'custom_html_header_body'); ?>
                     <?php include(erLhcoreClassDesign::designtpl('lhabstract/custom/theme/theme_text_translatable.tpl.php'));?>
@@ -1050,6 +1093,10 @@
 
                     <div class="form-group">
                         <label><?php echo erLhcoreClassAbstract::renderInput('auto_bot_intro', $fields['auto_bot_intro'], $object)?> <?php echo $fields['auto_bot_intro']['trans'];?></label>
+                    </div>
+
+                    <div class="form-group">
+                        <label><?php echo erLhcoreClassAbstract::renderInput('use_bot_profile', $fields['use_bot_profile'], $object)?> <?php echo $fields['use_bot_profile']['trans'];?></label>
                     </div>
 
                     <h5><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Choose manually bot ant trigger')?></h5>

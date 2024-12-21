@@ -149,6 +149,16 @@ $fields = array(
                     'validation_definition' => new ezcInputFormDefinitionElement(
                         ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
                     )),
+                'custom_html_footer_raw' => array(
+                    'type' => 'checkbox',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Print raw HTML in footer without parsing it for special functions. Makes custom HTML in footer to render faster.'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                    )),
                 'always_present_nh' => array(
                     'type' => 'checkbox',
                     'main_attr' => 'bot_configuration_array',
@@ -250,6 +260,26 @@ $fields = array(
                         'type' => 'checkbox',
                         'main_attr' => 'bot_configuration_array',
                         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Use a new widget look for old embed code. If you can not change easily old embed codes you can force system to load new widget still.'),
+                        'required' => false,
+                        'hidden' => true,
+                        'nginit' => true,
+                        'validation_definition' => new ezcInputFormDefinitionElement(
+                            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                        )),
+                    'drag_enabled' => array(
+                        'type' => 'checkbox',
+                        'main_attr' => 'bot_configuration_array',
+                        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Enable drag and drop for status widget'),
+                        'required' => false,
+                        'hidden' => true,
+                        'nginit' => true,
+                        'validation_definition' => new ezcInputFormDefinitionElement(
+                            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                        )),
+                    'animate_nh' => array(
+                        'type' => 'checkbox',
+                        'main_attr' => 'bot_configuration_array',
+                        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Animate need help position change after status widget position was changed'),
                         'required' => false,
                         'hidden' => true,
                         'nginit' => true,
@@ -1676,6 +1706,16 @@ $fields = array(
                     'validation_definition' => new ezcInputFormDefinitionElement(
                         ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
                 )),
+                'use_bot_profile' => array(
+                    'type' => 'checkbox',
+                    'main_attr' => 'bot_configuration_array',
+                    'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Use bot profile in the widget instead of default'),
+                    'required' => false,
+                    'hidden' => true,
+                    'nginit' => true,
+                    'validation_definition' => new ezcInputFormDefinitionElement(
+                        ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+                )),
                 'detect_language' => array(
                     'type' => 'checkbox',
                     'main_attr' => 'bot_configuration_array',
@@ -1989,6 +2029,46 @@ $fields = array(
         'type' => 'colorpicker',
          'main_attr' => 'bot_configuration_array',
         'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','New message background color'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+
+    'buble_reaction_background_vi' => array(
+        'type' => 'colorpicker',
+        'main_attr' => 'bot_configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Reaction to visitor message bubble background color'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+
+    'buble_reaction_color_vi' => array(
+        'type' => 'colorpicker',
+        'main_attr' => 'bot_configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Reaction to visitor message bubble icon color'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+
+    'buble_reaction_background_op' => array(
+        'type' => 'colorpicker',
+        'main_attr' => 'bot_configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Reaction to operator message bubble background color'),
+        'required' => false,
+        'hidden' => true,
+        'validation_definition' => new ezcInputFormDefinitionElement(
+            ezcInputFormDefinitionElement::OPTIONAL, 'unsafe_raw'
+        )),
+
+    'buble_reaction_color_op' => array(
+        'type' => 'colorpicker',
+        'main_attr' => 'bot_configuration_array',
+        'trans' => erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Reaction to operator message bubble icon color'),
         'required' => false,
         'hidden' => true,
         'validation_definition' => new ezcInputFormDefinitionElement(

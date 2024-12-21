@@ -32,12 +32,15 @@
 </div>
 
 <div class="form-group">
+    <label><?php echo erLhcoreClassAbstract::renderInput('disabled', $fields['disabled'], $object)?> <?php echo $fields['disabled']['trans'];?></label>
+</div>
+
+<div class="form-group">
 <label><?php echo $fields['siteaccess']['trans'];?></label>
 <?php echo erLhcoreClassAbstract::renderInput('siteaccess', $fields['siteaccess'], $object)?>
 </div>
 
-<div class="form-group">
-<label><?php echo $fields['position']['trans'];?></label>
+<div class="form-group"><label><?php echo $fields['position']['trans'];?> <a class="live-help-tooltip" data-placement="top" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('abstract/widgettheme','Auto responders with lowest values will be applied first');?>" data-bs-toggle="tooltip"><i class="material-icons">help</i></a></label>
 <?php echo erLhcoreClassAbstract::renderInput('position', $fields['position'], $object)?>
 </div>
 
@@ -77,7 +80,7 @@
     <div class="tab-content">
         <div role="tabpanel" class="tab-pane active" id="main-wait-content">
             <div class="form-group">
-                <label><?php echo $fields['wait_message']['trans'];?></label>
+                <label><?php echo $fields['wait_message']['trans'];?> <a href="#" onclick="lhc.revealModal({'url':WWW_DIR_JAVASCRIPT+'genericbot/help/cannedreplacerules'});" class="material-icons text-muted">help</a></label>
                 <?php $bbcodeOptions = array('selector' => 'textarea[name=AbstractInput_wait_message]'); ?>
                 <?php include(erLhcoreClassDesign::designtpl('lhbbcode/toolbar.tpl.php')); ?>
                 <?php echo erLhcoreClassAbstract::renderInput('wait_message', $fields['wait_message'], $object)?>
@@ -86,7 +89,7 @@
         </div>
         <div role="tabpanel" class="tab-pane" id="main-offline-content">
             <div class="form-group">
-                <label><?php echo $fields['offline_message']['trans'];?></label>
+                <label><?php echo $fields['offline_message']['trans'];?> <a href="#" onclick="lhc.revealModal({'url':WWW_DIR_JAVASCRIPT+'genericbot/help/cannedreplacerules'});" class="material-icons text-muted">help</a></label>
                 <?php $bbcodeOptions = array('selector' => 'textarea[name=AbstractInput_offline_message]'); ?>
                 <?php include(erLhcoreClassDesign::designtpl('lhbbcode/toolbar.tpl.php')); ?>
                 <?php echo erLhcoreClassAbstract::renderInput('offline_message', $fields['offline_message'], $object)?>
@@ -196,6 +199,9 @@ $.each(responderItems, function( index, value ) {
 });
 
 function renderPreview(inst) {
+    if (inst.length == 0) {
+        return;
+    }
     var identifier = inst.attr('name').replace(/AbstractInput_|_trigger_id/g,"");
     $.get(WWW_DIR_JAVASCRIPT + 'theme/renderpreview/' + inst.val(), { }, function(data) {
         $('#'+identifier+'-trigger-preview-window').html(data);
@@ -203,4 +209,6 @@ function renderPreview(inst) {
         $('#'+identifier+'-trigger-preview-window').html('');
     });
 }
+const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 </script>

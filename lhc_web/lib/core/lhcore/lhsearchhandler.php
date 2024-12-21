@@ -111,7 +111,14 @@ class erLhcoreClassSearchHandler
                                 }
 
                             } else {
-                                $filter[$field['filter_type']][$field['filter_table_field']] = $inputParams->$key;
+                                if (isset($field['filter_sub_type']) && $field['filter_sub_type'] == 'email') {
+                                    $atPos = strrpos($inputParams->$key, "@");
+                                    $name =  str_replace('.','',substr($inputParams->$key, 0, $atPos));
+                                    $domain = substr($inputParams->$key, $atPos);
+                                    $filter[$field['filter_type']][$field['filter_table_field']] = strtolower($name . $domain);
+                                } else {
+                                    $filter[$field['filter_type']][$field['filter_table_field']] = $inputParams->$key;
+                                }
                             }
                         }
                     } elseif ($field['filter_type'] == 'filterin_remote') {
@@ -238,6 +245,14 @@ class erLhcoreClassSearchHandler
                                 } else {
                                     $inputFrom->{$key.'_seconds'} = null;
                                     $seconds = 0;
+                                }
+
+                                if (isset($_GET[$key.'_type']) && is_string($_GET[$key.'_type'])) {
+                                    $inputFrom->{$key.'_type'} = $_GET[$key.'_type'];
+                                } elseif (isset($uparams[$key.'_type']) && is_string($uparams[$key.'_type'])) {
+                                    $inputFrom->{$key.'_type'} = $uparams[$key.'_type'];
+                                } else {
+                                    $inputFrom->{$key.'_type'} = null;
                                 }
 
                                 $valueFilter = $dateFormated + $hours + $minutes + $seconds;
@@ -505,14 +520,24 @@ class erLhcoreClassSearchHandler
         );
     }
 
-    public static function getURLAppendFromInput($inputParams, $skipSort = false, $skipArgs = array())
+    public static function getURLAppendFromInput($inputParams, $skipSort = false, $skipArgs = array(), $queryArgs = array())
     {
         $URLappend = '';
+        $URLQueryAppend = '';
         $sortByAppend = '';
         
         foreach ($inputParams as $key => $value) {
             if (is_numeric($value) || $value != '') {
-                $value = is_array($value) ? implode('/', $value) : urlencode($value);
+                if (in_array($key,$queryArgs)) {
+                    $value = urlencode($value);
+                    if ($URLQueryAppend != '') {
+                        $URLQueryAppend .= '&';
+                    }
+                    $URLQueryAppend .= $key.'='.$value;
+                    continue;
+                } else {
+                    $value = is_array($value) ? implode('/', $value) : urlencode($value);
+                }
                 if ($key != 'sortby') {
                     if (!in_array($key,$skipArgs)) {
                         $URLappend .= "/({$key})/" . $value;
@@ -522,7 +547,11 @@ class erLhcoreClassSearchHandler
                 }
             }
         }
-        
+
+        if (!empty($queryArgs)) {
+            return ['query' => $URLQueryAppend, 'append' => $URLappend . ($skipSort == false ? $sortByAppend : '')];
+        }
+
         if ($skipSort == false) {
             return $URLappend . $sortByAppend;
         } else {

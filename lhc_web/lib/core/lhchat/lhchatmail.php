@@ -34,14 +34,21 @@ class erLhcoreClassChatMail {
 			$phpMailer->Host = $data['host'];
 			$phpMailer->Port = $data['port'];
 
-            // To work with various SMTP servers
-            $phpMailer->SMTPOptions = array(
+            $SMTPOptions = array(
                 'ssl' => array(
                     'verify_peer' => false,
                     'verify_peer_name' => false,
                     'allow_self_signed' => true
                 )
             );
+
+            if (isset($data['bindip']) && trim($data['bindip']) != '') {
+                $IPs = explode(",",$data['bindip']);
+                $SMTPOptions['socket']['bindto'] = trim($IPs[array_rand($IPs)]) . ':0';
+            }
+
+            // To work with various SMTP servers
+            $phpMailer->SMTPOptions = $SMTPOptions;
 
 			if ($data['username'] != '' && $data['password'] != '') {			
 				$phpMailer->Username = $data['username'];
@@ -202,8 +209,20 @@ class erLhcoreClassChatMail {
     			$mail->AddBCC(trim($recipientBCC));
     		}
     	}
-    	
-    	$mail->Send();
+
+        if (!$mail->Send()) {
+            erLhcoreClassLog::write( $mail->ErrorInfo,
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'web_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => $chat->id
+                )
+            );
+        }
+
     	$mail->ClearAddresses();
     }
 
@@ -242,8 +261,19 @@ class erLhcoreClassChatMail {
     	}
     	
     	self::setupSMTP($mail);
-    	
-    	$mail->Send();    	
+
+        if (!$mail->Send()) {
+            erLhcoreClassLog::write( $mail->ErrorInfo,
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'web_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => 0
+                )
+            );
+        }
     }
     
     public static function sendMailRequestPermission(erLhcoreClassModelUser $recipient, erLhcoreClassModelUser $sender, $requestedPermissions) {
@@ -266,7 +296,19 @@ class erLhcoreClassChatMail {
         
         self::setupSMTP($mail);
                      
-        $mail->Send();
+        if (!$mail->Send()) {
+            erLhcoreClassLog::write( $mail->ErrorInfo,
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'web_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => 0
+                )
+            );
+        }
+
         $mail->ClearAddresses();
     }
     
@@ -360,8 +402,21 @@ class erLhcoreClassChatMail {
     	   $mail->From = $chat->email;
     	   $mail->FromName = $chat->nick;    	  
     	}
-    	    	
-    	$mail->Send();
+
+        if (!$mail->Send()) {
+            erLhcoreClassLog::write( $mail->ErrorInfo,
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'web_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => $chat->id
+                )
+            );
+            throw new Exception($mail->ErrorInfo);
+        }
+
     	$mail->ClearAddresses();
     }
     
@@ -438,7 +493,18 @@ class erLhcoreClassChatMail {
     		$veryfyEmail = 	sha1(sha1($receiver.$secretHash).$secretHash);
     		$mail->Body = str_replace(array('{survey}','{chat_duration}','{waited}','{created}','{user_left}','{user_name}','{chat_id}','{phone}','{name}','{email}','{message}','{additional_data}','{url_request}','{ip}','{department}','{url_accept}','{country}','{city}'), array($surveyContent, ($chat->chat_duration > 0 ? $chat->chat_duration_front : '-'), ($chat->wait_time > 0 ? $chat->wait_time_front : '-'), $chat->time_created_front, ($chat->user_closed_ts > 0 && $chat->user_status == 1 ? $chat->user_closed_ts_front : '-'),$chat->user_name,$chat->id,$chat->phone,$chat->nick,$chat->email,$messagesContent,$additional_data,$chat->referrer,erLhcoreClassIPDetect::getIP(),(string)$chat->department, erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurl('chat/accept').'/'.erLhcoreClassModelChatAccept::generateAcceptLink($chat).'/'.$veryfyEmail.'/'.$receiver,$chat->country_name,$chat->city), $sendMail->content);
     		$mail->AddAddress( $receiver );
-    		$mail->Send();
+            if (!$mail->Send()) {
+                erLhcoreClassLog::write( $mail->ErrorInfo,
+                    ezcLog::SUCCESS_AUDIT,
+                    array(
+                        'source' => 'lhc',
+                        'category' => 'web_exception',
+                        'line' => __LINE__,
+                        'file' => __FILE__,
+                        'object_id' => 0
+                    )
+                );
+            }
     		$mail->ClearAddresses();
     	}
     	
@@ -449,7 +515,18 @@ class erLhcoreClassChatMail {
     			$veryfyEmail = 	sha1(sha1($receiver.$secretHash).$secretHash);
     			$mail->Body = str_replace(array('{survey}','{chat_duration}','{waited}','{created}','{user_left}','{user_name}','{chat_id}','{phone}','{name}','{email}','{message}','{additional_data}','{url_request}','{ip}','{department}','{url_accept}','{country}','{city}'), array($surveyContent, ($chat->chat_duration > 0 ? $chat->chat_duration_front : '-'), ($chat->wait_time > 0 ? $chat->wait_time_front : '-'), $chat->time_created_front, ($chat->user_closed_ts > 0 && $chat->user_status == 1 ? $chat->user_closed_ts_front : '-'),$chat->user_name,$chat->id,$chat->phone,$chat->nick,$chat->email,$messagesContent,$additional_data,$chat->referrer,erLhcoreClassIPDetect::getIP(),(string)$chat->department, erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurl('chat/accept').'/'.erLhcoreClassModelChatAccept::generateAcceptLink($chat).'/'.$veryfyEmail.'/'.$receiver,$chat->country_name,$chat->city), $sendMail->content);
     			$mail->AddAddress( $receiver );
-    			$mail->Send();
+                if (!$mail->Send()) {
+                    erLhcoreClassLog::write( $mail->ErrorInfo,
+                        ezcLog::SUCCESS_AUDIT,
+                        array(
+                            'source' => 'lhc',
+                            'category' => 'web_exception',
+                            'line' => __LINE__,
+                            'file' => __FILE__,
+                            'object_id' => 0
+                        )
+                    );
+                }
     			$mail->ClearAddresses();    			
     		}
     	}
@@ -535,7 +612,19 @@ class erLhcoreClassChatMail {
 	    		}
 	    	}
 	    	
-	    	$mail->Send();
+            if (!$mail->Send()) {
+                erLhcoreClassLog::write( $mail->ErrorInfo,
+                    ezcLog::SUCCESS_AUDIT,
+                    array(
+                        'source' => 'lhc',
+                        'category' => 'web_exception',
+                        'line' => __LINE__,
+                        'file' => __FILE__,
+                        'object_id' => 0
+                    )
+                );
+            }
+
 	    	$mail->ClearAddresses();
     	}
     }
@@ -590,7 +679,19 @@ class erLhcoreClassChatMail {
     	self::setupSMTP($mail);
 
     	$mail->AddAddress( $chat->email );
-    	$mail->Send();
+
+        if (!$mail->Send()) {
+            erLhcoreClassLog::write( $mail->ErrorInfo,
+                ezcLog::SUCCESS_AUDIT,
+                array(
+                    'source' => 'lhc',
+                    'category' => 'web_exception',
+                    'line' => __LINE__,
+                    'file' => __FILE__,
+                    'object_id' => $chat->id
+                )
+            );
+        }
     }
 
     public static function extractArgument($arguments, $body) {
@@ -722,7 +823,18 @@ class erLhcoreClassChatMail {
                     '{debug}','{survey}','{chat_duration}','{waited}','{created}','{user_left}','{chat_id}','{phone}','{name}','{email}','{message}','{additional_data}','{url_request}','{ip}','{department}','{url_accept}','{operator}','{country}','{city}'), array(print_r($debug,true),$surveyContent,($chat->chat_duration > 0 ? $chat->chat_duration_front : '-'), ($chat->wait_time > 0 ? $chat->wait_time_front : '-'), $chat->time_created_front, ($chat->user_closed_ts > 0 && $chat->user_status == 1 ? $chat->user_closed_ts_front : '-'),$chat->id,$chat->phone,$chat->nick,$chat->email,$messagesContent,$additional_data,$chat->referrer,$chat->ip,(string)$chat->department,erLhcoreClassSystem::getHost() . erLhcoreClassDesign::baseurl('chat/accept').'/'.erLhcoreClassModelChatAccept::generateAcceptLink($chat).'/'.$veryfyEmail.'/'.$receiver,$operator,$chat->country_name,$chat->city),  $extractedData['body']);
             }
     		$mail->AddAddress( $receiver );
-    		$mail->Send();
+            if (!$mail->Send()) {
+                erLhcoreClassLog::write( $mail->ErrorInfo,
+                    ezcLog::SUCCESS_AUDIT,
+                    array(
+                        'source' => 'lhc',
+                        'category' => 'web_exception',
+                        'line' => __LINE__,
+                        'file' => __FILE__,
+                        'object_id' => $chat->id
+                    )
+                );
+            }
     		$mail->ClearAddresses();
     	}
 
@@ -748,7 +860,18 @@ class erLhcoreClassChatMail {
                 }
 
                 $mail->AddAddress( $receiver );
-	    		$mail->Send();
+                if (!$mail->Send()) {
+                    erLhcoreClassLog::write( $mail->ErrorInfo,
+                        ezcLog::SUCCESS_AUDIT,
+                        array(
+                            'source' => 'lhc',
+                            'category' => 'web_exception',
+                            'line' => __LINE__,
+                            'file' => __FILE__,
+                            'object_id' => $chat->id
+                        )
+                    );
+                }
 	    		$mail->ClearAddresses();    			 
     		}
     	}
@@ -880,7 +1003,18 @@ class erLhcoreClassChatMail {
                 $sendMail->content);
 
             $mail->AddAddress( $receiver );
-            $mail->Send();
+            if (!$mail->Send()) {
+                erLhcoreClassLog::write( $mail->ErrorInfo,
+                    ezcLog::SUCCESS_AUDIT,
+                    array(
+                        'source' => 'lhc',
+                        'category' => 'web_exception',
+                        'line' => __LINE__,
+                        'file' => __FILE__,
+                        'object_id' => $chat->id
+                    )
+                );
+            }
             $mail->ClearAddresses();
         }
 
@@ -929,7 +1063,18 @@ class erLhcoreClassChatMail {
                 $receiver = trim($receiver);
 
                 $mail->AddAddress( $receiver );
-                $mail->Send();
+                if (!$mail->Send()) {
+                    erLhcoreClassLog::write( $mail->ErrorInfo,
+                        ezcLog::SUCCESS_AUDIT,
+                        array(
+                            'source' => 'lhc',
+                            'category' => 'web_exception',
+                            'line' => __LINE__,
+                            'file' => __FILE__,
+                            'object_id' => $chat->id
+                        )
+                    );
+                }
                 $mail->ClearAddresses();
             }
         }

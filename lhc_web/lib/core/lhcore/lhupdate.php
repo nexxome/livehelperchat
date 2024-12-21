@@ -3,8 +3,8 @@
 class erLhcoreClassUpdate
 {
 
-    const DB_VERSION = 307;
-    const LHC_RELEASE = 436;
+    const DB_VERSION = 321;
+    const LHC_RELEASE = 452;
 
 	public static function doTablesUpdate($definition){
 		$updateInformation = self::getTablesStatus($definition);
@@ -51,7 +51,24 @@ class erLhcoreClassUpdate
     		    $definition['tables'][erLhcoreClassModelChatArchiveRange::$archiveTable] = $definition['tables']['lh_chat'];
     		    $definition['tables'][erLhcoreClassModelChatArchiveRange::$archiveMsgTable] = $definition['tables']['lh_msg'];
     		    $definition['tables'][erLhcoreClassModelChatArchiveRange::$archiveChatParticipantTable] = $definition['tables']['lh_chat_participant'];
+    		    $definition['tables'][erLhcoreClassModelChatArchiveRange::$archiveChatSubjectTable] = $definition['tables']['lh_abstract_subject_chat'];
     		    $definition['tables_create'][erLhcoreClassModelChatArchiveRange::$archiveChatParticipantTable] = str_replace('`lh_chat_participant`',"`".erLhcoreClassModelChatArchiveRange::$archiveChatParticipantTable."`",$definition['tables_create']['lh_chat_participant']);
+    		    $definition['tables_create'][erLhcoreClassModelChatArchiveRange::$archiveChatSubjectTable] = str_replace('`lh_abstract_subject_chat`',"`".erLhcoreClassModelChatArchiveRange::$archiveChatSubjectTable."`",$definition['tables_create']['lh_abstract_subject_chat']);
+    		}
+		}
+
+        try {
+            $archives = \LiveHelperChat\Models\mailConv\Archive\Range::getList(array('ignore_fields' => array('name','year_month','range_from','range_to','older_than','last_id','first_id'),'offset' => 0, 'limit' => 1000000,'sort' => 'id ASC'));
+        } catch (Exception $e) {
+            $archives = [];
+        }
+
+		if (isset($definition['tables']['lhc_mailconv_conversation']))
+		{
+    		// Update archives tables also
+    		foreach ($archives as $archive) {
+    		    $archive->setTables();
+    		    $definition['tables'][\LiveHelperChat\Models\mailConv\Archive\Range::$archiveConversationTable] = $definition['tables']['lhc_mailconv_conversation'];
     		}
 		}
 
@@ -133,7 +150,7 @@ class erLhcoreClassUpdate
 								$typeMatch = false;
 							}
 
-							if ($columnDesired['default'] != $column['default']) {
+                            if (trim((string)$columnDesired['default'],"'") != trim((string)$column['default'],"'")) {
 								$typeMatch = false;
 							}
 
@@ -172,7 +189,7 @@ class erLhcoreClassUpdate
 						$status[] = "[{$columnDesired['field']}] column was not found";
 						
 						$default = '';
-						if ($columnDesired['default'] != null){
+						if ($columnDesired['default'] !== null) {
 							$default = " DEFAULT '{$columnDesired['default']}'";
 						}
 								

@@ -281,6 +281,14 @@ if (isset($outputResponse['theme'])) {
             $outputResponse['chat_ui']['hide_parent'] = 1;
         }
 
+        if (isset($theme->bot_configuration_array['drag_enabled']) && $theme->bot_configuration_array['drag_enabled'] == 1) {
+            $outputResponse['chat_ui']['drag_enabled'] = 1;
+        }
+
+        if (isset($theme->bot_configuration_array['animate_nh']) && $theme->bot_configuration_array['animate_nh'] == 1) {
+            $outputResponse['chat_ui']['animate_nh'] = 1;
+        }
+
         if ($theme->widget_pbottom != 0) {
             $outputResponse['chat_ui']['sbottom'] = (int)$theme->widget_pbottom;
         }
@@ -414,6 +422,7 @@ $disableNeedHelp = false;
 if (isset($start_data_fields['pre_conditions']) && !empty($start_data_fields['pre_conditions'])) {
     $preConditions = json_decode($start_data_fields['pre_conditions'], true);
     if (
+        (isset($preConditions['maintenance_mode']) && $preConditions['maintenance_mode'] == 1) ||
         (isset($preConditions['online']) && !empty($preConditions['online'])) ||
         (isset($preConditions['offline']) && !empty($preConditions['offline'])) ||
         (isset($preConditions['disable']) && !empty($preConditions['disable'])) ) {
@@ -426,6 +435,10 @@ if (isset($start_data_fields['pre_conditions']) && !empty($start_data_fields['pr
         } else if ($outcome['mode'] == 'disable') {
             $disableNeedHelp = true;
             $outputResponse['disable_proactive'] = true;
+
+            if (isset($outcome['sub_mode']) && $outcome['sub_mode'] == 'maintenance' && $outcome['show_widget'] !== true) {
+                $outputResponse['core_position'] = 'api';
+            }
         }
     }
 }
@@ -535,10 +548,10 @@ if (isset($startDataFields['lazy_load']) && $startDataFields['lazy_load'] == tru
 $ts = time();
 
 // Wrapper version
-$outputResponse['wv'] = 224;
+$outputResponse['wv'] = 246;
  
 // React APP versions
-$outputResponse['v'] = 325;
+$outputResponse['v'] = 343;
 
 $outputResponse['hash'] = sha1(erLhcoreClassIPDetect::getIP() . $ts . erConfigClassLhConfig::getInstance()->getSetting( 'site', 'secrethash' ));
 $outputResponse['hash_ts'] = $ts;
@@ -610,7 +623,7 @@ if (isset($gaOptions['ga_enabled']) && $gaOptions['ga_enabled'] == true) {
 $outputResponse['static'] = array(
     'screenshot' =>  $host . erLhcoreClassDesign::design('js/html2canvas.min.js'). '?v=' . $outputResponse['v'],
     'app' => $host . ((isset($_GET['ie']) && $_GET['ie'] == 'true') ? erLhcoreClassDesign::design('js/widgetv2/react.app.ie.js') . '?v=' . $outputResponse['v'] : erLhcoreClassDesign::design('js/widgetv2/react.app.js') . '?v=' . $outputResponse['v']),
-    'vendor' => $host . ((isset($_GET['ie']) && $_GET['ie'] == 'true') ? erLhcoreClassDesign::design('js/widgetv2/vendor.ie.js') . '?v=a3' : erLhcoreClassDesign::design('js/widgetv2/vendor.js') . '?v=a3'),
+    'vendor' => $host . ((isset($_GET['ie']) && $_GET['ie'] == 'true') ? erLhcoreClassDesign::design('js/widgetv2/vendor.ie.js') . '?v=a4' : erLhcoreClassDesign::design('js/widgetv2/vendor.js') . '?v=a4'),
     'widget_css' => $host . (erConfigClassLhConfig::getInstance()->getDirLanguage('dir_language') == 'ltr' ? erLhcoreClassDesign::designCSS('css/widgetv2/bootstrap.min.css;css/widgetv2/widget.css;css/widgetv2/widget_override.css') : erLhcoreClassDesign::designCSS('css/widgetv2/bootstrap.min.rtl.css;css/widgetv2/widget.css;css/widgetv2/widget_rtl.css;css/widgetv2/widget_override_rtl.css')),
     'dir' => erConfigClassLhConfig::getInstance()->getDirLanguage('dir_language'),
     'cl' => erConfigClassLhConfig::getInstance()->getDirLanguage('content_language'),

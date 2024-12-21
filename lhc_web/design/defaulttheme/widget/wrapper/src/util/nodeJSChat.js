@@ -19,6 +19,7 @@ class _nodeJSChat {
             protocolVersion: 1,
             hostname: params.hostname,
             path: params.path,
+            disconnectOnUnload: false,
             authTokenName: 'socketCluster.authToken_vi'
         }
 
@@ -37,6 +38,8 @@ class _nodeJSChat {
         var chanelName = 'uo_' + vid;
         var instance_id = this.attributes.instance_id;
         var sampleChannel = null;
+        // Do not update vars while we are updating it from other browser tabs
+        var ignoreVars = false;
 
         let status = await socket.listener('connect').once();
         if (status.isAuthenticated) {
@@ -71,14 +74,89 @@ class _nodeJSChat {
             sampleChannel = socket.subscribe('uo_' + vid);
             if (firstRun == true) {
                 try {
+                    // We want to receive signal is widget open in any of the windows
+                    attributes.mode != 'embed' && !attributes.widgetStatus.value && socket.transmitPublish('uo_' + vid, {op: 'ws_isopen'});
+
+                    // We want to publish request to receive all the vars other instances has
+                    if (attributes.lhc_var !== null) {
+                        socket.transmitPublish('uo_' + vid, { 'clientId' : sampleChannel.client.clientId, op: 'check_vars', 'init':false, 'lhc_var': attributes.lhc_var});
+                        attributes.eventEmitter.addListener('jsVarsUpdated', function () {
+                            ignoreVars === false && attributes.ignoreVars === false && socket.transmitPublish('uo_' + vid, {'clientId' : sampleChannel.client.clientId, op:'current_vars', 'init':false, 'lhc_var': attributes.lhc_var});
+                            ignoreVars = false;
+                        });
+                    }
+
+                    // Subscribe to widget status, just ignore initial status
+                    attributes.mode != 'embed' && attributes.widgetStatus.subscribe((data) => {
+                        socket.transmitPublish('uo_' + vid, {op: 'wstatus', status: data});
+                    }, true);
+
+                    // Listen for chat started event and dispatch to other windows
+                    attributes.eventEmitter.addListener('chatStarted', function (data, mode) {
+                        if (mode !== 'popup' || attributes.kcw === true) {
+                            socket.transmitPublish('uo_' + vid, {op: 'chat_started', data: data});
+                        }
+                    });
+                } catch (e) {
+                    console.log(e);
+                }
+                try {
                     for await (let op of sampleChannel) {
                         if (op.op == 'check_message') {
                             attributes.eventEmitter.emitEvent('checkMessageOperator');
                         } else if (op.op == 'is_online') {
                             socket.transmitPublish('ous_'+instance_id,{op:'vi_online', status: true, vid: vid});
+                        } else if (op.op == 'chat_started') {
+                            try {
+                                if (attributes.userSession.id === null && op.data.id) {
+                                    chatEvents.sendChildEvent('reopenNotification', [{
+                                        'id': op.data.id,
+                                        'hash': op.data.hash
+                                    }]);
+                                }
+                            } catch (e) {
+                                console.log(e);
+                            }
+                        } else if (op.op == 'ws_isopen') {
+                            try {
+                                if (attributes.mode != 'embed' && attributes.widgetStatus.value) {
+                                    socket.transmitPublish('uo_'+vid,{op:'wstatus', status: true});
+                                }
+                            } catch (e) {
+                                console.log(e);
+                            }
+
+                        } else if (op.op == 'wstatus') {
+                            try {
+                                if (attributes.mode != 'embed' && op.status != attributes.widgetStatus.value) {
+                                    attributes.widgetStatus.next(op.status);
+                                }
+                            } catch (e) {
+                                console.log(e);
+                            }
+                        } else if (op.op == 'current_vars' || op.op == 'check_vars') {
+                            try {
+                                if (sampleChannel.client.clientId != op.clientId){
+                                    if (op.lhc_var && attributes.lhc_var !== null) {
+                                        ignoreVars = true;
+                                        attributes.ignoreVars = true;
+                                        for (var index in op.lhc_var) {
+                                            if ((typeof attributes.lhc_var[index] === 'undefined' || attributes.lhc_var[index] === '' || op.init === false) && op.lhc_var[index] !== '' && attributes.lhc_var[index] !== op.lhc_var[index]) {
+                                                attributes.lhc_var[index] = op.lhc_var[index];
+                                            }
+                                        }
+                                        attributes.ignoreVars = false;
+                                    }
+                                    if (op.op == 'check_vars') {
+                                        attributes.lhc_var !== null && socket.transmitPublish('uo_'+vid,{'clientId' : sampleChannel.client.clientId, op:'current_vars', 'init':true, 'lhc_var': attributes.lhc_var});
+                                    }
+                                }
+                            } catch (e) {
+                                console.log(e);
+                            }
                         }
                     }
-                } catch (e){
+                } catch (e) {
                     // shut up old browsers
                 }
             }

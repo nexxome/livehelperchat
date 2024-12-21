@@ -1,3 +1,191 @@
+4.52v
+
+1. Widget will remain opened/closed across pages domain/subdomains. Widget will load chat instantly if chat is started on another tab of the same page.
+2. If NodeJS is used and chat is started on subdomain it will continue on all subdomain of the main domain.
+3. On page reload widget will avoid flickering while loading main widget components.
+4. Inline form will have a check to avoid it being submitted after chat was closed.
+5. Widget sounds settings will remain the same across the domain/subdomain navigation
+6. It's possible to mask sensitive information before it sending to Rest API endpoint. https://doc.livehelperchat.com/docs/bot/rest-api#magic-prefixes-for-replaceable-variables
+7. Bot log will log much more events and is usefull for bot debugging. It's activated in department edit. Log will appear in audit log.
+8. Markdown standard link support for better ChatGPT support.
+9. Rest API debug enhancement options. https://doc.livehelperchat.com/docs/bot/rest-api#audit-log
+10. If initial intro message was long, we did not scrolled to the bottom as we should.
+11. If `'lhaudit','see_audit_system'` permission was not set, operator will not see Rest API messages logged in the chat.
+12. Now it's possible to block third party chat from incoming webhooks.
+13. Sub URL has magic prefix `urlencode_` to encode elements in the query. https://doc.livehelperchat.com/docs/bot/rest-api#sub-url
+14. Option to disable mail ticket closed for some of the mailbox even if customer e-mail matches few of the tickets.
+15. Option to choose to show bot profile in widget theme.
+16. Maintenance mode improvements.
+17. Stream as HTML support for Rest API calls.
+18. Simple search for personal canned messages.
+19. In triple quotes sometimes code was parsed as a code. We should not parse anything in triple quotes.
+20. Improvements in explanations for e-mail messages.
+21. In department list you can search by department alias.
+22. Now it's possible to define multiple work periods in the single day.
+23. Updated to React 18 widget.
+24. Brand new text editor for the operators. Can be activated in the dashboard settings.
+
+No database update this time.
+
+
+4.51v
+
+1. Now you can remove selected message completely.
+2. Preparation for further works on custom online periods per department.
+3. Online/Offline peridios for operator will be tracked more precisely.
+4. Switch from || to OR syntax for SQL queries.
+5. Hours format for work hours switched to 23:59 as max value for end period.
+
+
+execute doc/update_db/update_321.sql for update
+
+4.50v
+
+1. You can put quickly chat into maintenance mode.
+2. Improvements how online status is checked once there is no passed department.
+
+execute doc/update_db/update_320.sql for update
+
+4.49v
+
+1. You can set custom department strictly offline.
+
+execute doc/update_db/update_319.sql for update
+
+4.48v
+
+1. Mobile notifications will work now for Mobile App. Although correct windows may not open.
+2. Chat GPT Flow support In Rest API section. Polling support.
+3. Survey page will show only collected items for departments agent is assigned to.
+4. Replaceable variables will be supported also in proactive chat invitations.
+5. Message edit action support for web UI if visitor edit's it's message.
+
+execute doc/update_db/update_318.sql for update
+
+4.47v
+
+1. Blinking title fixes with one page applications.
+2. Option to remember phone, email for the next time visitor starts a chats
+3. Chat delete event was missing on chat deletion from list.
+4. Compatibility with new Facebook Extension including WhatsApp, Instagram, Messenger support.
+5. Statistic chart will not include 17 as default work hour.
+6. SSO extension compatibility 
+
+execute doc/update_db/update_317.sql for update
+
+4.46v
+
+1. More options to parse incoming request for incoming webhooks
+2. Auto responder now can be disabled.
+3. Sensitive information display fixes if operator does not have permission to view an e-mail.
+4. Preparation for Facebook Messenger extension new version.
+5. Check conditions bot response was working incorrectly in some situations.
+6. Mail search will lowercase e-mails and remove dots.
+
+execute doc/update_db/update_316.sql for update
+
+4.45v
+
+1. E-Mail conversations search will now use `from_address_clean` attribute which is a new attribute without dot's in the name.
+2. If whisper message is send it won't influence arrows in the dashboard widget or auto responder flow.
+3. Chat print window was improved.
+
+There is few queries to populate that field in the update file.
+execute doc/update_db/update_315.sql for update
+
+You can also just run this file after you have updated official version. You do not have to run this script if you are not using mail module.
+
+`php cron.php -s site_admin -c cron/update/update_445`
+
+4.44v
+
+1. You can enter IP or IP range in back office which is not allowed to be blocked.
+2. Widget theme translations will override only default language and use default translation for other languages.
+3. 8.* PHP fixes.
+4. Transaction will be used for online vars update to avoid inconsistency.
+5. If your VPS has multiple IP you can configure which one should be used fot SMTP sending. DigitalOcean scenario with Reserved IP.
+6. Submenu will be hidden for main left menu while rendering back office page.
+7. Widget resize improvements.
+8. Auto assignment consistency improvements.
+9. Views will use dynamic date range and not fixed.
+10. Various other fixes/improvements.
+
+execute doc/update_db/update_314.sql for update
+
+4.43v
+
+1. Embedded forms in chat now can completely hide form content on success submission.
+2. If embeded form is submitted it's content will be hidden instantly to improve UI
+
+execute doc/update_db/update_313.sql for update
+
+4.42v
+
+1. Composer dependencies bumped to 8.2 PHP version. In order to run on older PHP version reinstall composer dependencies.
+2. Additional chat variables can extract JWT token custom field and store it as a chat variable etc.
+3. Widget themes now has option to set reaction bubble and icons colors separately.
+4. MacOS was not rendering online visitors list.
+5. If two departments has same alias. Alias with language prefix fre-my-alias will have higher priority than my-alias. That way you fan forward other language chats to specific departments.
+
+execute doc/update_db/update_312.sql for update
+
+
+4.41v
+
+1. Departments now have individual `Ignore operator status` settings.
+
+execute doc/update_db/update_311.sql for update
+
+4.40v
+
+1. Visitors statistic charts are now generated much faster using database implementation.
+2. Iframe bot response type now supports forms.
+3. If same department alias is used for multiple departments, online status check will use department sort priority.
+4. Canned messages hashtag list will indicate we hit limit and not all results are rendered.
+5. Page based invitations now can be combined with general ones. https://doc.livehelperchat.com/docs/proactive#how-to-setup-url-based-invitations
+6. Offline form submit will use very first passed department to match online chat logic.
+7. Operators will be to test notifications from their account.
+8. Various other fixes.
+
+execute doc/update_db/update_310.sql for update
+
+4.39v
+
+1. https://github.com/LiveHelperChat/electron/releases Electron app was updated to 124 chrome version.
+2. If Rest API was used as "raw_{some_var}" and variable had a quote at the end, it was incorrectly encoded resulting in broken JSON.
+3. Added support for large numbers of chats/e-mails export from ElasticSearch extension.
+4. Fixed some of the icons in dashboard widgets after migration to svelte.
+5. Edge case fixes for the widget and ignoring some of the errors because of to old browsers version.
+6. Fixes for DeppL language translation services.
+7. Keyword in ElasticSearch always will be a GET parameter to avoid hitting apache path length limit.
+8. Handle missing file after e-mail import so it's correctly downloaded viewing e-mail from back office.
+9. Logging will handle incorrect UTF characters.
+10. Fix for https://github.com/LiveHelperChat/livehelperchat/issues/2003
+11. Deleting chats from list had a limit. It should not have and delete all selected chats.
+12. Online visitors attribute filter sometimes was lost.
+13. Online operators tab was migrated to Svelte also.
+14. Mobile app was not working because of incorrect expression in SQL while two tables are used under JOIN condition.
+15. Ignore invalid JSON characters in e-mail module.
+
+There is no database update this time.
+
+4.38v
+
+1. Bot commands can can be sorted by position
+2. Preparation for a new flow for mail messages import.
+
+execute doc/update_db/update_309.sql for update
+
+4.37v
+
+1. Options to execute bot commands from chat UI directly without typing them.
+2. Online operators widget has a lot of new functions and indicators.
+3. Messages in back office has indicator were they sent by auto responder.
+4. Material symbols icons were updated.
+5. More gracefull errors handling in transfer workflow.
+
+execute doc/update_db/update_308.sql for update
+
 4.36v
 
 1. Colored subject support for mail modules

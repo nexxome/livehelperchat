@@ -65,7 +65,7 @@ class erLhcoreClassModelChatOnlineUser
         );
     }
 
-    public function removeThis()
+    public function beforeRemove()
     {
         $q = ezcDbInstance::get()->createDeleteQuery();
 
@@ -73,16 +73,33 @@ class erLhcoreClassModelChatOnlineUser
         $q->deleteFrom('lh_chat_online_user_footprint')->where($q->expr->eq('chat_id', 0), $q->expr->eq('online_user_id', $this->id));
         $stmt = $q->prepare();
         $stmt->execute();
-        
-        
+
         $q = ezcDbInstance::get()->createDeleteQuery();
-        
+
         // Delete realted events
         $q->deleteFrom('lh_abstract_proactive_chat_event')->where( $q->expr->eq('vid_id', $this->id));
         $stmt = $q->prepare();
         $stmt->execute();
+    }
 
-        erLhcoreClassChat::getSession()->delete($this);
+    public function afterSave($params = array())
+    {
+        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.online_user.after_save',array(
+            'online_user' => & $this
+        ));
+    }
+
+    public function afterUpdate($params = array())
+    {
+        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.online_user.after_update',array(
+            'online_user' => & $this
+        ));
+    }
+
+    public function afterRemove() {
+        erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.online_user.after_remove',array(
+            'online_user' => & $this
+        ));
     }
 
     public function __get($var)
@@ -206,7 +223,42 @@ class erLhcoreClassModelChatOnlineUser
                             }
                         }
                     }
- 
+
+                    $replaceCustomArgs = [];
+
+                    $matchesMessage = [];
+                    preg_match_all('/\{[A-Za-z0-9\_]+\}/is',$this->operator_message_front, $matchesMessage);
+                    if (isset($matchesMessage[0]) && !empty($matchesMessage[0])) {
+                        foreach ($matchesMessage[0] as $replaceItem) {
+                            if (key_exists($replaceItem,$replaceArray) == false) {
+                                $replaceCustomArgs[] = $replaceItem;
+                            }
+                        }
+                    }
+
+                    $replaceCustomArgs = array_unique($replaceCustomArgs);
+
+                    if (!empty($replaceCustomArgs)) {
+                        $identifiers = [];
+                        $identifiersApplied = [];
+                        foreach ($replaceCustomArgs as $replaceArg) {
+                            $identifiers[] = str_replace(['{','}'],'', $replaceArg);
+                        }
+
+                        $replaceRules = erLhcoreClassModelCannedMsgReplace::getList(array(
+                                'sort' => 'repetitiveness DESC', // Default translation will be the last one if more than one same identifier is found
+                                'limit' => false,
+                                'filterin' => array('identifier' => $identifiers))
+                        );
+
+                        foreach ($replaceRules as $replaceRule) {
+                            if ($replaceRule->is_active && !in_array($replaceRule->identifier,$identifiersApplied)) {
+                                $replaceArray['{' . $replaceRule->identifier . '}'] = $replaceRule->getValueReplace(['chat' => $this]);
+                                $identifiersApplied[] = $replaceRule->identifier;
+                            }
+                        }
+                    }
+
                     if (!empty($replaceArray)){
                         $this->operator_message_front = str_replace(array_keys($replaceArray), array_values($replaceArray), $this->operator_message_front);
                     }
@@ -313,7 +365,7 @@ class erLhcoreClassModelChatOnlineUser
 
                 if ($this->last_visit > 0) {
 
-                    $periods = array("s.", "m.", "h.", "d.", "w.", "m.", "y.", "dec.");
+                    $periods = array("s.", "m.", "h.", "d.", "w.", "mo.", "y.", "dec.");
                     $lengths = array("60", "60", "24", "7", "4.35", "12", "10");
 
                     $difference = time() - $this->last_visit;
@@ -957,6 +1009,7 @@ class erLhcoreClassModelChatOnlineUser
             if (!isset($paramsHandle['check_message_operator']) || (isset($paramsHandle['pages_count']) && $paramsHandle['pages_count'] == true)) {
                 $item->user_agent = isset($_POST['ua']) ? $_POST['ua'] : (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '');
                 $location = isset($_POST['l']) ? $_POST['l'] : (isset($_GET['l']) ? rawurldecode($_GET['l']) : ($item->current_page == '' ? self::getReferer() : null));
+                $locationPrevious = $item->current_page;
                 if ($location !== null) {
                     $item->current_page = $location;
                 }
@@ -979,14 +1032,19 @@ class erLhcoreClassModelChatOnlineUser
                     $urlOptions = explode(',',$item->invitation->url_present);
                     $currentPage = ltrim($item->current_page,'/');
                     $validURL = false;
-                    foreach ($urlOptions as $urlOption) {
-                        if (substr($urlOption,-1) == '*') {
-                            if (strpos($currentPage,rtrim($urlOption,'*')) === 0) {
+
+                    if ($item->invitation->url_present != '*') {
+                        foreach ($urlOptions as $urlOption) {
+                            if (substr($urlOption,-1) == '*') {
+                                if (strpos($currentPage,rtrim($urlOption,'*')) === 0) {
+                                    $validURL = true;
+                                }
+                            } elseif ($currentPage == $urlOption) {
                                 $validURL = true;
                             }
-                        } elseif ($currentPage == $urlOption) {
-                            $validURL = true;
                         }
+                    } elseif ($locationPrevious === $item->current_page) {
+                        $validURL = true;
                     }
 
                     if ($validURL === false) {
@@ -994,7 +1052,6 @@ class erLhcoreClassModelChatOnlineUser
                             $item->has_message_from_operator == true ||
                             ($item->message_seen == 1 && isset($item->invitation->design_data_array['show_next_inv']) && $item->invitation->design_data_array['show_next_inv'] == true)
                         ) {
-
                             $onlineAttrSystem = $item->online_attr_system_array;
 
                             if ($item->message_seen == 1 && isset($item->invitation->design_data_array['do_not_show_session']) && $item->invitation->design_data_array['do_not_show_session'] == true) {
@@ -1031,7 +1088,21 @@ class erLhcoreClassModelChatOnlineUser
                     if ($item->operator_message != '' || $item->message_seen == 1) {
                         $item->operator_message = '';
                         $item->message_seen = 0;
-                        $item->updateThis(['update' => ['message_seen','operator_message']]);
+
+                        if (!isset($onlineAttrSystem)) {
+                            $onlineAttrSystem = $item->online_attr_system_array;
+                        }
+
+                        $updateAttributes = ['message_seen','operator_message'];
+
+                        if (isset($onlineAttrSystem['qinv'])) {
+                            unset($onlineAttrSystem['qinv']);
+                            $item->online_attr_system = json_encode($onlineAttrSystem);
+                            $item->online_attr_system_array = $onlineAttrSystem;
+                            $updateAttributes[] = 'online_attr_system';
+                        }
+
+                        $item->updateThis(['update' => $updateAttributes]);
                     }
                 }
             }
@@ -1083,9 +1154,8 @@ class erLhcoreClassModelChatOnlineUser
 
     }
 
-    public function saveThis()
+    public function beforeSave()
     {
-
         if ($this->first_visit == 0) {
             $this->first_visit = time();
         }
@@ -1093,8 +1163,6 @@ class erLhcoreClassModelChatOnlineUser
         if ($this->last_visit == 0) {
             $this->last_visit = time();
         }
-
-        erLhcoreClassChat::getSession()->saveOrUpdate($this);
     }
 
     public $id = null;

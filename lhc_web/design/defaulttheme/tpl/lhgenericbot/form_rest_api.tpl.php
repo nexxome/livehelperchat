@@ -14,6 +14,19 @@
 </div>
 
 <div class="form-group">
+    <label><input type="checkbox" ng-model="lhcrestapi.log_audit" value="on"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Log all request and their responses in audit log.');?></label>
+</div>
+
+<div class="form-group">
+    <label><input type="checkbox" ng-model="lhcrestapi.log_system" value="on"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Log all request and their responses as system messages.');?></label>
+</div>
+
+<div class="form-group" ng-show="lhcrestapi.log_audit || lhcrestapi.log_system">
+    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Ignore request with these http statuses. Separate multiple by comma.');?></label>
+    <input type="text" class="form-control" name="log_code"  ng-model="lhcrestapi.log_code" value="" placeholder="200" />
+</div>
+
+<div class="form-group">
     <label><input type="checkbox" ng-model="lhcrestapi.ecache" value="on"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Enable cache');?></label>
 
     <?php if ($item->id > 0) : ?>
@@ -33,7 +46,7 @@
 
 <div ng-repeat="param in lhcrestapi.parameters" class="mt-2">
 
-    <hr style="height: 5px;"/>
+    <div class="bg-info rounded text-center fw-bold text-white">{{param.name}}</div>
 
     <button type="button" class="btn btn-danger btn-xs" ng-click="lhcrestapi.deleteParam(lhcrestapi.parameters,param)"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Delete');?></button>
 
@@ -45,13 +58,17 @@
             </div>
         </div>
         <div class="col-6">
-            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Method');?></label>
-            <select class="form-control form-control-sm" name="method" ng-model="param.method">
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-                <option value="PUT">PUT</option>
-                <option value="DELETE">DELETE</option>
-            </select>
+
+            <div class="form-group">
+                <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Method');?></label>
+                <select class="form-control form-control-sm" name="method" ng-model="param.method">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+            </div>
+
         </div>
         <div class="col-6">
             <div class="form-group">
@@ -62,7 +79,7 @@
         <div class="col-6">
             <div class="form-group">
                 <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Maximum execution time');?></label>
-                <input type="number" max="30" min="1" class="form-control form-control-sm" ng-model="param.max_execution_time" placeholder="10" value="" />
+                <input type="number" max="60" min="1" class="form-control form-control-sm" ng-model="param.max_execution_time" placeholder="10" value="" />
             </div>
         </div>
     </div>
@@ -75,6 +92,8 @@
         <li role="presentation" class="nav-item"><a class="nav-link" href="#outputrest-rest-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Output parsing');?></a></li>
         <li role="presentation" class="nav-item"><a class="nav-link" href="#conditions-rest-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Conditions');?></a></li>
         <li role="presentation" class="nav-item"><a class="nav-link" href="#remote-msg-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Remote Message ID');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#polling-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Polling');?></a></li>
+        <li role="presentation" class="nav-item"><a class="nav-link" href="#streaming-{{$index}}" aria-controls="headers" role="tab" data-bs-toggle="tab"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Streaming');?></a></li>
     </ul>
 
     <!-- Tab panes -->
@@ -224,8 +243,6 @@
                     </div>
                 </div>
             </div>
-
-
         </div>
         <div role="tabpanel" class="tab-pane" id="body-rest-{{$index}}">
 
@@ -386,37 +403,37 @@
                         <div class="col-4">
                             <div class="form-group">
                                 <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Response Location 1. Available as {content_1} in messages.')?></label>
-                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response.')?>">
+                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response or enter __all__.')?>">
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="form-group">
                                 <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Response Location 2. Available as {content_2} in messages.')?></label>
-                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_2" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response.')?>">
+                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_2" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response or enter __all__.')?>">
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="form-group">
                                 <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Response Location 3. Available as {content_3} in messages.')?></label>
-                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_3" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response.')?>">
+                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_3" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response or enter __all__.')?>">
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="form-group">
                                 <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Response Location 4. Available as {content_4} in messages.')?></label>
-                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_4" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response.')?>">
+                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_4" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response or enter __all__.')?>">
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="form-group">
                                 <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Response Location 5. Available as {content_5} in messages.')?></label>
-                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_5" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response.')?>">
+                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_5" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response or enter __all__.')?>">
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="form-group">
                                 <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Response Location 6. Available as {content_6} in messages.')?></label>
-                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_6" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response.')?>">
+                                <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_6" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','response:msg you can leave an empty if you want forward whole response or enter __all__.')?>">
                             </div>
                         </div>
                     </div>
@@ -425,6 +442,9 @@
                         <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Meta msg location. If you support Live Helper Chat JSON syntax you can set location of this response.')?></label>
                         <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_location_meta" placeholder="response:msg">
                     </div>
+
+                    <h6><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Preg replace rules to apply extracted content.')?></h6>
+                    <textarea ng-model="paramOutput.success_preg_replace" class="form-control form-control-sm" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','You can apply preg replace rules to extracted content. One rule per row. Format example: ^.{5,}+$==>Replace with content')?>"></textarea>
 
                     <h6><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Custom event')?></h6>
 
@@ -468,7 +488,9 @@
                                 <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_compare_value" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Value to compare')?>">
                             </div>
                         </div>
+                        </div>
 
+                        <div class="row">
                         <div class="col-4">
                             <div class="form-group">
                                 <label>2. <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','If required you can also have condition to check')?>. <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Response Location. It will also fail if attribute is not found.')?></label>
@@ -497,7 +519,22 @@
                                 <input type="text" class="form-control form-control-sm" ng-model="paramOutput.success_compare_value_2" placeholder="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Value to compare')?>">
                             </div>
                         </div>
+                    </div>
 
+                    <h6><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Streaming options');?></h6>
+                    <div class="row">
+                        <div class="col-12">
+                            <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Output is matched only if event is this type');?></label>
+                        </div>
+                        <div class="col-12">
+                            <input type="text" ng-model="paramOutput.streaming_event_type_value" class="form-control form-control-sm" placeholder="thread.run.created">
+                        </div>
+                        <div class="col-6">
+                            <label class="d-block"><input type="checkbox" ng-model="paramOutput.stream_content" value="on"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Stream content if output is matched.');?></label>
+                            <label class="d-block"><input type="checkbox" ng-model="paramOutput.stream_as_html" value="on"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Stream content as HTML.');?></label>
+                            <label class="d-block"><input type="checkbox" ng-model="paramOutput.stream_execute_trigger" value="on"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Execute trigger on matched content. Stream will continue afterwards.');?></label>
+                            <label class="d-block"><input type="checkbox" ng-model="paramOutput.stream_final" value="on"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','If matched use response as final response.');?></label>
+                        </div>
                     </div>
                 </div>
 
@@ -506,6 +543,29 @@
             <p><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','If you want to add custom data within each send message to its meta_data attribute you can provide response path here')?></p>
             <input type="text" class="form-control form-control-sm" ng-model="param.remote_message_id" placeholder="messages:0:id" value="" />
         </div>
+
+        <div role="tabpanel" class="tab-pane" id="polling-{{$index}}">
+            <div class="row">
+                <div class="col-6">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Repeat request n times if conditions is not met (polling)');?></label>
+                    <input type="number" class="form-control form-control-sm" ng-model="param.polling_n_times" placeholder="0" min="0" max="10" />
+                </div>
+                <div class="col-6">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Making n seconds delay between each request');?></label>
+                    <input type="number" class="form-control form-control-sm" ng-model="param.polling_n_delay" placeholder="1" min="1" max="5" />
+                </div>
+            </div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="streaming-{{$index}}">
+
+            <label class="d-block"><input type="checkbox" value="on" ng-model="param.streaming_request"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','This is a streaming request');?></label>
+
+            <label class="d-block"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('genericbot/restapi','Streaming event type field');?></label>
+            <input type="text" ng-model="param.streaming_event_type_field" class="form-control form-control-sm" placeholder="event">
+
+        </div>
+
     </div>
 </div>
 

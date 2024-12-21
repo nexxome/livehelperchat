@@ -129,7 +129,7 @@ class NodeTriggerActionRestAPI extends Component {
                     <div className="pe-2">
                         <div className="input-group input-group-sm">
                             <span className="input-group-text" id="basic-addon1"><span className="material-icons">vpn_key</span></span>
-                            <input type="text" className="form-control" readOnly="true" value={this.props.action.getIn(['_id'])} title="Action ID"/>
+                            <input type="text" className="form-control" readOnly={true} value={this.props.action.getIn(['_id'])} title="Action ID"/>
                         </div>
                     </div>
                     <div className="pe-2 pt-1 text-nowrap">
@@ -182,11 +182,22 @@ class NodeTriggerActionRestAPI extends Component {
                             <NodeTriggerList enableAction={true} payload_action_id={this.props.action.getIn(['content','rest_api_method_output','long_taking_action_id'])} onSetPayloadActionId={(e) => this.onchangeAttr({'path':['rest_api_method_output','long_taking_action_id'],'value':e})} onSetPayload={(e) => this.onchangeAttr({'path':['rest_api_method_output','long_taking_trigger'],'value':e})} payload={this.props.action.getIn(['content','rest_api_method_output','long_taking_trigger'])} />
                         </div>
                     </div>
+
+                    <div className="col-12">
+                        <div className="form-group">
+                            <label>Custom argument for the Rest API Call</label>
+                            <textarea onChange={(e) => this.onchangeAttr({'path' : ['attr_options','custom_args_1'], 'value' : e.target.value})} defaultValue={this.props.action.getIn(['content','attr_options','custom_args_1'])} placeholder="You will be able to access this argument in your Rest API call via {{custom_args_1}}" className="form-control form-control-sm"></textarea>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div className="row">
-                    <div className="col-6">
-                        <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','background_process'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','background_process'])} /> Send Rest API Call in the background.</label> <i className="material-icons" title="You have to be using lhc-php-resque extension.">info</i>
+                <div className="col-12">
+                        <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','background_process'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','background_process'])} /> Send Rest API Call in the background always.</label> <i className="material-icons" title="You have to be using lhc-php-resque extension.">info</i>
+                    </div>
+                    <div className="col-12">
+                        <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','background_process_delegate'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','background_process_delegate'])} /> Send Rest API Call in the background if we are not already in it.</label> <i className="material-icons" title="You have to be using lhc-php-resque extension.">info</i>
                     </div>
                     <div className="col-6">
                         <label><input type="checkbox" onChange={(e) => this.onchangeAttr({'path' : ['attr_options','no_body'], 'value' :e.target.checked})} defaultChecked={this.props.action.getIn(['content','attr_options','no_body'])} /> Do not save response.</label>

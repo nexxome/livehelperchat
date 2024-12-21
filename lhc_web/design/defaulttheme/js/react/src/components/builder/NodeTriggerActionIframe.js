@@ -44,7 +44,7 @@ class NodeTriggerActionIframe extends Component {
                     <div className="pe-2">
                         <div className="input-group input-group-sm">
                             <span className="input-group-text" id="basic-addon1"><span className="material-icons">vpn_key</span></span>
-                            <input type="text" className="form-control" readOnly="true" value={this.props.action.getIn(['_id'])} title="Action ID"/>
+                            <input type="text" className="form-control" readOnly={true} value={this.props.action.getIn(['_id'])} title="Action ID"/>
                         </div>
                     </div>
                     <div className="pe-2 pt-1 text-nowrap">
@@ -67,6 +67,18 @@ class NodeTriggerActionIframe extends Component {
                         <div className="form-group">
                             <label>Body HTML</label>
                             <textarea className="form-control form-control-sm" onChange={(e) => this.onchangeAttr({'path' : ['body_html'], 'value' : e.target.value})} defaultValue={this.props.action.getIn(['content','body_html'])}></textarea>
+                        </div>
+                    </div>
+                    <div className="col-6">
+                        <div className="form-group">
+                            <label>Form ID</label>
+                            <input type="text" className="form-control form-control-sm" onChange={(e) => this.onchangeAttr({'path' : ['body_form'], 'value' : e.target.value})} defaultValue={this.props.action.getIn(['content','body_form'])}></input>
+                        </div>
+                    </div>
+                    <div className="col-6">
+                        <div className="form-group">
+                            <label>Iframe URL</label>
+                            <input type="text" className="form-control form-control-sm" onChange={(e) => this.onchangeAttr({'path' : ['iframe_url'], 'value' : e.target.value})} defaultValue={this.props.action.getIn(['content','iframe_url'])}></input>
                         </div>
                     </div>
                     <div className="col-12">

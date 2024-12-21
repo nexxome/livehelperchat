@@ -25,6 +25,8 @@ if ($Params['user_parameters']['status'] == 'true') {
     }
 }
 
+$originalInactiveMode = $userData->inactive_mode;
+
 if ($Params['user_parameters']['status'] == 'true') {
 	$userData->inactive_mode = 1;
 } else {
@@ -42,6 +44,10 @@ if ($userData->hide_online == 0) { // change status only if he's not offline man
     $userDataTemp->always_on = $userData->always_on;
 
     erLhcoreClassUserDep::setHideOnlineStatus($userDataTemp);
+
+    if ($originalInactiveMode != $userData->inactive_mode){
+        $currentUser->updateLastVisit(time(), $userDataTemp->hide_online == 1 ? 2 : 1); // Went offline OR went online
+    }
 }
 
 erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.operator_inactivemode_changed',array('user' => & $userData, 'reason' => 'user_action'));

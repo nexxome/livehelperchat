@@ -1,6 +1,8 @@
 <?php
 
-$dummyPayload = null;
+/*$dummyPayload = json_decode('',true);*/
+
+$dummyPayload = isset($dummyPayload) ? $dummyPayload : null;
 
 try {
 

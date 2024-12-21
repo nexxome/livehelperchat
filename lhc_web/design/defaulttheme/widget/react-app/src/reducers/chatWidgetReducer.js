@@ -33,7 +33,7 @@ const initialState = fromJS({
     chat_ui_state : {'confirm_close': 0, 'show_survey' : 0, 'pre_survey_done' : 0}, // Settings from themes, UI we store our present state here
     processStatus : 0,
     chatData : {}, // Stores only chat id and hash
-    chatLiveData : {'msg_to_store':[] ,'lmsop':0, 'vtm':0,'otm':0, 'msop':0, 'uid' : 0, 'error' : '','lfmsgid':0, 'lmsgid' : 0, 'operator' : '', 'messages' : [], 'closed' : false, 'ott' : '', 'status_sub' : 0, 'status' : 0}, // Stores live chat data
+    chatLiveData : {'msg_to_store':[] ,'lock_send' : false, 'lmsop':0, 'vtm':0,'otm':0, 'msop':0, 'uid' : 0, 'error' : '','lfmsgid':0, 'lmsgid' : 0, 'operator' : '', 'messages' : [], 'closed' : false, 'ott' : '', 'status_sub' : 0, 'status' : 0}, // Stores live chat data
     chatStatusData : {},
     usersettings : {soundOn : false},
     vid: null,
@@ -158,7 +158,7 @@ const chatWidgetReducer = (state = initialState, action) => {
                 .removeIn(['chat_ui','survey_id'])
                 .removeIn(['chat_ui','cmmsg_widget'])
                 .setIn(['onlineData','fetched'],false)
-                .set('chatLiveData',fromJS({'msg_to_store':[], 'lmsop':0, 'vtm':0, 'otm':0, 'msop':0, 'uid':0, 'status' : 0, 'status_sub' : 0, 'uw' : false, 'ott' : '', 'closed' : false, 'lfmsgid': 0, 'lmsgid' : 0, 'operator' : '', 'messages' : []}))
+                .set('chatLiveData',fromJS({'msg_to_store':[], 'lock_send' : false, 'lmsop':0, 'vtm':0, 'otm':0, 'msop':0, 'uid':0, 'status' : 0, 'status_sub' : 0, 'uw' : false, 'ott' : '', 'closed' : false, 'lfmsgid': 0, 'lmsgid' : 0, 'operator' : '', 'messages' : []}))
                 .set('chatStatusData',fromJS({}))
                 .set('chat_ui_state',fromJS({'confirm_close': 0, 'show_survey' : 0, 'pre_survey_done' : 0}))
                 .set('initClose',false)
@@ -172,7 +172,9 @@ const chatWidgetReducer = (state = initialState, action) => {
         }
 
         case IS_ONLINE : {
-            return state.set('isOnline',action.data);
+            return state.set('isOnline',action.data)
+                 .setIn(['onlineData','fetched'], false)
+                 .setIn(['offlineData','fetched'], false);
         }
 
         case OFFLINE_FIELDS_UPDATED : {
@@ -303,6 +305,25 @@ const chatWidgetReducer = (state = initialState, action) => {
             return state.set('chat_ui', state.get('chat_ui').merge(fromJS(action.data.chat_ui)));
         }
 
+        case 'REMOVE_CHAT_MESSAGE' : {
+            let index = state.getIn(['chatLiveData','messages']).findIndex(msg => {
+                if (msg.msg.includes("id=\"msg-"+action.data.msg_id+"\"")) {
+                    return true;
+                }
+            });
+
+            if (index !== -1) {
+                var nodeParse = document.createElement('div');
+                nodeParse.innerHTML = state.getIn(["chatLiveData", "messages", index, "msg"]);
+                var messageExtractor = nodeParse.querySelector("#msg-"+action.data.id);
+                if (messageExtractor) {
+                    nodeParse.innerHTML = nodeParse.innerHTML.replace(messageExtractor.outerHTML,"");
+                    state = state.setIn(["chatLiveData", "messages", index, "msg"], nodeParse.innerHTML);
+                }
+            }
+            return state;
+        }
+
         case 'FETCH_MESSAGE_SUBMITTED' : {
 
             let index = state.getIn(['chatLiveData','messages']).findIndex(msg => {
@@ -372,6 +393,7 @@ const chatWidgetReducer = (state = initialState, action) => {
             return state.setIn(['chatLiveData','status_sub'], action.data.status_sub)
                 .setIn(['chatLiveData','status'], action.data.status)
                 .set('msgLoaded', true)
+                .setIn(['chatLiveData','lock_send'], action.data.lock_send ? true : false)
                 .set('network_down', false)
                 .setIn(['chatLiveData','closed'], action.data.closed && action.data.closed === true)
         }

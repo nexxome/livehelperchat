@@ -6,15 +6,20 @@
                     <?php echo htmlspecialchars($search->name)?> </a>
             </li>
         </ul>
-        <div class="tab-content" ng-cloak>
+        <div class="tab-content pt-0 mt-0" ng-cloak>
             <div role="tabpanel" class="tab-pane form-group active" id="chatlist">
                 <div id="view-content-list">
                     <?php endif; ?>
 
+                    <?php $dateFilterAttr = 'time';?>
+                    <?php include(erLhcoreClassDesign::designtpl('lhviews/date_filter.tpl.php')); ?>
+
                     <table cellpadding="0" cellspacing="0" class="table table-sm" width="100%">
                         <thead>
                         <tr>
-                            <th width="10%"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/pendingchats','Information');?></th>
+                            <th width="10%">
+                                <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/pendingchats','Information');?>
+                            </th>
                             <th nowrap width="45%">
                                 <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/pendingchats','Nick');?>
                             </th>
@@ -31,7 +36,11 @@
                                 <?php include(erLhcoreClassDesign::designtpl('lhchat/lists/icons_additional.tpl.php')); ?>
 
                                 <?php foreach ($chat->aicons as $aicon) : ?>
-                                    <i class="material-icons" style="color: <?php isset($aicon['c']) ? print htmlspecialchars($aicon['c']) : print '#6c757d'?>" title="<?php isset($aicon['t']) ? print htmlspecialchars($aicon['t']) : htmlspecialchars($aicon['i'])?>"><?php isset($aicon['i']) ? print htmlspecialchars($aicon['i']) : htmlspecialchars($aicon)?></i>
+                                    <?php if (isset($aicon['i']) && strpos($aicon['i'],'/') !== false) : ?>
+                                        <img class="me-1" title="<?php isset($aicon['t']) ? print htmlspecialchars($aicon['t']) : htmlspecialchars($aicon['i'])?>" src="<?php echo $aicon['i'];?>" />
+                                    <?php else : ?>
+                                        <i class="material-icons" style="color: <?php isset($aicon['c']) ? print htmlspecialchars($aicon['c']) : print '#6c757d'?>" title="<?php isset($aicon['t']) ? print htmlspecialchars($aicon['t']) : htmlspecialchars($aicon['i'])?>"><?php isset($aicon['i']) ? print htmlspecialchars($aicon['i']) : htmlspecialchars($aicon)?></i>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
 
                                 <?php if ( !empty($chat->country_code) ) : ?><img src="<?php echo erLhcoreClassDesign::design('images/flags');?>/<?php echo $chat->country_code?>.png" alt="<?php echo htmlspecialchars($chat->country_name)?>" title="<?php echo htmlspecialchars($chat->country_name)?>" />&nbsp;<?php endif; ?>

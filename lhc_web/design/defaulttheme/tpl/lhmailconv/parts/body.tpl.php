@@ -1,7 +1,13 @@
+<?php if (!isset($tinyMceOptions['hide_form_group'])) : ?>
 <div class="form-group">
     <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconvrt','Body');?></label>
+    <?php endif; ?>
+
     <textarea id="response-template" class="form-control form-control-sm" name="body"><?php echo htmlspecialchars($item->body)?></textarea>
+
+    <?php if (!isset($tinyMceOptions['hide_form_group'])) : ?>
 </div>
+<?php endif; ?>
 
 <script>
     <?php
@@ -20,7 +26,7 @@
         'advlist autolink lists link image charmap print preview anchor image lhfiles',
         'searchreplace visualblocks code fullscreen',
         'media table paste help',
-        'print preview importcss searchreplace autolink save autosave directionality visualblocks visualchars fullscreen media codesample charmap pagebreak nonbreaking anchor toc advlist lists wordcount textpattern noneditable help charmap emoticons'
+        'print preview importcss searchreplace autolink save directionality visualblocks visualchars fullscreen media codesample charmap pagebreak nonbreaking anchor toc advlist lists wordcount textpattern noneditable help charmap emoticons'
     ];
 
     if (isset($mcOptionsData['mce_plugins']) && $mcOptionsData['mce_plugins'] != '') {
@@ -32,7 +38,7 @@
         tinymce.init({
             selector: '#response-template',
             cache_suffix: "?v=1.0",
-            height: 320,
+            height: <?php if (isset($tinyMceOptions['height'])) : ?><?php echo $tinyMceOptions['height']?><?php else : ?>320<?php endif;?>,
             automatic_uploads: true,
             file_picker_types: 'image',
             images_upload_url: '<?php echo erLhcoreClassDesign::baseurl('mailconv/uploadimage')?>/(csrf)/'+confLH.csrf_token,

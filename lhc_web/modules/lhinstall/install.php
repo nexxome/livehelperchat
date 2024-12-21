@@ -394,6 +394,7 @@ try {
         	       `time` int(11) NOT NULL, 
         	       `duration` int(11) NOT NULL, 
         	       `lactivity` int(11) NOT NULL, 
+        	       `type` tinyint(1) NOT NULL DEFAULT '0',
         	       PRIMARY KEY (`id`), 
         	       KEY `user_id_lactivity` (`user_id`, `lactivity`), KEY `lactivity` (`lactivity`) ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
@@ -450,6 +451,7 @@ try {
                   `repeat_number` int(11) NOT NULL DEFAULT '1',
                   `survey_timeout` int(11) NOT NULL DEFAULT '0',
                   `survey_id` int(11) NOT NULL DEFAULT '0',
+                  `disabled` tinyint(1) NOT NULL DEFAULT '0',
                   `wait_timeout_hold_1` int(11) NOT NULL,
                   `wait_timeout_hold_2` int(11) NOT NULL,
                   `wait_timeout_hold_3` int(11) NOT NULL,
@@ -482,7 +484,8 @@ try {
                   `languages` text NOT NULL,
                   `ignore_pa_chat` int(11) NOT NULL,
                   PRIMARY KEY (`id`),
-                  KEY `siteaccess_position` (`siteaccess`,`position`)
+                  KEY `siteaccess_position` (`siteaccess`,`position`),
+                  KEY `disabled` (`disabled`)
                 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
                     $db->query("CREATE TABLE `lh_abstract_widget_theme` (
@@ -531,11 +534,11 @@ try {
                       `close_image_path` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
                       `popup_image` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
                       `popup_image_path` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
-                      `hide_close` int(11) NOT NULL,
-                      `hide_popup` int(11) NOT NULL,
-                      `header_height` int(11) NOT NULL,
-                      `header_padding` int(11) NOT NULL,
-                      `widget_border_width` int(11) NOT NULL,
+                      `hide_close` int(11) NOT NULL DEFAULT 0,
+                      `hide_popup` int(11) NOT NULL DEFAULT 0,
+                      `header_height` int(11) NOT NULL DEFAULT 0,
+                      `header_padding` int(11) NOT NULL DEFAULT 0,
+                      `widget_border_width` int(11) NOT NULL DEFAULT 0,
                       `support_joined` text COLLATE utf8mb4_unicode_ci NOT NULL,
                       `support_closed` text COLLATE utf8mb4_unicode_ci NOT NULL,
                       `pending_join` text COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -555,9 +558,9 @@ try {
                       `custom_popup_css` text COLLATE utf8mb4_unicode_ci NOT NULL,
                       `hide_ts` tinyint(1) unsigned NOT NULL DEFAULT 0,
                       `hide_op_ts` tinyint(1) unsigned NOT NULL DEFAULT 0,
-                      `widget_response_width` int(11) NOT NULL,
-                      `show_need_help_delay` int(11) NOT NULL,
-                      `show_status_delay` int(11) NOT NULL,
+                      `widget_response_width` int(11) NOT NULL DEFAULT 0,
+                      `show_need_help_delay` int(11) NOT NULL DEFAULT 0,
+                      `show_status_delay` int(11) NOT NULL DEFAULT 0,
                       `modern_look` tinyint(1) NOT NULL DEFAULT 0,
                       `bot_status_text` text COLLATE utf8mb4_unicode_ci NOT NULL,
                       `bot_configuration` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -1258,6 +1261,7 @@ try {
         	   `id` int(11) NOT NULL AUTO_INCREMENT,
         	   `name` varchar(100) NOT NULL,        	   
         	   `content` longtext NOT NULL,
+        	   `configuration` longtext NOT NULL,
         	   `recipient` varchar(250) NOT NULL,
         	   `active` int(11) NOT NULL,
         	   `name_attr` varchar(250) NOT NULL,
@@ -1546,8 +1550,10 @@ try {
                 ('export_hash',	'{$exportHash}',	0,	'Chats export secret hash',	0),
                 ('do_no_track_ip', 0, 0, 'Do not track visitors IP',0),
                 ('remember_username','1','0','Should we remember username for the next time visitor starts a chat?','0'),
+                ('remember_phone_email','1','0','Should we remember E-Mail, Phone for the next time visitor starts a chat?','0'),
                 ('ignore_typing', 0, 0, 'Do not store what visitor is typing',0),
                 ('encrypt_msg_after', 0, 0, 'After how many days anonymize messages',0),
+                ('notice_message','','0','','1'),
                 ('encrypt_msg_op', 0, 0, 'Anonymize also operators messages',0),
                 ('valid_domains','','0','Domains where script can be embedded. E.g example.com, google.com','0'),
                 ('message_seen_timeout', 24, 0, 'Proactive message timeout in hours. After how many hours proactive chat mesasge should be shown again.',	0),
@@ -1579,6 +1585,7 @@ try {
                 ('track_domain',	'',	0,	'Set your domain to enable user tracking across different domain subdomains.',	0),
                 ('max_message_length','500',0,'Maximum message length in characters', '0'),
                 ('need_help_tip','1',0,'Show need help tooltip?', '0'),
+                ('unban_ip_range','','0','Which ip should not be allowed to be blocked','0'),
                 ('recaptcha_data','a:4:{i:0;b:0;s:8:\"site_key\";s:0:\"\";s:10:\"secret_key\";s:0:\"\";s:7:\"enabled\";i:0;}','0','Re-captcha configuration','1'),
                 ('need_help_tip_timeout','24',0,'Need help tooltip timeout, after how many hours show again tooltip?', '0'),
                 ('use_secure_cookie','0',0,'Use secure cookie, check this if you want to force SSL all the time', '0'),
@@ -1686,6 +1693,7 @@ try {
                   PRIMARY KEY (`id`),
                   KEY `vid` (`vid`),
 				  KEY `dep_id` (`dep_id`),
+				  KEY `first_visit` (`first_visit`),
 				  KEY `last_visit_dep_id` (`last_visit`,`dep_id`)
                 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
@@ -1806,22 +1814,24 @@ try {
 				  `inform_options` varchar(250) NOT NULL,
 				  `online_hours_active` tinyint(1) NOT NULL,
 				  `inform_delay` int(11) NOT NULL,
-				  `attr_int_1` int(11) NOT NULL,
-				  `attr_int_2` int(11) NOT NULL,
-				  `attr_int_3` int(11) NOT NULL,
+				  `attr_int_1` int(11) NOT NULL DEFAULT '0',
+				  `attr_int_2` int(11) NOT NULL DEFAULT '0',
+				  `attr_int_3` int(11) NOT NULL DEFAULT '0',
 				  `pending_max` int(11) NOT NULL,
 				  `pending_group_max` int(11) NOT NULL,
-				  `active_chats_counter` int(11) NOT NULL,
+				  `active_chats_counter` int(11) NOT NULL DEFAULT '0',
 				  `inactive_chats_cnt` int(11) NOT NULL DEFAULT '0',
-				  `pending_chats_counter` int(11) NOT NULL,
+				  `pending_chats_counter` int(11) NOT NULL DEFAULT '0',
 				  `bot_chats_counter` int(11) NOT NULL DEFAULT '0',
 				  `inop_chats_cnt` int(11) NOT NULL DEFAULT '0',
 				  `acop_chats_cnt` int(11) NOT NULL DEFAULT '0',
-				  `inform_close_all` int(11) NOT NULL,
-				  `inform_close_all_email` varchar(250) NOT NULL,
+				  `inform_close_all` int(11) NOT NULL DEFAULT '0',
+				  `inform_close_all_email` varchar(250) NOT NULL DEFAULT '0',
 				  `alias` varchar(50) NOT NULL,
 				  `product_configuration` longtext NOT NULL,
 				  `bot_configuration` text NOT NULL,
+                  `ignore_op_status` tinyint(1) unsigned NOT NULL DEFAULT 0,
+                  `dep_offline` tinyint(1) NOT NULL DEFAULT '0',
 				  PRIMARY KEY (`id`),
 				  KEY `identifier_2` (`identifier`(191)),
 				  KEY `archive` (`archive`),
@@ -1833,6 +1843,7 @@ try {
 				  KEY `pending_chats_counter` (`pending_chats_counter`),
 				  KEY `bot_chats_counter` (`bot_chats_counter`),
 				  KEY `disabled_hidden` (`disabled`, `hidden`),
+				  KEY `dep_offline` (`dep_offline`),
 				  KEY `sort_priority_name` (`sort_priority`, `name`),
 				  KEY `active_mod` (`online_hours_active`,`mod_start_hour`,`mod_end_hour`),
 				  KEY `active_tud` (`online_hours_active`,`tud_start_hour`,`tud_end_hour`),
@@ -1840,7 +1851,8 @@ try {
 				  KEY `active_thd` (`online_hours_active`,`thd_start_hour`,`thd_end_hour`),
 				  KEY `active_frd` (`online_hours_active`,`frd_start_hour`,`frd_end_hour`),
 				  KEY `active_sad` (`online_hours_active`,`sad_start_hour`,`sad_end_hour`),
-				  KEY `active_sud` (`online_hours_active`,`sud_start_hour`,`sud_end_hour`)
+				  KEY `active_sud` (`online_hours_active`,`sud_start_hour`,`sud_end_hour`),
+                  KEY `ignore_op_status` (`ignore_op_status`)
 				) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
                     $db->query("CREATE TABLE `lh_departament_group_user` (
@@ -1875,7 +1887,7 @@ try {
                   KEY `dep_group_id` (`dep_group_id`)
                 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
-                    $db->query("CREATE TABLE `lh_generic_bot_rest_api` (`id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY, `name` varchar(50) NOT NULL, `description` varchar(250), `configuration` text NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+                    $db->query("CREATE TABLE `lh_generic_bot_rest_api` (`id` bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY, `name` varchar(50) NOT NULL, `description` varchar(250), `configuration` longtext NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
                     $db->query("CREATE TABLE `lh_departament_group` (
                       `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -1946,8 +1958,10 @@ try {
 				  `date_to` int(11) NOT NULL,
 				  `start_hour` int(11) NOT NULL,
 				  `end_hour` int(11) NOT NULL,
+                  `repetitiveness` tinyint(1) unsigned NOT NULL DEFAULT '0',
 				  PRIMARY KEY (`id`),
 				  KEY `dep_id` (`dep_id`),
+				  KEY `repetitiveness` (`repetitiveness`),
 				  KEY `date_from` (`date_from`),
 				  KEY `search_active` (`date_from`, `date_to`, `dep_id`)
 				) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
@@ -2142,16 +2156,29 @@ try {
   KEY `created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
+                    $db->query("CREATE TABLE `lhc_mailconv_sent_copy` (
+                                          `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                                          `mailbox_id` bigint(20) unsigned NOT NULL,
+                                          `status` tinyint(1) unsigned NOT NULL DEFAULT 0,
+                                          `body` longblob NOT NULL,
+                                          PRIMARY KEY (`id`),
+                                          KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
                     $db->query("CREATE TABLE `lh_generic_bot_command` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `command` varchar(50) NOT NULL,
   `sub_command` varchar(100) NOT NULL,
+  `enabled_display` tinyint(1) NOT NULL DEFAULT '0', 
   `info_msg` varchar(100) NOT NULL,
+  `name` varchar(50) NOT NULL,
   `bot_id` int(11) NOT NULL,
   `trigger_id` int(11) NOT NULL,
   `dep_id` int(11) NOT NULL,
+  `fields` text NOT NULL, 
   `shortcut_1` varchar(10) NOT NULL,
   `shortcut_2` varchar(10) NOT NULL,
+  `position` int(11) unsigned NOT NULL DEFAULT '1000',
   PRIMARY KEY (`id`),
   KEY `dep_id` (`dep_id`),
   KEY `command` (`command`)
@@ -2257,7 +2284,7 @@ try {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
                     $db->query("CREATE TABLE `lh_abstract_rest_api_key_remote` ( `id` int(11) NOT NULL AUTO_INCREMENT, `api_key` varchar(50) NOT NULL, `username` varchar(50) NOT NULL, `name` varchar(50) NOT NULL, `host` varchar(250) NOT NULL, `active` tinyint(1) NOT NULL DEFAULT '0', `position` int(11) NOT NULL DEFAULT '0', PRIMARY KEY (`id`), KEY `active` (`active`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-                    $db->query("CREATE TABLE `lh_abstract_chat_variable` ( `id` int(11) NOT NULL AUTO_INCREMENT, `var_name` varchar(255) NOT NULL, `var_identifier` varchar(255) NOT NULL,`inv` tinyint(1) NOT NULL, `old_js_id` varchar(50) NOT NULL, `change_message` varchar(250) NOT NULL, `type` tinyint(1) NOT NULL, `persistent` tinyint(1) NOT NULL, `js_variable` varchar(255) NOT NULL, `dep_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+                    $db->query("CREATE TABLE `lh_abstract_chat_variable` ( `id` int(11) NOT NULL AUTO_INCREMENT, `content_field` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL, `var_name` varchar(255) NOT NULL, `var_identifier` varchar(255) NOT NULL,`inv` tinyint(1) NOT NULL, `old_js_id` varchar(50) NOT NULL, `change_message` varchar(250) NOT NULL, `type` tinyint(1) NOT NULL, `persistent` tinyint(1) NOT NULL, `js_variable` varchar(255) NOT NULL, `dep_id` int(11) NOT NULL, PRIMARY KEY (`id`), KEY `dep_id` (`dep_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
                     $db->query("CREATE TABLE `lh_webhook` ( `id` int(11) NOT NULL AUTO_INCREMENT, `name` varchar(50) NOT NULL, `event` varchar(50) NOT NULL, `bot_id_alt` int(11) NOT NULL DEFAULT '0', `trigger_id_alt` int(11) NOT NULL DEFAULT '0', `bot_id` int(11) NOT NULL, `trigger_id` int(11) NOT NULL, `disabled` tinyint(1) NOT NULL, `status` longtext NOT NULL,`configuration` longtext NOT NULL, `type` tinyint(1) NOT NULL DEFAULT 0, PRIMARY KEY (`id`), KEY `event_disabled` (`event`,`disabled`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
                     $db->query("CREATE TABLE `lh_generic_bot_rest_api_cache` (
   `hash` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -2350,7 +2377,7 @@ try {
                       `expires_on` int(11) NOT NULL,
                       `notifications_status` int(11) NOT NULL DEFAULT 1,
                       `error` int(11) NOT NULL DEFAULT 0,
-                      `last_error` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+                      `last_error` text COLLATE utf8mb4_unicode_ci NOT NULL,
                       PRIMARY KEY (`id`),
                       KEY `token` (`token`),
                       KEY `device_token_device_type_v2` (`device_token`(191),`device_type`),
@@ -2539,6 +2566,7 @@ try {
   `priority_asc` int(11) NOT NULL DEFAULT 0,
   `from_name` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
   `from_address` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_address_clean` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `lang` varchar(5) COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL,
   `last_message_id` bigint(20) unsigned NOT NULL,
@@ -2569,6 +2597,7 @@ try {
   PRIMARY KEY (`id`),
   KEY `lang` (`lang`),
   KEY `from_address` (`from_address`),
+  KEY `from_address_clean` (`from_address_clean`),
   KEY `mailbox_id` (`mailbox_id`),
   KEY `dep_id` (`dep_id`),
   KEY `mailbox_id_status_udate` (`mailbox_id`,`status`,`udate`),

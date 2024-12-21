@@ -16,15 +16,25 @@ if ($form->active == 0) {
 }
 
 $tpl = erLhcoreClassTemplate::getInstance( 'lhform/fill.tpl.php');
-$tpl->set('content',$form->content_rendered);
+$content_rendered = $form->content_rendered;
 
 $chat = null;
+$replaceArray = ['{chat_id}' => '','{hash}' => '', '{msg_id}' => ''];
 
 if (isset($_GET['chat_id']) && is_numeric($_GET['chat_id']) && isset($_GET['hash']) && ($chat = erLhcoreClassModelChat::fetch($_GET['chat_id'])) instanceof erLhcoreClassModelChat && $chat->hash == $_GET['hash'] && $chat->status !== erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
     $tpl->setArray(array(
         'hash' => $_GET['hash'],
         'chat_id' => $_GET['chat_id'],
     ));
+    $replaceArray['{chat_id}'] = $chat->id;
+    $replaceArray['{hash}'] = $chat->hash;
+    if (isset($_GET['msg_id']) && is_numeric($_GET['msg_id'])) {
+        $msg = erLhcoreClassModelmsg::fetch($_GET['msg_id']);
+        if ($msg instanceof erLhcoreClassModelmsg && $msg->chat_id == $chat->id) {
+            $tpl->set('msg_id',$msg->id);
+            $replaceArray['{msg_id}'] = $msg->id;
+        }
+    }
 }
 
 if (isset($_POST['chat_id']) && is_numeric($_POST['chat_id']) && isset($_POST['hash']) && ($chat = erLhcoreClassModelChat::fetch($_POST['chat_id'])) instanceof erLhcoreClassModelChat && $chat->hash == $_POST['hash'] && $chat->status !== erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
@@ -32,9 +42,34 @@ if (isset($_POST['chat_id']) && is_numeric($_POST['chat_id']) && isset($_POST['h
         'hash' => $_POST['hash'],
         'chat_id' => $_POST['chat_id'],
     ));
+    $replaceArray['{chat_id}'] = $chat->id;
+    $replaceArray['{hash}'] = $chat->hash;
+    if (isset($_POST['msg_id']) && is_numeric($_POST['msg_id'])) {
+        $msg = erLhcoreClassModelmsg::fetch($_POST['msg_id']);
+        if ($msg instanceof erLhcoreClassModelmsg && $msg->chat_id == $chat->id) {
+            $tpl->set('msg_id',$msg->id);
+            $replaceArray['{msg_id}'] = $msg->id;
+        }
+    }
 }
 
-if (erLhcoreClassFormRenderer::isCollected()) {
+$chatClosed = false;
+if (
+    (
+        (isset($_GET['chat_id']) && is_numeric($_GET['chat_id']) && isset($_GET['hash']) && ($chat = erLhcoreClassModelChat::fetch($_GET['chat_id'])) instanceof erLhcoreClassModelChat && $chat->hash == $_GET['hash']) ||
+        (isset($_POST['chat_id']) && is_numeric($_POST['chat_id']) && isset($_POST['hash']) && ($chat = erLhcoreClassModelChat::fetch($_POST['chat_id'])) instanceof erLhcoreClassModelChat && $chat->hash == $_POST['hash'])
+    )
+    && $chat->status == erLhcoreClassModelChat::STATUS_CLOSED_CHAT
+) {
+    $chatClosed = true;
+    $tpl = erLhcoreClassTemplate::getInstance( 'lhkernel/validation_error.tpl.php');
+    $tpl->set('errors',array('chat_closed' => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Chat was already closed!')));
+}
+
+$tpl->set('replace_array',$replaceArray);
+$tpl->set('content',str_replace(array_keys($replaceArray), array_values($replaceArray), $content_rendered));
+
+if ($chatClosed === false && erLhcoreClassFormRenderer::isCollected()) {
 	erLhcoreClassFormRenderer::storeCollectedInformation($form, erLhcoreClassFormRenderer::getCollectedInfo(), erLhcoreClassFormRenderer::getCustomFields(), $chat);
 };
 

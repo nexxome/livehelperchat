@@ -111,7 +111,9 @@ lhc-multilanguage-tab-content>.active {
 	right:0;
 	z-index:9999;
 }
-
+.ps-1-8{
+    padding-left:0.45rem!important;
+}
 @media (max-width: 768px) {
     .chat-main-left-column.col-xl-8 .toolbar-chat,
     .chat-main-left-column.col-xl-8 .form-send-textarea,
@@ -288,6 +290,19 @@ a:hover{
 
 .fs24 {
 	font-size: 24px;
+}
+
+
+.fs17{
+    font-size:17px;
+}
+
+.fs18{
+    font-size:18px;
+}
+
+.fs19{
+    font-size:19px;
 }
 
 .icon-user-status {
@@ -974,7 +989,7 @@ div.message-row.response+div.message-row.response:hover .msg-date,
     text-align:right;
 }
 
-.admin-chat-mic {
+.admin-chat-mic, .admin-chat-mic > .form-send-textarea {
 	background:url(../images/icons/mic.gif) no-repeat center center;
 }
 
@@ -1213,7 +1228,7 @@ ul.user-settings-list li{
 	transition: background-color 1000ms linear;	
 }
 
-.edit-mode,
+.edit-mode, .edit-mode > .form-send-textarea,
 .recent_visit {
 	background-color:#E0F3FF !important;
 	transition: background-color 1000ms linear;	
@@ -1719,7 +1734,7 @@ input[type="file"]{
 }
 
 .version-updated{
-	line-height:52px;
+	line-height:42px;
 	color: #BB474A;
 }
 
@@ -2372,7 +2387,6 @@ html {
     z-index: 9999;
     height: 100%;
     right: 7px;
-    background: white;
 }
 
 .chat-tab-selected > .tabs-column > .tab-pane.chat-tab-pane > .row,
@@ -2485,3 +2499,12 @@ html {
      vertical-align: middle;
      border-radius: 7px;
  }
+
+.hide-suggester > suggester{
+    display: none;
+}
+
+.form-send-textarea[placeholder]:empty:before {
+    content: attr(placeholder);
+    color: var(--bs-secondary-color);
+}

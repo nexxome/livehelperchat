@@ -117,14 +117,15 @@ class erLhcoreClassGenericBotActionText {
                 $filter['filternot']['id'] = erLhcoreClassGenericBotWorkflow::$currentEvent->id;
             }
 
-            $event = erLhcoreClassModelGenericBotChatEvent::findOne($filter);
-
             $softEvent = false;
-            $hasEvent = $event instanceof erLhcoreClassModelGenericBotChatEvent;
+            $hasEvent = false;
 
-            if ($hasEvent === true && isset($event->content_array['soft_event']) && $event->content_array['soft_event'] === true) {
-                $softEvent = true;
-                $event->removeThis();
+            foreach (erLhcoreClassModelGenericBotChatEvent::getList($filter) as $eventFilter) {
+                $hasEvent = true;
+                if (isset($eventFilter->content_array['soft_event']) && $eventFilter->content_array['soft_event'] === true) {
+                    $softEvent = true;
+                    $eventFilter->removeThis();
+                }
             }
 
             if ($hasEvent && $softEvent === false) {
@@ -171,8 +172,20 @@ class erLhcoreClassGenericBotActionText {
         }
 
         if (isset($params['replace_array'])) {
-            $msg->msg = @str_replace(array_keys($params['replace_array']),array_values($params['replace_array']),$msg->msg);
+            foreach ($params['replace_array'] as $keyReplace => $valueReplace) {
+                if (is_object($valueReplace) || is_array($valueReplace)) {
+                    if (isset($action['content']['attr_options']['json_replace']) && $action['content']['attr_options']['json_replace'] === true)
+                    {
+                        $msg->msg = @str_replace($keyReplace,json_encode($valueReplace),$msg->msg);
+                    } else {
+                        $msg->msg = @str_replace($keyReplace,'[' . $keyReplace . ' - OBJECT OR ARRAY]',$msg->msg);
+                    }
+                } else {
+                    $msg->msg = @str_replace($keyReplace,$valueReplace,$msg->msg);
+                }
+            }
         }
+
 
         if (isset($params['auto_responder']) && $params['auto_responder'] === true) {
             $metaMessage['content']['auto_responder'] = true;

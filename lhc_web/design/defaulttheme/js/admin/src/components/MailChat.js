@@ -444,7 +444,7 @@ const MailChat = props => {
                             index == 0 ||                                   // Render first
                             state.messages.length == (index + 1) ||         // Render last one
                             state.messages.length - 2 == index) {           // Render before last one
-                                    return <React.Fragment>{state.expand_messages == false && state.messages.length >= 5 && state.messages.length - 2 == index && <div className="previous-mails-row" onClick={() => dispatch({type: 'update',value: {'expand_messages': true}})} ><span className="previous-number" title={t('mail.previous_messages')}>{state.messages.length - 3}</span></div>}<MailChatMessage setConversationStatus={(e) => setConversationStatus(e)}
+                                    return <React.Fragment key={'msg-mail-hold-' + props.chatId + '_' + index + '_' + message.id}>{state.expand_messages == false && state.messages.length >= 5 && state.messages.length - 2 == index && <div className="previous-mails-row" onClick={() => dispatch({type: 'update',value: {'expand_messages': true}})} ><span className="previous-number" title={t('mail.previous_messages')}>{state.messages.length - 3}</span></div>}<MailChatMessage setConversationStatus={(e) => setConversationStatus(e)}
                                                             verifyOwner={(e) => verifyOwner(e)} moptions={state.moptions}
                                                             fetchMessages={(e) => fetchMessages(message)}
                                                             fetchingMessages={state.fetching_messages} mode={props.mode}
@@ -477,7 +477,7 @@ const MailChat = props => {
 
                                 <div className={"pb-1 text-success" + (state.saving_remarks ? ' text-warning' : '')}><span className="material-icons">mode_edit</span> Conversation remarks</div>
                                 <div>
-                                    {state.conv && <textarea disabled={!state.moptions.can_write} placeholder="Enter your remarks here." onKeyUp={(e) => saveRemarks(e.target.value)} class="form-control mh150" defaultValue={state.conv.remarks}></textarea>}
+                                    {state.conv && <textarea disabled={!state.moptions.can_write} placeholder="Enter your remarks here." onKeyUp={(e) => saveRemarks(e.target.value)} className="form-control mh150" defaultValue={state.conv.remarks}></textarea>}
                                 </div>
 
                             </div>
@@ -524,7 +524,9 @@ const MailChat = props => {
                                     </tr>
                                     <tr>
                                         <td>{t('mail.sender')}</td>
-                                        <td>{state.conv.lang && state.moptions.lang_dir && <img src={state.moptions.lang_dir + '/' + state.conv.lang + '.png'} /> } {state.conv.from_name} &lt;{state.conv.from_address}&gt;</td>
+                                        <td>
+                                            {state.conv.lang && state.moptions.lang_dir && <img src={state.moptions.lang_dir + '/' + state.conv.lang + '.png'}/>} {state.conv.from_name} &lt;{state.conv.from_address}&gt; <span className={"action-image" + (state.moptions.is_blocked ? " text-danger fw-bold" : "")} onClick={() => showModal({url: "mailconv/blocksender/" + props.chatId})}><span className="material-icons">block</span>{state.moptions.is_blocked ? t('mail.is_blocked') : t('mail.block')}</span>
+                                        </td>
                                     </tr>
                                     {(state.conv.phone || state.conv.phone_front) && <tr>
                                         <td>{t('mail.phone')}</td>
@@ -546,7 +548,7 @@ const MailChat = props => {
                                                     {state.conv.status == 1 && <i className="material-icons chat-active me-0">mail_outline</i>}
                                                     {state.conv.status == 2 && <i className="material-icons chat-closed me-0">mail_outline</i>}
                                                 </span>
-                                                <select disabled={state.moptions.is_archive} className="form-control form-control-sm" value={state.conv.status} onChange={(e) => changeStatus(e)} defaultValue={state.conv.status}>
+                                                <select disabled={state.moptions.is_archive} className="form-control form-control-sm" value={state.conv.status} onChange={(e) => changeStatus(e)}>
                                                     <option value="">{t('status.pending')}</option>
                                                     <option value="1">{t('status.active')}</option>
                                                     {state.conv.status == 2 && <option value="2">{t('status.closed')}</option>}

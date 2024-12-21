@@ -45,11 +45,73 @@
     <?php endforeach; ?>
     </div>
 
-    <input type="submit" class="btn btn-secondary" name="StoreOptions" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Save'); ?>" />
+    <input type="submit" class="btn btn-sm btn-secondary" name="StoreOptions" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Save'); ?>" />&nbsp;<input type="submit" class="btn btn-secondary btn-sm" name="ReloadOperatorsBackOffice" value="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/buttons','Reload back office for operators. Requires NodeJS'); ?>" />
 
 </form>
 
+<hr>
+
+<h4>Time Zone</h4>
+
+<ul>
+<li><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/edit','These hours will be using');?> <b><?php print date_default_timezone_get()?></b> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/edit','time zone');?> <b>[<?php echo (new DateTime('now', new DateTimeZone(date_default_timezone_get())))->format('Y-m-d H:i:s') ?>]</b></li>
+<li><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/edit','Time in database server');?> <b>[<?php
+        $db = ezcDbInstance::get();
+        $stmt = $db->prepare("SELECT NOW()");
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        echo $data['now()'];
+        ?>]</b></li>
+<li><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/edit','Time zone used for the visitor will be');?> <b>[<?php
+        if (erConfigClassLhConfig::getInstance()->getSetting('site','time_zone', false) != '') : ?>
+            <?php echo erConfigClassLhConfig::getInstance()->getSetting('site','time_zone', false).' ' . (new DateTime('now', new DateTimeZone(erConfigClassLhConfig::getInstance()->getSetting('site','time_zone', false))))->format('Y-m-d H:i:s')?>
+        <?php else : ?>
+            <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/edit', 'Server default timezone.')?> <?php echo (new DateTime('now', new DateTimeZone(date_default_timezone_get())))->format('Y-m-d H:i:s')?>
+            <span class="text-muted"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('department/edit','If you have set your time zone in account. Make sure you set it in default settings file also.');?></span>
+        <?php endif; ?>
+        ]</b></li>
+</ul>
+
 <?php if (!class_exists('erLhcoreClassInstance') && erLhcoreClassUser::instance()->hasAccessTo('lhaudit','see_system')) : ?>
+
+<hr>
+
+<h4>Database variables</h4>
+
+<?php
+$db = ezcDbInstance::get();
+$rows = [];
+try {
+    $stmt = $db->prepare('SHOW variables');
+    $stmt->execute();
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    echo '<div class="text-danger">' . $e->getMessage() . '</div>';
+}
+?>
+
+<b>Important variables</b>
+<ul>
+    <li>thread_pool_size - how many threads there are for database</li>
+    <li>innodb_buffer_pool_size - database pool size</li>
+</ul>
+
+<div class="mx550">
+
+<table class="table table-sm table-hover">
+    <tr>
+        <th>Variables</th>
+        <th>Value</th>
+    </tr>
+    <?php foreach ($rows as $row) : ?>
+        <tr>
+            <td><?php echo htmlspecialchars($row['variable_name'])?></td>
+            <td><?php echo htmlspecialchars($row['value'])?></td>
+        </tr>
+    <?php endforeach;?>
+</table>
+
+</div>
 
 <hr>
 
@@ -114,6 +176,24 @@ try {
 <pre style="max-width: 1000px; overflow: auto">
 <?php print_r(htmlspecialchars(json_encode($_SERVER, JSON_PRETTY_PRINT)))?>
 </pre>
+
+<h4>Extensions check</h4>
+<ul>
+    <li>Is the php_curl extension installed - <?php echo extension_loaded ('curl' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the mbstring extension installed - <?php echo extension_loaded ('mbstring' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the php-pdo extension installed - <?php echo extension_loaded ('pdo_mysql' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the gd extension installed - <?php echo extension_loaded ('gd' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the json extension detected - <?php echo function_exists('json_encode') ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the bcmath extension detected - <?php echo extension_loaded('bcmath') ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-warning">No, GEO detection will be disabled</span>'; ?></li>
+    <li>Is the php-xml extension detected - <?php echo function_exists('simplexml_load_string') ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-warning">No</span>'; ?></li>
+    <li>Is the fileinfo extension detected - <?php echo extension_loaded ('fileinfo' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the ldap extension detected - <?php echo function_exists ('ldap_search' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-warning">No, required only if you use `lhldap` extension</span>'; ?></li>
+    <li>Is the imap extension detected - <?php echo extension_loaded ('imap' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the redis or phpiredis extension detected - <?php echo extension_loaded ('phpiredis' ) || extension_loaded('redis') ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the soap extension detected - <?php echo extension_loaded ('soap' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the zlib extension detected - <?php echo extension_loaded ('zlib' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+    <li>Is the zip extension detected - <?php echo extension_loaded ('zip' ) ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'; ?></li>
+</ul>
 
 <h4>phpinfo</h4>
     <?php

@@ -224,10 +224,7 @@ class erLhcoreClassChatHelper
         if ($changeStatus == erLhcoreClassModelChat::STATUS_ACTIVE_CHAT) {
 
             // If chat is transferred to pending state we don't want to process any old events
-            $eventPending = erLhcoreClassModelGenericBotChatEvent::findOne(array('filter' => array('chat_id' => $chat->id)));
-            if ($eventPending instanceof erLhcoreClassModelGenericBotChatEvent) {
-                $eventPending->removeThis();
-            }
+            erLhcoreClassGenericBotWorkflow::removePreviousEvents($chat->id);
 
             if ($chat->status != erLhcoreClassModelChat::STATUS_ACTIVE_CHAT) {
                 if ($chat->status == erLhcoreClassModelChat::STATUS_BOT_CHAT) {
@@ -363,7 +360,7 @@ class erLhcoreClassChatHelper
     	}
 
         if ($background == false && class_exists('erLhcoreClassExtensionLhcphpresque')) {
-            $inst_id = class_exists('erLhcoreClassInstance') ? erLhcoreClassInstance::$instanceChat->id : 0;
+            $inst_id = class_exists('erLhcoreClassInstance') ? \erLhcoreClassInstance::$instanceChat->id : 0;
             erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhcphpresque')->enqueue('lhc_rest_webhook', 'erLhcoreClassChatWebhookResque', array('inst_id' => $inst_id, 'event_type' => 'merge_vid', 'old_vid' => $data['vid'], 'new_vid' => $data['new']));
             return;
         }

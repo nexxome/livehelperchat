@@ -173,6 +173,7 @@ div.message-row {
 
 .overflow-scroll{
     overflow-y: auto!important;
+    overflow-x: auto!important;
 }
 
 .desktop-body{
@@ -455,13 +456,6 @@ div.message-row.response div.msg-body.sub-message{
     color:#212529;
 }
 
-/* For reaction icons avoid scrolling up and down if operator is the last message */
-
-.bottom-message div.message-row.response:last-child,
-.bottom-message div.message-row.message-admin:last-child {
-    min-height: 47px;
-}
-
 .bottom-message div.response div.msg-body a.link{
     color:#fff;
     text-decoration:underline;
@@ -484,6 +478,11 @@ div.message-row.response div.msg-body.sub-message{
 
 .msg-body-media{
     position: relative;
+}
+
+.reaction-item-admin:hover,
+.reaction-item-admin{
+    color:#212529;
 }
 
 .reaction-item:hover,
@@ -790,7 +789,7 @@ div.show-msg-ts-below > div.message-row:last-child .msg-date
 
 code {
     background: #f7f7f7;
-    padding:3px;
+    padding:2px;
     border-radius: 5px;
     color:#000;
     border:1px solid #c3c3c3;
@@ -807,7 +806,7 @@ code {
 
 .blockquote-code{
     padding: 5px;
-    padding-top:0;
+    padding-top:3px;
 }
 
 .blockquote-code:before{
@@ -945,6 +944,10 @@ button.material-icons-button{
     animation: blink 1500ms linear infinite;
 }
 
+.message-row-typing-stream {
+    animation: none;
+}
+
 @keyframes blink{
     0%{opacity: 0.3;}
     50%{opacity: .9;}
@@ -963,6 +966,10 @@ button.material-icons-button{
     margin:9px;
 }
 
+.fs11{
+    font-size:11px;
+}
+
 .fs12{
     font-size:12px;
 }
@@ -971,13 +978,26 @@ button.material-icons-button{
     font-size:13px;
 }
 
-.fs11{
-    font-size:11px;
-}
-
 .fs14{
     font-size:14px;
 }
+
+.fs16{
+    font-size:16px;
+}
+
+.fs17{
+    font-size:17px;
+}
+
+.fs18{
+    font-size:18px;
+}
+
+.fs19{
+    font-size:19px;
+}
+
 
 .fs25{
     font-size:25px;
@@ -1128,21 +1148,11 @@ button.material-icons-button{
 /* I just don't like how they look so we get rid of this animation.*/
 /*.fade-in-fast {
     animation: fadeIn ease 0.3s;
-}
-.fade-in {
+}.fade-in {
     animation: fadeIn ease 1s;
 }*/
 .msg-to-store{
-    opacity:0.3;
-}
-
-@keyframes fadeIn {
-    0% {
-        opacity:0.3;
-    }
-    100% {
-        opacity:1;
-    }
+    opacity: 0.3;
 }
 
 #ChatSendButtonContainer{
@@ -1289,7 +1299,8 @@ button.material-icons-button{
 }
 
 #widget-header-content:empty{
-    background: none!important;
+    background: #fff!important;
+    min-height: 11px;
 }
 
 .text-muted-light{

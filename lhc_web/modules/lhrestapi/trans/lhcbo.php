@@ -4,7 +4,7 @@ $transItems = array(
     "homepage.invisible" => erTranslationClassLhTranslation::getInstance()->getTranslation('pagelayout/pagelayout','Invisible'),
     "homepage.visible"  => erTranslationClassLhTranslation::getInstance()->getTranslation('pagelayout/pagelayout','Visible'),
     "homepage.change_visibility" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/user_settings','Change my visibility to visible/invisible'),
-    "homepage.change_online_status" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/user_settings', 'Change my status to online/offline'),
+    "homepage.change_online_status" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/user_settings', 'Change my status to online/offline. Ctrl + F12 Shortcut.'),
     "homepage.status_offline" => erTranslationClassLhTranslation::getInstance()->getTranslation('user/account', 'Offline'),
     "homepage.status_online" => erTranslationClassLhTranslation::getInstance()->getTranslation('user/account', 'Online'),
     "homepage.always_online" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/user_settings','Change my persistent status to online'),
@@ -74,6 +74,8 @@ $transItems = array(
     "widget.pending" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Pending'),
     "widget.delete_chat" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Delete chat'),
     "widget.sort" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Sort'),
+    "widget.sort_pending" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Sort by chat priority and chat start time'),
+    "widget.sort_wait_time" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Sort by chat wait time'),
     "widget.redirect_contact" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Redirect user to contact form.'),
     "widget.are_you_sure" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Are you sure?'),
     "widget.offline_request" => erTranslationClassLhTranslation::getInstance()->getTranslation('chat/syncadmininterface','Offline request'),
@@ -108,6 +110,7 @@ $transItems = array(
     "widget.taken_time" => erTranslationClassLhTranslation::getInstance()->getTranslation('pagelayout/pagelayout','Taken time to fetch information for this widget'),
     "widget.taken_time_dep" => erTranslationClassLhTranslation::getInstance()->getTranslation('pagelayout/pagelayout','Taken time to render departments statistic'),
     "widget.op_chats_statistic" => erTranslationClassLhTranslation::getInstance()->getTranslation('pagelayout/pagelayout','Operator chats statistic'),
+    "widget.items_appear_here" => erTranslationClassLhTranslation::getInstance()->getTranslation('pagelayout/pagelayout','All items will appear here'),
 
     // Widget options
     "widget_options.hide_disabled" => erTranslationClassLhTranslation::getInstance()->getTranslation('pagelayout/pagelayout','Hide disabled'),

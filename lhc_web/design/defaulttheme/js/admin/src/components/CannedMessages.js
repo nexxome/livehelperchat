@@ -38,8 +38,19 @@ const CannedMessages = props => {
 
     const fillMessage = (message) => {
         let element = document.getElementById('CSChatMessage-'+props.chatId);
-        element.value = element.getAttribute('content_modified') ? element.value + message.msg : message.msg ;
-        element.focus();
+
+        if (element.nodeName == 'LHC-EDITOR') {
+            if (element.getAttribute('content_modified')) {
+                element.insertContent(message.msg,{"convert_bbcode" : true});
+            } else {
+                element.setContent(message.msg,{"convert_bbcode" : true});
+            }
+            element.setFocus();
+        } else {
+            element.value = element.getAttribute('content_modified') ? element.value + message.msg : message.msg ;
+            element.focus();
+        }
+
         message.subject_ids && element.setAttribute('subjects_ids',message.subject_ids);
         element.setAttribute('canned_id',message.id);
         renderPreview(message);
@@ -106,12 +117,17 @@ const CannedMessages = props => {
     const renderPreview = (message) => {
         clearTimeout(timeoutCannedMessage);
 
-        if (message === null) {
-            document.getElementById('chat-render-preview-'+props.chatId).innerHTML = '';
+        let element = document.getElementById('chat-render-preview-'+props.chatId);
+
+        if (!element) {
             return;
         }
 
-        let element = document.getElementById('chat-render-preview-'+props.chatId);
+        if (message === null) {
+            element.innerHTML = '';
+            return;
+        }
+
         element.innerHTML = message.msg;
 
         const formData = new FormData();
@@ -120,7 +136,7 @@ const CannedMessages = props => {
 
         timeoutCannedMessage = setTimeout(() => {
             axios.post(WWW_DIR_JAVASCRIPT + 'chat/previewmessage/', formData).then((result) => {
-                element.innerHTML = result.data;
+                element && (element.innerHTML = result.data);
             });
         }, 100);
     }
@@ -188,7 +204,13 @@ const CannedMessages = props => {
         }
 
         if (e.keyCode == 27) {
-            document.getElementById('CSChatMessage-' + props.chatId).focus();
+            let element = document.getElementById('CSChatMessage-' + props.chatId);
+            if (element.nodeName == 'LHC-EDITOR') {
+                element.setFocus();
+            } else {
+                element.focus();
+            }
+
             setCollapsed(true);
         }
 
@@ -197,8 +219,14 @@ const CannedMessages = props => {
                 item.messages.map(message => {
                     if (message.current) {
                         let element = document.getElementById('CSChatMessage-' + props.chatId);
-                        element.value = message.msg;
-                        element.focus();
+                        if (element.nodeName == 'LHC-EDITOR') {
+                            element.setContent(message.msg,{"convert_bbcode" : true});
+                            element.setFocus();
+                        } else {
+                            element.value = message.msg;
+                            element.focus();
+                        }
+
                         message.subject_ids && element.setAttribute('subjects_ids',message.subject_ids);
                         element.setAttribute('canned_id',message.id);
                         setCollapsed(true);
@@ -338,7 +366,7 @@ const CannedMessages = props => {
                 <ul className="list-unstyled fs13 border mt-0 mx300" id={'canned-list-'+props.chatId}>
                     <li className="border-bottom pt-1 pb-1"><a onClick={(e) => setCollapsed(true)}><span className="material-icons">expand_less</span>{t('chat_canned.canned')}</a></li>
                     {data.map((item, index) => (
-                        <li><a className="fw-bold" key={index} onClick={() => expandCategory(item, index)}><span className="material-icons">{item.expanded ? 'expand_less' : 'expand_more'}</span>{item.title} [{item.messages.length}{item.messages.length >= 50 ? '+' : ''}]</a>
+                        <li key={'canned-'+index}><a className="fw-bold" key={index} onClick={() => expandCategory(item, index)}><span className="material-icons">{item.expanded ? 'expand_less' : 'expand_more'}</span>{item.title} [{item.messages.length}{item.messages.length >= 50 ? '+' : ''}]</a>
                             {item.expanded &&
                             <ul className="list-unstyled ms-4">
                                 {item.messages.map(message => (

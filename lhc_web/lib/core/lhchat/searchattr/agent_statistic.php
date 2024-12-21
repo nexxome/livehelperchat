@@ -171,6 +171,39 @@ $fieldsSearch['has_online_hours'] = array (
     )
 );
 
+$fieldsSearch['exclude_deactivated'] = array (
+    'type' => 'boolean',
+    'trans' => 'groupby',
+    'required' => false,
+    'valid_if_filled' => false,
+    'filter_type' => false,
+    'validation_definition' => new ezcInputFormDefinitionElement(
+        ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+    )
+);
+
+$fieldsSearch['mail_conv_user'] = array (
+    'type' => 'boolean',
+    'trans' => 'groupby',
+    'required' => false,
+    'valid_if_filled' => false,
+    'filter_type' => false,
+    'validation_definition' => new ezcInputFormDefinitionElement(
+        ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+    )
+);
+
+$fieldsSearch['group_conv'] = array (
+    'type' => 'boolean',
+    'trans' => 'groupby',
+    'required' => false,
+    'valid_if_filled' => false,
+    'filter_type' => false,
+    'validation_definition' => new ezcInputFormDefinitionElement(
+        ezcInputFormDefinitionElement::OPTIONAL, 'boolean'
+    )
+);
+
 $fieldSortAttr = array (
 'field'      => false,
 'default'    => false,

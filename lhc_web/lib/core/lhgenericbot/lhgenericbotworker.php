@@ -16,7 +16,12 @@ class erLhcoreClassLHCBotWorker
         $db->reconnect(); // Because it timeouts automatically, this calls to reconnect to database, this is implemented in 2.52v
 
         if (isset($this->args['inst_id']) && $this->args['inst_id'] > 0) {
-            $cfg = erConfigClassLhConfig::getInstance();
+            $cfg = \erConfigClassLhConfig::getInstance();
+            $db->query('USE ' . $cfg->getSetting('db', 'database'));
+
+            $instance = \erLhcoreClassModelInstance::fetch($this->args['inst_id']);
+            \erLhcoreClassInstance::$instanceChat = $instance;
+
             $db->query('USE ' . $cfg->getSetting('db', 'database_user_prefix') . $this->args['inst_id']);
         }
 
@@ -93,7 +98,61 @@ class erLhcoreClassLHCBotWorker
 
                     $params['chat'] = $chat;
 
-                    $response = erLhcoreClassGenericBotActionRestapi::makeRequest($restAPI->configuration_array['host'], $method, array('rest_api' => $restAPI, 'action' => $action, 'rest_api_method_params' => $action['content']['rest_api_method_params'], 'chat' => $chat, 'params' => $params));
+                    if (
+                        isset($method['polling_n_times']) && (int)$method['polling_n_times'] >= 1 && $method['polling_n_times'] <= 10 &&
+                        isset($method['polling_n_delay']) && (int)$method['polling_n_delay'] >= 1 && $method['polling_n_delay'] <= 10
+                    ) {
+                        for ($i = 0; $i < (int)$method['polling_n_times']; $i++) {
+                            sleep($method['polling_n_delay']);
+                            $response = erLhcoreClassGenericBotActionRestapi::makeRequest($restAPI->configuration_array['host'], $method, array('rest_api' => $restAPI, 'action' => $action, 'rest_api_method_params' => $action['content']['rest_api_method_params'], 'chat' => $chat, 'params' => $params));
+                            // Request succeeded we can exit a loop
+                            if (isset($response['conditions_met']) && $response['conditions_met'] == true) {
+                                break;
+                            }
+                        }
+                    } else {
+                        $response = erLhcoreClassGenericBotActionRestapi::makeRequest($restAPI->configuration_array['host'], $method, array('rest_api' => $restAPI, 'action' => $action, 'rest_api_method_params' => $action['content']['rest_api_method_params'], 'chat' => $chat, 'params' => $params));
+                    }
+
+                    erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.rest_api_after_request', array(
+                        'restapi' => & $restAPI,
+                        'chat' => $chat,
+                        'params' => $params,
+                        'method' => & $method,
+                        'response' => & $response
+                    ));
+
+                    // Store remote message
+                    if (
+                        isset($method['remote_message_id']) &&
+                        $method['remote_message_id'] != '' &&
+                        isset($response['content_raw'])
+                    ) {
+                        $contentRawParsed = json_decode($response['content_raw'], true);
+                        $remoteMessageId = erLhcoreClassGenericBotActionRestapi::extractAttribute($contentRawParsed, $method['remote_message_id']);
+                        if ($remoteMessageId['found'] === true && isset($params['msg']) && is_object($params['msg'])) {
+                            $db = ezcDbInstance::get();
+                            try {
+                                $db->beginTransaction();
+
+                                $params['msg']->syncAndLock();
+
+                                $meta_msg_array = $params['msg']->meta_msg_array;
+                                $meta_msg_array['iwh_msg_id'] = $remoteMessageId['value'];
+                                $params['msg']->meta_msg_array = $meta_msg_array;
+                                $params['msg']->meta_msg = json_encode($meta_msg_array);
+                                $params['msg']->del_st = erLhcoreClassModelmsg::STATUS_PENDING;
+
+                                if ($params['msg']->id > 0) {
+                                    $params['msg']->updateThis(['update' => ['meta_msg','del_st']]);
+                                }
+
+                                $db->commit();
+                            } catch (Exception $e) {
+                                $db->rollback();
+                            }
+                        }
+                    }
 
                     $event->removeThis();
 
@@ -146,22 +205,6 @@ class erLhcoreClassLHCBotWorker
 
                             if ($msgLast instanceof erLhcoreClassModelmsg) {
                                 erLhcoreClassChatWebhookIncoming::sendBotResponse($chat, $msgLast, ['init' => true]);
-                            }
-
-                            $chatVariables = $chat->chat_variables_array;
-
-                            // Log executed triggers if required
-                            if (!empty(erLhcoreClassGenericBotWorkflow::$triggerNameDebug) && isset($chatVariables['gbot_debug']) && $chatVariables['gbot_debug'] == 1) {
-                                erLhcoreClassLog::write(json_encode(erLhcoreClassGenericBotWorkflow::$triggerNameDebug,JSON_PRETTY_PRINT),
-                                    ezcLog::SUCCESS_AUDIT,
-                                    array(
-                                        'source' => 'lhc',
-                                        'category' => 'bot',
-                                        'line' => 0,
-                                        'file' => 'lhgenericbotworker.php',
-                                        'object_id' => $chat->id
-                                    )
-                                );
                             }
 
                             return;
@@ -229,20 +272,6 @@ class erLhcoreClassLHCBotWorker
                         }
 
                         $chatVariables = $chat->chat_variables_array;
-
-                        // Log executed triggers if required
-                        if (!empty(erLhcoreClassGenericBotWorkflow::$triggerNameDebug) && isset($chatVariables['gbot_debug']) && $chatVariables['gbot_debug'] == 1) {
-                            erLhcoreClassLog::write(json_encode(erLhcoreClassGenericBotWorkflow::$triggerNameDebug,JSON_PRETTY_PRINT),
-                                ezcLog::SUCCESS_AUDIT,
-                                array(
-                                    'source' => 'lhc',
-                                    'category' => 'bot',
-                                    'line' => 0,
-                                    'file' => 'lhgenericbotworker.php',
-                                    'object_id' => $chat->id
-                                )
-                            );
-                        }
 
                         return;
                     }

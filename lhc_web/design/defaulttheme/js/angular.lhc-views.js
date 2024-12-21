@@ -65,7 +65,16 @@ try {
 
         this.loadViewPage = function(href) {
             var deferred = $q.defer();
-            $http.get(href + '/(mode)/list').then(function(data) {
+
+            if (href.includes('(page)')) {
+                href = href.replace('(page)','(mode)/list/(page)')
+            } else if (href.slice(-1) == '?') {
+                href = href.substring(0, href.length - 1) + '/(mode)/list';
+            } else {
+                href = href + '/(mode)/list';
+            }
+
+            $http.get(href).then(function(data) {
                 deferred.resolve(data.data);
             },function(internalError){
                 deferred.reject(typeof internalError.status !== 'undefined' ? '['+internalError.status+']' : '[0]');

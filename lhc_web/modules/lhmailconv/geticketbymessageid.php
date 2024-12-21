@@ -17,7 +17,8 @@ if ($scheduled == 0 && $mailbox->sync_status == erLhcoreClassModelMailconvMailbo
 
     if ($worker == 'resque' && class_exists('erLhcoreClassExtensionLhcphpresque')) {
         // We should start this job ASAP it's queue is free
-        erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhcphpresque')->enqueue('lhc_mailconv', 'erLhcoreClassMailConvWorker', array('ignore_timeout' => true, 'mailbox_id' => $mailboxId));
+        $inst_id = class_exists('erLhcoreClassInstance') ? erLhcoreClassInstance::$instanceChat->id : 0;
+        erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionLhcphpresque')->enqueue('lhc_mailconv', 'erLhcoreClassMailConvWorker', array('inst_id' => $inst_id, 'ignore_timeout' => true, 'mailbox_id' => $mailboxId));
     } else {
         erLhcoreClassMailconvParser::syncMailbox(erLhcoreClassModelMailconvMailbox::fetch($mailboxId), ['live' => true, 'only_send' => true]);
     }
@@ -44,7 +45,7 @@ if ($message instanceof erLhcoreClassModelMailconvMessage && $message->conversat
 
     $template = erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconvrt','Working') . '. ' . $subStatus;
 
-    echo json_encode(array('found' => false, 'scheduled' => $scheduled, 'progress' => $template));
+    echo json_encode(array('found' => false, 'scheduled' => $scheduled, 'progress' => $template),\JSON_INVALID_UTF8_IGNORE);
 }
 
 exit;

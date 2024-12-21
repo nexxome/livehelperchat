@@ -13,6 +13,9 @@ export class mainWidget{
         this.units = 'px';
         this.originalCSS = '';
         this.bottom_override = false;
+        this.is_invitation = false;
+        this.is_loaded = false;
+        this.widget_rendered = false;
 
         this.cont = new UIConstructorIframe((prefix || 'lhc')+'_widget_v2', helperFunctions.getAbstractStyle({
             zindex: "2147483640",
@@ -24,7 +27,7 @@ export class mainWidget{
             maxwidth: "95px",
             minheight: "95px",
             minwidth: "95px"
-        }),  {"role":"presentation"}, "iframe");
+        }),  {"role":"presentation","translate":"no"}, "iframe");
 
         this.isLoaded = false;
 
@@ -95,7 +98,8 @@ export class mainWidget{
     }
 
     checkLoadStatus() {
-        if (this.loadStatus['css'] == true && this.loadStatus['theme'] == true && this.loadStatus['font_status'] == true && this.loadStatus['font_preload'] == true && this.loadStatus['css_preload'] == true) {
+        if (this.is_loaded == false && this.loadStatus['css'] == true && this.loadStatus['theme'] == true && this.loadStatus['font_status'] == true && this.loadStatus['font_preload'] == true && this.loadStatus['css_preload'] == true) {
+            this.is_loaded = true;
             this.loadApp();
         }
     }
@@ -114,11 +118,10 @@ export class mainWidget{
             return null;
         }
 
-        this.cont.elmDom.className = this.attributes.isMobile === true ? 'lhc-mobile lhc-mode-'+this.attributes.mode : 'lhc-desktop lhc-mode-'+this.attributes.mode;
+        this.cont.elmDom.className = this.attributes.isMobile === true ? 'notranslate lhc-mobile lhc-mode-'+this.attributes.mode : 'notranslate lhc-desktop lhc-mode-'+this.attributes.mode;
 
         if (this.attributes.cont_ss) {
             this.originalCSS = this.cont.elmDom.style.cssText;
-            this.cont.elmDom.style.cssText += this.attributes.cont_ss;
         }
     }
 
@@ -150,7 +153,17 @@ export class mainWidget{
         {
             this.screenAttributesUpdate = () => {
 
-                if (window.innerHeight < attributes.widgetDimesions.valueInternal['height'] + 60 + (this.attributes.clinst === true ? 70 : 0)) {
+                if (this.is_invitation === true && attributes.full_invitation === false) {
+                    return;
+                }
+
+                var body = this.cont.elmDomDoc.body,
+                    html = this.cont.elmDomDoc.documentElement;
+
+                var height = Math.max( body.scrollHeight, body.offsetHeight,
+                    html.clientHeight, html.scrollHeight, html.offsetHeight, attributes.widgetDimesions.value['height'] );
+
+                if (window.innerHeight < height + 60 + (this.attributes.clinst === true ? 70 : 0)) {
                     attributes.widgetDimesions.nextPropertySilent('height_soverride', window.innerHeight - 60 - (this.attributes.clinst === true ? 70 : 0));
                 } else {
                     attributes.widgetDimesions.nextPropertySilent('height_soverride', null);
@@ -165,7 +178,7 @@ export class mainWidget{
                 attributes.widgetDimesions.callListeners();
             };
 
-            this.screenAttributesUpdate();
+           this.screenAttributesUpdate();
 
             window.addEventListener('resize', this.screenAttributesUpdate);
         }
@@ -179,6 +192,12 @@ export class mainWidget{
             this.toggleVisibility(attributes.widgetStatus.valueInternal);
         });
 
+    }
+
+    resizeTrigger() {
+        if (this.screenAttributesUpdate) {
+            this.screenAttributesUpdate();
+        }
     }
 
     bootstrap() {
@@ -257,7 +276,7 @@ export class mainWidget{
 
     monitorDimensions(data) {
         this.width = data.width_override || data.width_soverride || data.width;
-        this.height = data.height_override || data.height_soverride || data.height;
+        this.height = data.height_soverride || data.height_override || data.height;
         this.bottom = data.bottom_override ? (data.bottom_override + (data.wbottom ? data.wbottom : 0)) : (30 + (this.attributes.clinst === true ? 70 : 0) + (data.wbottom ? data.wbottom : 0));
         this.right = data.right_override ? (data.right_override + (data.wright_inv ? data.wright_inv : 0)) : (30 + (data.wright ? data.wright : 0));
         this.units = (data.width_override || data.height_override || data.bottom_override || data.right_override) ? 'px' : data.units;
@@ -271,14 +290,35 @@ export class mainWidget{
         this.cont.hide();
     }
 
+    widgetRendered(){
+
+        if (this.widget_rendered === false) {
+            var eldoc = null;
+            if (this.cont.elmDomDoc && (eldoc = this.cont.elmDomDoc.getElementById('root')) && eldoc) {
+                eldoc.classList.add('lhc-widget-loaded');
+                this.widget_rendered = true;
+            }
+        }
+
+        if (!this.attributes.cont_ss) {
+            return;
+        }
+
+        if (this.is_invitation === false || (this.is_invitation === true && this.attributes.full_invitation)) {
+            this.cont.elmDom.style.cssText += this.attributes.cont_ss;
+        }
+    }
+
     hideInvitation() {
+        this.is_invitation = false;
         if (this.attributes.cont_ss) {
             this.cont.elmDom.style.cssText += this.attributes.cont_ss;
         }
     }
 
     showInvitation() {
-        if (this.attributes.cont_ss) {
+        this.is_invitation = true;
+        if (this.attributes.cont_ss && !this.attributes.full_invitation) {
             this.cont.elmDom.style.cssText = this.originalCSS;
         }
         this.show();

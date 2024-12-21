@@ -93,6 +93,11 @@
                 {#if type == 'online_op'}<span class="text-success" title={$t("widget.online")}>{$lhcList[type].op_on}</span>{/if}
             {:else if type == 'depgroups_stats'}
                 <i title={$t("widget.dep_group")} class="material-icons">&#xE84F;</i>
+            {:else if type == 'pending_chats'}
+                <a on:click={(e) => lhcServices.toggleWidgetSort(lhcList,sort_identifier,'id_dsc','id_asc',true)}>
+                    <i title={$t("widget.visitor")} class:text-muted={$lhcList.toggleWidgetData[sort_identifier] != 'id_dsc' && $lhcList.toggleWidgetData[sort_identifier] != 'id_asc'} class="chat-active material-icons">face</i>
+                    <i title={$t("widget.sort_pending")} class="material-icons">{$lhcList.toggleWidgetData[sort_identifier] === 'id_dsc' ? 'trending_up' : 'trending_down'}</i>
+                </a>
             {:else if type == 'active_chats'}
                 <a on:click={(e) => lhcServices.toggleWidgetSort(lhcList,sort_identifier,'loc_dsc','loc_asc',true)} >
                     <i title={$t("widget.location")} class="material-icons">location_on</i>
@@ -111,13 +116,9 @@
                 {$t("widget.transferred_to_you")}
             {/if}
 
-            {#if type == 'pending_chats'}
-                <a on:click={(e) => lhcServices.toggleWidgetSort(lhcList,sort_identifier,'id_dsc','id_asc',true)}><i title={$t("widget.sort")} class="material-icons">{$lhcList.toggleWidgetData[sort_identifier] === 'id_dsc' ? 'trending_up' : 'trending_down'}</i></a>
-            {/if}
-
             {#each custom_sort_icons as iconSortData}
                 | <a on:click={(e) => lhcServices.toggleWidgetSort(lhcList, iconSortData.sort_identifier, iconSortData.sort_options[0], iconSortData.sort_options[1], true)} >
-                    <i title={iconSortData.title} class={'material-icons ' + ($lhcList.toggleWidgetData[iconSortData.sort_identifier] != iconSortData.sort_options[1] && $lhcList.toggleWidgetData[iconSortData.sort_identifier] != iconSortData.sort_options[0] ? 'text-muted' : '')}>
+                    <i title={iconSortData.title} class={'material-icons chat-active ' + ($lhcList.toggleWidgetData[iconSortData.sort_identifier] != iconSortData.sort_options[1] && $lhcList.toggleWidgetData[iconSortData.sort_identifier] != iconSortData.sort_options[0] ? 'text-muted' : '')}>
                         {$lhcList.toggleWidgetData[iconSortData.sort_identifier] == iconSortData.sort_options[1] ? iconSortData['sort_icon_' + iconSortData.sort_options[1]] : iconSortData['sort_icon_' + iconSortData.sort_options[0]]}
                     </i>
                 </a>
@@ -130,7 +131,7 @@
             {#each $lhcList.additionalColumns as column}
                 {#if column.cenabl == true && !column.iconm}
                     <th width="20%">
-                        {#if column.icon !== ''}<i class="material-icons text-muted">{column.icon}</i>{/if}{column.name}
+                        {#if column.icon !== ''}<i class:text-muted={!additional_sort || !column.sorten || ($lhcList.toggleWidgetData[additional_sort] != column.items[0] + '_asc' && $lhcList.toggleWidgetData[additional_sort] != column.items[0] + '_dsc')} class="material-icons chat-active">{column.icon}</i>{/if}{column.name}
                         {#if additional_sort !== "" && column.sorten}
                             <a on:click={(e) => lhcServices.toggleWidgetSort(lhcList,additional_sort,column.items[0] + '_dsc', column.items[0] + '_asc',true)}>
                                 <i class:text-muted={$lhcList.toggleWidgetData[additional_sort] != column.items[0] + '_asc' && $lhcList.toggleWidgetData[additional_sort] != column.items[0] + '_dsc'} class="material-icons">{$lhcList.toggleWidgetData[additional_sort] == column.items[0] + '_dsc' || $lhcList.toggleWidgetData[additional_sort] != column.items[0] + '_asc' ? 'trending_up' : 'trending_down'}</i>
@@ -158,8 +159,12 @@
                 <i title={$t("widget.last_assignment_ago")}  class="material-icons">assignment_ind</i>
             {/if}
 
-            {#if type === 'pending_chats' || type === 'my_mails' || type === 'alarm_mails' || type === 'active_mails' || type === 'pending_mails'}
+            {#if type === 'my_mails' || type === 'alarm_mails' || type === 'active_mails' || type === 'pending_mails'}
             <i title={$t("widget.wait_time")} class="material-icons">access_time</i>
+            {/if}
+
+            {#if type === 'pending_chats'}
+                <a on:click={(e) => lhcServices.toggleWidgetSort(lhcList,sort_identifier,'wtime_dsc','wtime_asc',true)}> <i class:text-muted={$lhcList.toggleWidgetData[sort_identifier] != 'wtime_dsc' && $lhcList.toggleWidgetData[sort_identifier] != 'wtime_asc'} title={$t("widget.wait_time")} class="material-icons chat-active">access_time</i><i title={$t("widget.sort_wait_time")} class="material-icons">{$lhcList.toggleWidgetData[sort_identifier] === 'wtime_dsc' ? 'trending_up' : 'trending_down'}</i></a>
             {/if}
 
             {#if type === 'my_chats'}
@@ -506,7 +511,7 @@
                                     {#if column.cenabl == true && column.iconm == true}
                                         {#each column.items as val}
                                             {#if chat[val]}
-                                                <span class="material-icons me-0" on:click={(e) => {column.iconp && lhcServices.openModal('chat/icondetailed/'+chat.id + '/' + column.id,e)}} title={column.iconp == true ? 'Click for more information | ' : ''}{chat[val + '_tt'] ? chat[val + '_tt'] : chat[val]} style:color={column.icon[chat[val]].color}>{column.icon[chat[val]].icon}</span>
+                                                <span class="material-icons me-0" on:click={(e) => {column.iconp && lhcServices.openModal('chat/icondetailed/'+chat.id + '/' + column.id,e)}} title={column.iconp == true ? 'Click for more information | ' : ''}{chat[val + '_tt'] ? chat[val + '_tt'] : chat[val]} style:color={column.icon[chat[val]] && column.icon[chat[val]].color ? column.icon[chat[val]].color : '#CECECE'}>{column.icon[chat[val]] && column.icon[chat[val]].icon ? column.icon[chat[val]].icon : 'unknown_document'}</span>
                                             {/if}
                                         {/each}
                                     {/if}
@@ -597,7 +602,7 @@
 
                     {#if type == 'active_chats' || type == 'subject_chats' || type == 'bot_chats'}
                         <div class="abbr-list" title="Chat started at - {chat.time_created_front}">
-                            <span class="material-icons text-success" title={$t("widget.send_receive")} class:text-danger={chat.pnd_rsp}>{chat.pnd_rsp === true ? 'call_received' : 'call_made'}</span>{chat.last_msg_time_front ? chat.last_msg_time_front : '&#x2709;'}
+                            <span class="material-icons text-success" title={$t("widget.send_receive")} class:text-danger={chat.pnd_rsp}>{chat.pnd_rsp === true ? 'call_received' : 'call_made'}</span>{#if chat.last_msg_time_front}{chat.last_msg_time_front}{:else}&#x2709;{/if}
                         </div>
                     {/if}
 
@@ -608,7 +613,7 @@
 
                     {#if type == 'my_chats'}
                         <div class="abbr-list" title={chat.status == 1 ? $t("widget.active")  : $t("widget.pending")}>
-                            {#if chat.status != 1}<i title={$t("widget.pending")} class="material-icons chat-unread">&#xE80E;</i>{/if}<span class="material-icons text-success" title={$t("widget.send_receive")} class:text-danger={chat.pnd_rsp}>{chat.pnd_rsp === true ? 'call_received' : 'call_made'}</span>{chat.status == 0 ? '&#x23F3; '+chat.wait_time_pending : chat.last_msg_time_front}
+                            {#if chat.status != 1}<i title={$t("widget.pending")} class="material-icons chat-unread">&#xE80E;</i>{/if}<span class="material-icons text-success" title={$t("widget.send_receive")} class:text-danger={chat.pnd_rsp}>{chat.pnd_rsp === true ? 'call_received' : 'call_made'}</span>{#if !chat.status}&#x23F3; {chat.wait_time_pending}{:else}{chat.last_msg_time_front}{/if}
                         </div>
                     {/if}
                 </td>

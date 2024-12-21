@@ -33,22 +33,31 @@ class _zoomImage {
 
         var that = this;
 
-        btn.onclick = () => {
-            this.cleanup();
+        function removeListeners(){
             window.removeEventListener('click',clickListener);
             window.removeEventListener('resize',resizeListener);
+        }
+
+        btn.onclick = () => {
+            this.cleanup();
+            removeListeners();
         }
 
         function clickListener(event) {
             if (event.target == modal) {
                 that.cleanup();
-                window.removeEventListener('click',clickListener);
-                window.removeEventListener('resize',resizeListener);
+                removeListeners();
             }
         }
 
         function resizeListener(event) {
-                document.getElementById('lhc-zoom-image').style.maxHeight = (window.innerHeight - 140) + "px";
+                var elm = document.getElementById('lhc-zoom-image');
+                if (elm) {
+                    document.getElementById('lhc-zoom-image').style.maxHeight = (window.innerHeight - 140) + "px";
+                } else {
+                    removeListeners();
+                    that.cleanup();
+                }
         }
 
         window.addEventListener('click',clickListener);

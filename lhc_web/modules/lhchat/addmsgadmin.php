@@ -158,9 +158,12 @@ if (trim($form->msg) != '')
     	                }
                     }
 
-                    $Chat->last_op_msg_time = time();
+                    if (!$whisper) {
+                        $Chat->last_op_msg_time = time();
+                        $updateFields[] = 'last_op_msg_time';
+                    }
+
                     $Chat->last_msg_id = $msg->id;
-                    $updateFields[] = 'last_op_msg_time';
                     $updateFields[] = 'last_msg_id';
 
                     if (!$whisper && $Chat->status != erLhcoreClassModelChat::STATUS_CLOSED_CHAT) {
@@ -249,17 +252,27 @@ if (trim($form->msg) != '')
 
                         $Chat->user_id = $currentUser->getUserID();
 
+                        // If operator takes over and task is not finished we want to unlock text field for visitor
+                        if (isset($Chat->chat_variables_array['bot_lock_msg'])) {
+                            $chatVariables = $Chat->chat_variables_array;
+                            unset($chatVariables['bot_lock_msg']);
+                            $Chat->chat_variables_array = $chatVariables;
+                            $Chat->chat_variables = json_encode($chatVariables);
+                        }
+
+                        if (isset($chat->chat_variables_array['bot_lock_msg'])) {
+                            $r = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','We are still working on your previous request!');
+                            echo erLhcoreClassChat::safe_json_encode(array('error' => true, 'r' => $r));
+                            exit;
+                        }
+
                         // User status in event of chat acceptance
                         $Chat->usaccept = $userData->hide_online;
                         $Chat->operation_admin .= "lhinst.updateVoteStatus(".$Chat->id.");";
                         $Chat->saveThis();
 
                         // If chat is transferred to pending state we don't want to process any old events
-                        $eventPending = erLhcoreClassModelGenericBotChatEvent::findOne(array('filter' => array('chat_id' => $Chat->id)));
-
-                        if ($eventPending instanceof erLhcoreClassModelGenericBotChatEvent) {
-                            $eventPending->removeThis();
-                        }
+                        erLhcoreClassGenericBotWorkflow::removePreviousEvents($Chat->id);
 
                         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.data_changed',array('chat' => & $Chat, 'user' => $currentUser));
 

@@ -23,6 +23,8 @@ try {
             $message->response_type = erLhcoreClassModelMailconvMessage::RESPONSE_NOT_REQUIRED;
             $message->response_time = $message->lr_time - $message->accept_time;
             $message->status = erLhcoreClassModelMailconvMessage::STATUS_RESPONDED;
+            $message->user_id = $conv->user_id;
+            $message->conv_user_id = $conv->user_id;
             $message->updateThis();
         }
 
@@ -52,7 +54,7 @@ try {
 
         $db->commit();
 
-        echo json_encode($returnAttributes);
+        echo json_encode($returnAttributes,\JSON_INVALID_UTF8_IGNORE);
 
     } else {
         throw new Exception(erTranslationClassLhTranslation::getInstance()->getTranslation('module/mailconv','No permission to read conversation.'));

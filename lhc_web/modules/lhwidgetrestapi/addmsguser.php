@@ -44,6 +44,12 @@ if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[
 
         $chat = erLhcoreClassModelChat::fetchAndLock($payload['id']);
 
+        if (isset($chat->chat_variables_array['bot_lock_msg'])) {
+            $r = erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','We are still working on your previous request!');
+            echo erLhcoreClassChat::safe_json_encode(array('error' => true, 'r' => $r));
+            exit;
+        }
+
         // We do not want to call mobile notifications and any related database calls
         if (!isset($payload['mn']) || $chat->status != erLhcoreClassModelChat::STATUS_ACTIVE_CHAT) {
             erLhcoreClassChatEventDispatcher::getInstance()->disableMobile = true;
@@ -156,26 +162,18 @@ if (isset($payload['msg']) && trim($payload['msg']) != '' && trim(str_replace('[
 
         $db->commit();
 
-        echo erLhcoreClassChat::safe_json_encode(array('r' => $r, 't' => $triggers));
+        $response = array('r' => $r, 't' => $triggers);
+
+        if (isset($chat->chat_variables_array['bot_lock_msg'])){
+            $response['l'] = true;
+        }
+
+        echo erLhcoreClassChat::safe_json_encode($response);
 
         // Try to finish request before any listers do their job
         flush();
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
-        }
-
-        // Log executed triggers if required
-        if (!empty($triggers) && isset($chat->chat_variables_array['gbot_debug']) && $chat->chat_variables_array['gbot_debug'] == 1) {
-            erLhcoreClassLog::write(json_encode(erLhcoreClassGenericBotWorkflow::$triggerNameDebug,JSON_PRETTY_PRINT),
-                ezcLog::SUCCESS_AUDIT,
-                array(
-                    'source' => 'lhc',
-                    'category' => 'bot',
-                    'line' => 0,
-                    'file' => 'addmsguser.php',
-                    'object_id' => $chat->id
-                )
-            );
         }
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.addmsguser',array('chat' => & $chat, 'msg' => & $msg));

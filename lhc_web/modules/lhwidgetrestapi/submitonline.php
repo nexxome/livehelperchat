@@ -113,6 +113,22 @@ if (!isset($Errors)) {
     }
 }
 
+if (empty($Errors) && isset($startDataFields['pre_conditions']) && !empty($startDataFields['pre_conditions'])) {
+    $preConditions = json_decode($startDataFields['pre_conditions'], true);
+    if (
+        (isset($preConditions['maintenance_mode']) && $preConditions['maintenance_mode'] == 1) ||
+        (isset($preConditions['online']) && !empty($preConditions['online'])) ||
+        (isset($preConditions['offline']) && !empty($preConditions['offline'])) ||
+        (isset($preConditions['disable']) && !empty($preConditions['disable'])) ) {
+
+        $outcome = erLhcoreClassChatValidator::validatePreconditions($preConditions, ['is_online' => true, 'online_user' => (isset($onlineUser) ? $onlineUser : false)]);
+
+        if ($outcome['mode'] == 'disable' || $outcome['mode'] == 'terminate') {
+            $Errors['blocked_user'] = $outcome['message'];
+        }
+    }
+}
+
 if (empty($Errors)) {
 
     $chat->lsync = time();
@@ -144,6 +160,7 @@ if (empty($Errors)) {
             $chat_variables_array[$chatVariableKey] = $chatVariableName;
         }
         $chat->chat_variables = json_encode($chat_variables_array);
+        $chat->chat_variables_array = $chat_variables_array;
     }
 
     if (isset($restAPI) && isset($requestPayload['additional_data']) && is_array($requestPayload['additional_data'])) {
@@ -152,6 +169,7 @@ if (empty($Errors)) {
             $chat_variables_array[$chatVariableKey] = $chatVariableName;
         }
         $chat->additional_data = json_encode($chat_variables_array);
+        $chat->additional_data_array = $chat_variables_array;
     }
 
     $nick = trim($chat->nick);
@@ -321,10 +339,6 @@ if (empty($Errors)) {
                     $chat->chat_initiator = erLhcoreClassModelChat::CHAT_INITIATOR_PROACTIVE;
                 }
 
-                $userInstance->chat_id = $chat->id;
-                $userInstance->dep_id = $chat->dep_id;
-                $userInstance->chat_time = time();
-
                 if (!isset($resetMessage)) {
                     $userInstance->message_seen = 1;
                     $userInstance->message_seen_ts = time();
@@ -333,6 +347,22 @@ if (empty($Errors)) {
                 if ($userInstance->visitor_tz == '') {
                     $userInstance->visitor_tz = $chat->user_tz_identifier;
                 }
+
+                if (erLhcoreClassModelChatConfig::fetch('remember_phone_email')->current_value == 1 && $userInstance->chat_id > 0) {
+                    $chatLegacy = erLhcoreClassModelChat::fetch($userInstance->chat_id);
+                    if (is_object($chatLegacy)) {
+                        if ($chatLegacy->phone != '' && $chat->phone == '') {
+                            $chat->phone = $chatLegacy->phone;
+                        }
+                        if ($chatLegacy->email != '' && $chat->email == '') {
+                            $chat->email = $chatLegacy->email;
+                        }
+                    }
+                }
+
+                $userInstance->dep_id = $chat->dep_id;
+                $userInstance->chat_time = time();
+                $userInstance->chat_id = $chat->id;
 
                 if (erLhcoreClassModelChatConfig::fetch('remember_username')->current_value == 1) {
                     if ($chat->nick != 'Visitor') {
@@ -436,7 +466,7 @@ if (empty($Errors)) {
             $responder = erLhAbstractModelAutoResponder::processAutoResponder($chat);
         }
 
-        if (isset($responder) && $responder instanceof erLhAbstractModelAutoResponder) {
+        if (isset($responder) && $responder instanceof erLhAbstractModelAutoResponder && $responder->disabled == 0) {
             $beforeAutoResponderErrors = array();
             erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.before_auto_responder_triggered',array('chat' => & $chat, 'errors' => & $beforeAutoResponderErrors));
 
@@ -467,7 +497,7 @@ if (empty($Errors)) {
 
                     if ($messageText != '') {
                         $msg = new erLhcoreClassModelmsg();
-                        $msg->msg = trim($messageText);
+                        $msg->msg = erLhcoreClassGenericBotWorkflow::translateMessage(trim($messageText), array('chat' => $chat, 'args' => ['chat' => $chat]));
                         $msg->meta_msg = $responder->getMeta($chat, 'pending');
                         if ($msg->meta_msg == '') {
                             $msg->meta_msg = '{"content":{"auto_responder":true}}';
@@ -475,7 +505,7 @@ if (empty($Errors)) {
                         $msg->chat_id = $chat->id;
                         $msg->name_support = $responder->operator != '' ? $responder->operator : erTranslationClassLhTranslation::getInstance()->getTranslation('chat/startchat','Live Support');
                         $msg->user_id = -2;
-                        $msg->time = time() + 5;
+                        $msg->time = time() + 1;
                         erLhcoreClassChat::getSession()->save($msg);
 
                         if ($chat->last_msg_id < $msg->id) {
@@ -559,20 +589,6 @@ if (!isset($restAPI)) {
         flush();
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
-        }
-
-        // Log executed triggers if required
-        if (!empty(erLhcoreClassGenericBotWorkflow::$triggerName) && isset($chat->chat_variables_array['gbot_debug']) && $chat->chat_variables_array['gbot_debug'] == 1) {
-            erLhcoreClassLog::write(json_encode(erLhcoreClassGenericBotWorkflow::$triggerNameDebug,JSON_PRETTY_PRINT),
-                ezcLog::SUCCESS_AUDIT,
-                array(
-                    'source' => 'lhc',
-                    'category' => 'bot',
-                    'line' => 0,
-                    'file' => 'submitonline.php',
-                    'object_id' => $chat->id
-                )
-            );
         }
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.chat_started', array('chat' => & $chat, 'msg' => $messageInitial));

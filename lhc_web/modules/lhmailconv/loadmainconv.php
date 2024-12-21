@@ -103,11 +103,15 @@ try {
                     $message->wait_time = $message->accept_time - $message->ctime;
                     $message->status = erLhcoreClassModelMailconvMessage::STATUS_ACTIVE;
                     $message->conv_user_id = $conv->user_id;
+                    $message->user_id = $conv->user_id;
                     $message->updateThis();
                     $messages[$indexMessage] = $message;
                 } else {
+                    if ($message->user_id == 0) {
+                        $message->user_id = $conv->user_id;
+                    }
                     $message->conv_user_id = $conv->user_id;
-                    $message->updateThis(['update' => ['conv_user_id']]);
+                    $message->updateThis(['update' => ['conv_user_id', 'user_id']]);
                 }
             }
         }
@@ -160,7 +164,7 @@ try {
             'advlist autolink lists link image charmap print preview anchor image lhfiles',
             'searchreplace visualblocks code fullscreen',
             'media table paste help',
-            'print preview importcss searchreplace autolink save autosave directionality visualblocks visualchars fullscreen media codesample charmap pagebreak nonbreaking anchor toc advlist lists wordcount textpattern noneditable help charmap emoticons'
+            'print preview importcss searchreplace autolink save directionality visualblocks visualchars fullscreen media codesample charmap pagebreak nonbreaking anchor toc advlist lists wordcount textpattern noneditable help charmap emoticons'
         ];
 
         if (isset($mcOptionsData['mce_plugins']) && $mcOptionsData['mce_plugins'] != '') {
@@ -188,6 +192,7 @@ try {
             'messages' => array_values($messages),
             'moptions' => [
                 'is_archive' => $is_archive,
+                'is_blocked' => erLhcoreClassModelChatBlockedUser::isBlocked(array('email_conv' => $conv->from_address)),
                 'lang_dir' => erLhcoreClassDesign::design('images/flags'),
                 'skip_images' => ((isset($mcOptionsData['skip_images']) && $mcOptionsData['skip_images'] == 1) || !$currentUser->hasAccessTo('lhmailconv','include_images')),
                 'image_skipped_text' => ((isset($mcOptionsData['image_skipped_text']) && $mcOptionsData['image_skipped_text'] != '') ? $mcOptionsData['image_skipped_text'] : '[img]'),
@@ -218,7 +223,7 @@ try {
 
         erLhcoreClassChatEventDispatcher::getInstance()->dispatch('mailconv.editor_options',array('options' => & $editorOptions));
 
-        echo json_encode($editorOptions);
+        echo json_encode($editorOptions,\JSON_INVALID_UTF8_IGNORE);
 
         $db->commit();
     } else {
@@ -229,7 +234,7 @@ try {
     http_response_code(400);
     echo json_encode(array(
         'error' => $e->getMessage()
-    ));
+    ),\JSON_INVALID_UTF8_IGNORE);
 }
 
 

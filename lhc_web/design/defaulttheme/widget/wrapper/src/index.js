@@ -55,7 +55,7 @@
             lhc.loaded = false;
             lhc.connected = false;
             lhc.ready = false;
-            lhc.version = 224;
+            lhc.version = 246;
 
             const isMobileItem = require('ismobilejs');
             var isMobile = isMobileItem.default(global.navigator.userAgent).phone;
@@ -138,9 +138,11 @@
                     LHC_API: LHC_API,
                     viewHandler: null,
                     msgSnippet: null,
+                    drag_enabled: LHC_API.args.drag_enabled || false,
                     react_attr: LHC_API.args.react_attr || null,
                     hide_parent: LHC_API.args.hide_parent || false,
                     hide_iframe: LHC_API.args.hide_iframe || false,
+                    animate_nh: LHC_API.args.animate_nh || false,
                     hide_status: LHC_API.args.hide_status || null,
                     mainWidget: new mainWidget(prefixLowercase),
                     popupWidget: new mainWidgetPopup(),
@@ -149,12 +151,11 @@
                     onlineStatus: new BehaviorSubject(true),
                     wloaded: new BehaviorSubject(false),
                     sload: new BehaviorSubject(false),
+                    status_position: new BehaviorSubject(null),
                     shidden: new BehaviorSubject(LHC_API.args.hide_status || false),
                     msgsnippet_status: new BehaviorSubject(false),
                     unread_counter: new BehaviorSubject(0),
-                    widgetStatus: new BehaviorSubject((storageHandler.getSessionStorage(prefixStorage + '_ws') === 'true' || (LHC_API.args.mode && LHC_API.args.mode == 'embed'))),
                     eventEmitter: new EventEmitter(),
-                    toggleSound: new BehaviorSubject(storageHandler.getSessionStorage(prefixStorage + '_sound') === 'true', {'ignore_sub': true}),
                     hideOffline: false,
                     offline: LHC_API.args.offline || null,
                     fscreen: LHC_API.args.fscreen || false,
@@ -171,6 +172,7 @@
                     domain: LHC_API.args.domain || null,
                     domain_lhc: null,
                     instance_id: 0,
+                    broadcasChannel : new BroadcastChannel(prefixStorage+'_wchannel'),
                     profile_pic: LHC_API.args.profile_pic || null,
                     position: LHC_API.args.position || 'bottom_right',
                     position_placement: LHC_API.args.position_placement || 'bottom_right',
@@ -205,12 +207,14 @@
                     storageHandler: storageHandler,
                     staticJS: {},
                     nh : null, // Need help data
+                    full_invitation: false,
                     init_calls: [],
                     childCommands: [],
                     childExtCommands: [],
                     lhc_var: (LHC_API.args.lhc_var || (typeof lhc_var !== 'undefined' ? lhc_var : null)),
                     loadcb: LHC_API.args.loadcb || null,
-                    LHCChatOptions: global[scopeScript + 'ChatOptions'] || {}
+                    LHCChatOptions: global[scopeScript + 'ChatOptions'] || {},
+                    ignoreVars : false
                 };
 
                 attributesWidget.widgetDimesions = new BehaviorSubject({
@@ -234,12 +238,15 @@
                 attributesWidget.userSession.setSessionInformation(attributesWidget.storageHandler.getSessionInformation());
                 attributesWidget.userSession.setSessionReferrer(storageHandler.getSessionReferrer());
 
+                attributesWidget.widgetStatus = new BehaviorSubject(attributesWidget.userSession.ws == '1' || (LHC_API.args.mode && LHC_API.args.mode == 'embed'));
+                attributesWidget.toggleSound = new BehaviorSubject(!(attributesWidget.userSession.sd == '1'), {'ignore_sub': true});
+
                 if (attributesWidget.mode == 'widget' || attributesWidget.mode == 'popup') {
 
                     var containerChatObj = new containerChat(attributesWidget.prefixLowercase, LHC_API.args.pnode || null);
 
-                    attributesWidget.viewHandler = new statusWidget(attributesWidget.prefixLowercase);
-                    containerChatObj.cont.elmDom.appendChild(attributesWidget.viewHandler.cont.constructUI(), !0);
+                    attributesWidget.viewHandler = new statusWidget(attributesWidget.prefixLowercase, lhc.version);
+                    containerChatObj.cont.elmDom.appendChild(attributesWidget.viewHandler.cont, !0);
 
                     if (attributesWidget.mode == 'widget' || attributesWidget.mode == 'popup') {
                         containerChatObj.cont.elmDom.appendChild(attributesWidget.mainWidget.cont.constructUI(), !0);
@@ -384,6 +391,10 @@
                         LHC_API.args.position_placement = attributesWidget.position_placement = data.wposition;
                     }
 
+                    if (data.core_position) {
+                        LHC_API.args.position = attributesWidget.position = data.core_position;
+                    }
+
                     attributesWidget.captcha = {hash: data.hash, ts: data.hash_ts};
                     attributesWidget.userSession.setVID(data.vid);
 
@@ -433,6 +444,14 @@
 
                         if (data.chat_ui.clinst) {
                             attributesWidget.clinst = true;
+                        }
+
+                        if (data.chat_ui.drag_enabled) {
+                            attributesWidget.drag_enabled = true;
+                        }
+
+                        if (data.chat_ui.animate_nh) {
+                            attributesWidget.animate_nh = true;
                         }
 
                         if (data.chat_ui.viewport) {
@@ -512,6 +531,7 @@
                         if (data.js_vars.length > 0) {
                             attributesWidget.userSession.setupVarsMonitoring(data.js_vars, (vars, prefillVars) => {
                                 chatEvents.sendChildEvent('jsVars', [vars, prefillVars]);
+                                attributesWidget.eventEmitter.emitEvent('jsVarsUpdated');
                             });
                         }
                     }
@@ -554,6 +574,34 @@
                         });
                     }
 
+                })
+
+                // Listen for broadcast channels
+                attributesWidget.broadcasChannel.addEventListener("message", function(event) {
+                    if (event.data.action === 'current_vars' || event.data.action === 'check_vars') {
+                        if (attributesWidget.lhc_var !== null) {
+                            attributesWidget.ignoreVars = true;
+                            for (var index in event.data.lhc_var) {
+                                if ((typeof attributesWidget.lhc_var[index] === 'undefined' || attributesWidget.lhc_var[index] === '' || event.data.init === false) && event.data.lhc_var[index] !== '' && attributesWidget.lhc_var[index] !== event.data.lhc_var[index]) {
+                                    attributesWidget.lhc_var[index] = event.data.lhc_var[index];
+                                }
+                            }
+                            attributesWidget.ignoreVars = false;
+                            event.data.action === 'check_vars' && attributesWidget.broadcasChannel.postMessage({'action':'current_vars', 'init':true, 'lhc_var': JSON.parse(JSON.stringify(attributesWidget.lhc_var))});
+                        }
+                    } else if (event.data.action === 'wstatus') {
+                        if (attributesWidget.mode != 'embed' && event.data.value != attributesWidget.widgetStatus.value) {
+                            attributesWidget.widgetStatus.next(event.data.value);
+                        }
+                    } else if (event.data.action === 'chat_started') {
+                        if (attributesWidget.userSession.id === null && event.data.data.id) {
+                            attributesWidget.userSession.setChatInformation(event.data.data, attributesWidget.nh && attributesWidget.nh.ap);
+                            chatEvents.sendChildEvent('reopenNotification', [{
+                                'id': event.data.data.id,
+                                'hash': event.data.data.hash
+                            }]);
+                        }
+                    }
                 })
 
                 // Widget Hide event
@@ -638,6 +686,12 @@
                         attributesWidget.userSession.setChatInformation({'id': null, 'hash': null});
                         attributesWidget.storageHandler.storeSessionInformation(attributesWidget.userSession.getSessionAttributes());
                         attributesWidget.proactive = {};
+                    }
+                });
+
+                attributesWidget.eventEmitter.addListener('widgetRendered', function (params) {
+                    if (attributesWidget.mode == 'widget' || attributesWidget.mode == 'embed') {
+                        attributesWidget.mainWidget.widgetRendered();
                     }
                 });
 
@@ -729,6 +783,11 @@
 
                     if (mode !== 'popup' || attributesWidget.kcw === true) {
                         attributesWidget.userSession.setChatInformation(data, attributesWidget.nh && attributesWidget.nh.ap);
+                        attributesWidget.broadcasChannel.postMessage({'action':'chat_started', 'data':data, 'mode': mode});
+                        mode == 'popup' && chatEvents.sendChildEvent('reopenNotification', [{
+                            'id': data.id,
+                            'hash': data.hash
+                        }]);
                     }
 
                     if (mode == 'popup') {
@@ -739,6 +798,7 @@
                     if (attributesWidget.fresh === false && (mode !== 'popup' || attributesWidget.kcw === true)) {
                         attributesWidget.storageHandler.storeSessionInformation(attributesWidget.userSession.getSessionAttributes());
                     }
+
                 });
 
                 // Subscribe event
@@ -758,15 +818,20 @@
                     if (attributesWidget.mode !== 'popup') {
                         if (attributesWidget.mode !== 'embed') {
                             // Do not store open status in local storage because embed is always open
-                            attributesWidget.storageHandler.setSessionStorage(prefixStorage + '_ws', data);
+                            // attributesWidget.storageHandler.setSessionStorage(prefixStorage + '_ws', data);
+                            attributesWidget.userSession.ws = data ? '1' : null;
+                            attributesWidget.storageHandler.storeSessionInformation(attributesWidget.userSession.getSessionAttributes());
+                            attributesWidget.broadcasChannel.postMessage({'action':'wstatus','value':data});
                         }
+
                         chatEvents.sendChildEvent('widgetStatus', [data]);
                     }
                 });
 
                 // Store sound settings
                 attributesWidget.toggleSound.subscribe((data) => {
-                    attributesWidget.storageHandler.setSessionStorage(prefixStorage + '_sound', data);
+                    attributesWidget.userSession.sd = !data ? '1' : null;
+                    attributesWidget.storageHandler.storeSessionInformation(attributesWidget.userSession.getSessionAttributes());
                 });
 
                 attributesWidget.onlineStatus.subscribe((data) => {
@@ -817,11 +882,14 @@
                 attributesWidget.eventEmitter.addListener('hideInvitation', (data) => {
                     attributesWidget.mainWidget.hideInvitation();
                     if (data.full) {
+                        attributesWidget.full_invitation = true;
                         attributesWidget.eventEmitter.emitEvent('showWidget', [{'sender': 'closeButton'}]);
                         attributesWidget.eventEmitter.emitEvent('fullInvitation', [data]);
                     } else {
+                        attributesWidget.full_invitation = false;
                         attributesWidget.eventEmitter.emitEvent('cancelInvitation', []);
                     }
+                    attributesWidget.mainWidget.resizeTrigger();
                 });
 
                 attributesWidget.eventEmitter.addListener('msgSnippet', (data) => {
@@ -859,22 +927,35 @@
                     }
                 });
 
-                attributesWidget.originalTitle = document.title;
-                attributesWidget.blinkInterval = null;
-
                 attributesWidget.eventEmitter.addListener('change_language', (data) => {
                     attributesWidget.lang = data.lng.replace('/', '') + '/';
                 });
+
+                attributesWidget.originalTitle = document.title;
+                attributesWidget.blinkInterval = null;
+                attributesWidget.titleChanged = false;
 
                 attributesWidget.eventEmitter.addListener('unread_message_title', (data) => {
                     clearInterval(attributesWidget.blinkInterval);
                     if (data.status == false) {
                         attributesWidget.blinkInterval = setInterval(() => {
-                            document.title = (Math.round(new Date().getTime() / 1000) % 2) ? '💬 ' + attributesWidget.originalTitle : attributesWidget.originalTitle;
+                            if (Math.round(new Date().getTime() / 1000) % 2 && attributesWidget.titleChanged === false) {
+                                attributesWidget.originalTitle = document.title;
+                                document.title = '💬 ' + document.title;
+                                attributesWidget.titleChanged = true;
+                            } else {
+                                if (attributesWidget.titleChanged === true) {
+                                    document.title = attributesWidget.originalTitle;
+                                }
+                                attributesWidget.titleChanged = false;
+                            }
                         }, 1000);
                     } else {
                         attributesWidget.focused = true;
-                        document.title = attributesWidget.originalTitle;
+                        if (attributesWidget.titleChanged === true) {
+                            document.title = attributesWidget.originalTitle;
+                            attributesWidget.titleChanged = false;
+                        }
                     }
                 });
 
@@ -908,8 +989,10 @@
                             e = d.documentElement,
                             g = d.getElementsByTagName('body')[0],
                             y = global.innerHeight || e.clientHeight || g.clientHeight;
-                        if (parseInt(data.height) > attributesWidget.widgetDimesions.value['height'] && y > parseInt(data.height)) {
+
+                        if (parseInt(data.height) > attributesWidget.widgetDimesions.value['height']) {
                             attributesWidget.widgetDimesions.nextProperty('height_override', parseInt(data.height));
+                            attributesWidget.mainWidget.resizeTrigger();
                         } else if (attributesWidget.widgetDimesions.value['height_override'] && attributesWidget.widgetDimesions.value['height_override'] > y) {
                             attributesWidget.widgetDimesions.nextProperty('height_override', null);
                         }
@@ -1061,6 +1144,9 @@
                 // we have found document body so we can continue
                 if (document.body) {
                     lhc.ready = true;
+                } else {
+                    // Document body does not exists
+                    return;
                 }
 
                 lhc.init = init;

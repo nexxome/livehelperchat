@@ -81,7 +81,9 @@ class erLhcoreClassModelDepartament {
             'active_mail_balancing' => $this->active_mail_balancing,
             'max_ac_dep_mails' => $this->max_ac_dep_mails,
             'max_timeout_seconds_mail' => $this->max_timeout_seconds_mail,
-            'delay_before_assign_mail' => $this->delay_before_assign_mail
+            'delay_before_assign_mail' => $this->delay_before_assign_mail,
+            'ignore_op_status' => $this->ignore_op_status,
+            'dep_offline' => $this->dep_offline
         );
     }
 
@@ -327,6 +329,8 @@ class erLhcoreClassModelDepartament {
     public $product_configuration = '';
     public $bot_configuration = '';
     public $alias = '';
+    public $ignore_op_status = 0;
+    public $dep_offline = 0;
 
 
     // 0 - disabled

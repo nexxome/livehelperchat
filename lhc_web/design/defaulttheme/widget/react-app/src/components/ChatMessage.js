@@ -154,7 +154,11 @@ class ChatMessage extends PureComponent {
                 console.log('Unknown click event: ' + attrs.onclick);
             }
         }
-        e.preventDefault();
+
+        // Process clicks on IMG always and any tag with class process-click
+        if (e.target.tagName !== 'IMG' && (!attrs.class || attrs.class.indexOf('process-click') === -1)) {
+            e.preventDefault();
+        }
 
         // Why did we previously auto focused on button click?
         // It just makes a screen smaller and is bad for UI
@@ -279,6 +283,10 @@ class ChatMessage extends PureComponent {
 
         var operatorChanged = false;
 
+        if (!this.props.msg['msg'] || typeof this.props.msg['msg'] !== 'string') {
+            return <React.Fragment></React.Fragment>;
+        }
+
         var messages = parse(this.props.msg['msg'], {
 
             replace: domNode => {
@@ -294,10 +302,8 @@ class ChatMessage extends PureComponent {
                             domNode.attribs.className += ' current-reacting-to';
                         }
 
-                        domNode.attribs.className += ' fade-in-fast';
-
                         if (domNode.attribs.className.indexOf('message-row') !== -1) {
-                            domNode.attribs.className += ' index-row-' + this.props.id;
+                            domNode.attribs.className += ' fade-in-fast index-row-' + this.props.id;
                         }
 
                         // Animate only if it's not first sync call

@@ -18,10 +18,11 @@ if ( isset($_POST['doDelete']) ) {
 	$Errors = array();
 
 	if ( $form->hasValidData( 'ChatID' ) && !empty($form->ChatID) ) {
-		$chats = erLhcoreClassChat::getList(array('filterin' => array('id' => $form->ChatID)));
+		$chats = erLhcoreClassModelChat::getList(array('limit' => false, 'filterin' => array('id' => $form->ChatID)));
 		foreach ($chats as $chatToDelete) {
 			if (erLhcoreClassChat::hasAccessToWrite($chatToDelete) && ($currentUser->hasAccessTo('lhchat','deleteglobalchat') || ($currentUser->hasAccessTo('lhchat','deletechat') && $chatToDelete->user_id == $currentUser->getUserID())))
 			{
+                erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.delete', array('chat' => & $chatToDelete, 'user' => $currentUser));
 				$chatToDelete->removeThis();
 			}
 		}
@@ -44,7 +45,7 @@ if ( isset($_POST['doClose']) ) {
 	$Errors = array();
 
 	if ( $form->hasValidData( 'ChatID' ) && !empty($form->ChatID) ) {
-		$chats = erLhcoreClassChat::getList(array('filterin' => array('id' => $form->ChatID)));
+		$chats = erLhcoreClassModelChat::getList(array('limit' => false, 'filterin' => array('id' => $form->ChatID)));
         $userData = $currentUser->getUserData(true);
 
 		foreach ($chats as $chatToClose) {
@@ -95,7 +96,7 @@ if ($Params['user_parameters_unordered']['print'] == 1) {
 	$items = erLhcoreClassModelChat::getList(array_merge($filterParams['filter'],array('limit' => 100000,'offset' => 0)));
 	$tpl->set('items',$items);
 	$Result['content'] = $tpl->fetch();
-	$Result['pagelayout'] = 'popup';
+	$Result['pagelayout'] = 'print';
 	return;
 }
 
@@ -128,6 +129,8 @@ if (isset($Params['user_parameters_unordered']['export']) && $Params['user_param
 
     $tpl = erLhcoreClassTemplate::getInstance('lhviews/save_chat_view.tpl.php');
     $tpl->set('action_url', erLhcoreClassDesign::baseurl('chat/list') . erLhcoreClassSearchHandler::getURLAppendFromInput($filterParams['input_form']));
+    $tpl->set('input', $filterParams['input_form']);
+
     if (ezcInputForm::hasPostData()) {
 
         $Errors = erLhcoreClassAdminChatValidatorHelper::validateSavedSearch($savedSearch, array('filter' => $filterParams['filter'], 'input_form' => $filterParams['input_form']));
@@ -160,6 +163,7 @@ if (isset($Params['user_parameters_unordered']['export']) && $Params['user_param
         $filterParams['filter']['offset'] = 0;
 
         foreach (erLhcoreClassModelChat::getList($filterParams['filter']) as $item){
+            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.delete', array('chat' => & $item, 'user' => $currentUser));
             $item->removeThis();
         }
 

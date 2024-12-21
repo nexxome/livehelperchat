@@ -128,6 +128,11 @@
         }
     });
 
+    ee.addListener('svelteWentActive', function(){
+        jQuery('#myModal').modal('hide');
+        setActiveInterface();
+    });
+
     ee.addListener('angularStartChatbyId',function (chat_id) {
         lhinst.addOpenTrace('view_clicked');
         startChatByID(chat_id);
@@ -136,6 +141,11 @@
     ee.addListener('svelteOpenChat',function (chat_id) {
         lhinst.addOpenTrace('click');
         startChatByID(chat_id);
+    });
+
+    //ee.emitEvent("svelteAction",[{'type':'info_history','msg':"History record"}]);
+    ee.addListener('svelteAction',function (data) {
+        addAction(data);
     });
 
     ee.addListener('svelteDebug',function () {
@@ -150,12 +160,20 @@
         loadChatList();
     });
 
+    ee.addListener('svelteTestNotification',function (chat_id) {
+        lhcServices.getNotificationsData(chat_id).then(function (data) {
+            data.forEach(function (item) {
+                lhinst.playSoundNewAction(item.last_id_identifier,parseInt(item.last_id),(item.nick ? item.nick : 'Live Help'),(item.msg ? item.msg : confLH.transLation.new_chat), item.nt);
+            });
+        });
+    });
+
     ee.addListener('svelteResetTimeoutActivity',function () {
         resetTimeoutActivity();
     });
 
     ee.addListener('angularStartChatOperatorPublic',function (user_id) {
-        // startChatOperatorPublic(user_id);
+        lhcServices.startChatOperator(user_id);
     });
 
     ee.addListener('svelteallDepartmentsChanged',function (list,force) {
@@ -193,6 +211,10 @@
 
     ee.addListener('svelteStoreLocalSetting',function (item_id, value) {
         lhcServices.storeLocalSetting(item_id,value);
+    });
+
+    ee.addListener('svelteNoticeUpdated', function () {
+        updateNoticeData();
     });
 
     ee.addListener('svelteAppendActiveChats',function () {
@@ -233,6 +255,30 @@
     });
 
     $lhcList['onlineusers_m_h'] = lhcServices.restoreLocalSetting('onlineusers_m_h',null,false);
+
+    async function updateNoticeData(){
+        const responseTrack = await fetch(WWW_DIR_JAVASCRIPT  + 'chat/loadinitialdata', {
+            method: "GET",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            }
+        });
+
+        const data = await responseTrack.json();
+
+        if (data.logout || data.error_url) {
+            document.location.reload();
+            return;
+        }
+
+        if (data.notice) {
+            $lhcList['lhcNotice'] = data.notice;
+        } else {
+            $lhcList['lhcNotice'] = {'message' : '', 'level' : 'primary'};
+        }
+    }
+
 
     function toggleList(variable) {
         $lhcList[variable] = !$lhcList[variable];
@@ -549,6 +595,9 @@
             list.hideInvisible = data.im;
             list.hideOnline = data.ho;
             list.lhcVersion = data.v;
+            if (data.notice) {
+                list.lhcNotice = data.notice;
+            }
             list.alwaysOnline = data.a_on;
             list.additionalColumns = data.col;
             list.widgetsActive = data.widgets;
@@ -667,7 +716,9 @@
 
         data.copen.forEach(function(chatOpen) {
             lhinst.addOpenTrace('opened_chats');
+            lhinst.ignoreAdminSync = true;
             lhinst.startChat(chatOpen.id, jQuery('#tabs'),truncate((chatOpen.nick || 'Visitor'),10), (chatOpen.id === chat_id), 0, chatOpen.status);
+            lhinst.ignoreAdminSync = false;
             addAction({'type':'mac_history', 'chat_id': chatOpen.id, 'nick': chatOpen.nick});
             if (chatOpen.id === chat_id) {
                 document.getElementById('tabs').classList.add('chat-tab-selected');
@@ -1408,6 +1459,7 @@
                                             lhinst.startChatBackground(chat.id, tabs, truncate((chat.nick || 'Visitor'), 10));
                                             // We auto open only auto assigned chats
                                             lhcLogic.channel.postMessage({'action':'startbackground_chat','args':{'nick': truncate((chat.nick || 'Visitor'), 10), 'chat_id' : parseInt(chat.id)}});
+                                            ee.emitEvent('eventLoadChatListSvelteAutoOpen', [chat, lhcLogic]);
                                         }
 
                                         if (lhinst.disableremember == false) {

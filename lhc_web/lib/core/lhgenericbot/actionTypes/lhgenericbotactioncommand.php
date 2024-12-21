@@ -93,11 +93,7 @@ class erLhcoreClassGenericBotActionCommand {
                 }
 
                 // If chat is transferred to pending state we don't want to process any old events
-                $eventPending = erLhcoreClassModelGenericBotChatEvent::findOne(array('filter' => array('chat_id' => $chat->id)));
-
-                if ($eventPending instanceof erLhcoreClassModelGenericBotChatEvent) {
-                    $eventPending->removeThis();
-                }
+                erLhcoreClassGenericBotWorkflow::removePreviousEvents($chat->id);
 
                 // Because we want that mobile app would receive notification
                 // By default these listeners are not set if visitors sends a message and chat is not active
@@ -128,6 +124,23 @@ class erLhcoreClassGenericBotActionCommand {
                 }
             }
 
+        } elseif ($action['content']['command'] == 'loopvariable') {
+
+            $variablesAppend = $action['content']['payload'];
+
+            foreach ($params['replace_array'] as $keyReplace => $valueReplace) {
+                if (is_object($valueReplace) || is_array($valueReplace)) {
+                    $variablesAppend = @str_replace($keyReplace,json_encode($valueReplace),$variablesAppend);
+                } else {
+                    $variablesAppend = @str_replace($keyReplace,$valueReplace,$variablesAppend);
+                }
+            }
+
+            //print_r($variablesAppend);
+            // Update evening and morning phone to +3706545478
+
+
+
         } elseif ($action['content']['command'] == 'transfertobot') {
             $chat->status = erLhcoreClassModelChat::STATUS_BOT_CHAT;
             $chat->last_op_msg_time = time();
@@ -150,6 +163,39 @@ class erLhcoreClassGenericBotActionCommand {
                     erLhcoreClassGenericBotWorkflow::processTrigger($chat, $trigger, true);
                 }
             }
+        } elseif ($action['content']['command'] == 'disableuntillopmsg') {
+
+            $db = ezcDbInstance::get();
+
+            try {
+
+                $db->beginTransaction();
+                $chat->syncAndLock('`chat_variables`');
+
+                $variablesArray = [];
+
+                if (!empty($chat->chat_variables)) {
+                    $variablesArray = json_decode($chat->chat_variables,true);
+                }
+
+                if (!is_array($variablesArray)) {
+                    $variablesArray = array();
+                }
+
+                if (!isset($variablesArray['bot_lock_msg'])) {
+                    $variablesArray['bot_lock_msg'] = $chat->last_msg_id;
+                    $chat->chat_variables = json_encode($variablesArray);
+                    $chat->chat_variables_array = $variablesArray;
+                    $chat->updateThis(['update' => ['chat_variables']]);
+                }
+
+                $db->commit();
+
+            } catch (Exception $e) {
+                $db->rollback();
+                throw $e;
+            }
+
         } elseif ($action['content']['command'] == 'closechat') {
 
             $chat->pnd_time = time();
@@ -508,6 +554,11 @@ class erLhcoreClassGenericBotActionCommand {
                     if ($action['content']['payload'] == 'meta_msg') {
                         $meta_msg_array = $params['msg']->meta_msg_array;
                         $meta_msg_array = array_merge_recursive($meta_msg_array, json_decode($contentPayload,true));
+                        foreach (['buttons','custom','progress'] as $contentType) {
+                            if (isset($meta_msg_array['content'][$contentType])){
+                                unset($meta_msg_array['content'][$contentType]);
+                            }
+                        }
                         $params['msg']->meta_msg_array = $meta_msg_array;
                         $params['msg']->meta_msg = json_encode($meta_msg_array);
                     } else {
@@ -546,7 +597,17 @@ class erLhcoreClassGenericBotActionCommand {
                     $variablesArray = (array)$params['msg']->__get('meta_msg_array');
 
                     if (isset($params['replace_array']) && is_array($params['replace_array'])) {
-                        $variablesAppend = @str_replace(array_keys($params['replace_array']),array_values($params['replace_array']),$action['content']['payload']);
+
+                        $variablesAppend = $action['content']['payload'];
+
+                        foreach ($params['replace_array'] as $keyReplace => $valueReplace) {
+                            if (is_object($valueReplace) || is_array($valueReplace)) {
+                                $variablesAppend = @str_replace($keyReplace,json_encode($valueReplace),$variablesAppend);
+                            } else {
+                                $variablesAppend = @str_replace($keyReplace,$valueReplace,$variablesAppend);
+                            }
+                        }
+
                     } else {
                         $variablesAppend = $action['content']['payload'];
                     }
@@ -588,7 +649,16 @@ class erLhcoreClassGenericBotActionCommand {
                 $variablesArray = (array)$chat->chat_variables_array;
 
                 if (isset($params['replace_array']) && is_array($params['replace_array'])) {
-                    $variablesAppend = @str_replace(array_keys($params['replace_array']), array_values($params['replace_array']), $action['content']['payload']);
+                    $variablesAppend = $action['content']['payload'];
+
+                    foreach ($params['replace_array'] as $keyReplace => $valueReplace) {
+                        if (is_object($valueReplace) || is_array($valueReplace)) {
+                            $variablesAppend = @str_replace($keyReplace,json_encode($valueReplace),$variablesAppend);
+                        } else {
+                            $variablesAppend = @str_replace($keyReplace,$valueReplace,$variablesAppend);
+                        }
+                    }
+
                 } else {
                     $variablesAppend = $action['content']['payload'];
                 }

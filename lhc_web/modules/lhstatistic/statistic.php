@@ -192,7 +192,7 @@ if ($tab == 'active') {
     }
 
     $filterParams['input_form']->work_hours_starts = isset($configuration['work_hours_starts']) ? $configuration['work_hours_starts'] : 8;
-    $filterParams['input_form']->work_hours_ends = isset($configuration['work_hours_ends']) ? $configuration['work_hours_ends'] : 17;
+    $filterParams['input_form']->work_hours_ends = isset($configuration['work_hours_ends']) ? $configuration['work_hours_ends'] : 16;
 
     erLhcoreClassChatStatistic::formatUserFilter($filterParams);
 
@@ -253,7 +253,8 @@ if ($tab == 'active') {
                     in_array('msgtype',$filterParams['input_form']->chart_type) ||
                     in_array('unanswered',$filterParams['input_form']->chart_type) ||
                     in_array('msgdelop',$filterParams['input_form']->chart_type) ||
-                    in_array('msgdelbot',$filterParams['input_form']->chart_type)
+                    in_array('msgdelbot',$filterParams['input_form']->chart_type) ||
+                    in_array('devicetype',$filterParams['input_form']->chart_type)
                 )
             ) ? erLhcoreClassChatStatistic::getNumberOfChatsPerMonth($filterParams['filter'], array('charttypes' => $filterParams['input_form']->chart_type, 'comparetopast' => $filterParams['input']->comparetopast)) : array()),
 
@@ -615,8 +616,12 @@ if ($tab == 'active') {
 
     $userFilterDefault = erLhcoreClassGroupUser::getConditionalUserFilter();
 
-    if (!empty($userFilterDefault)){
-        $filterParams['filter'] = array_merge_recursive($filterParams['filter'], $userFilterDefault);
+    if (!empty($userFilterDefault)) {
+        if (isset($filterParams['filter']['filterin']['id'])) {
+            $filterParams['filter']['filterin']['id'] = array_values(array_intersect($filterParams['filter']['filterin']['id'],$userFilterDefault['filterin']['id']));
+        } else {
+            $filterParams['filter']['filterin']['id'] = array_values($userFilterDefault['filterin']['id']);
+        }
     }
 
     if (isset($_GET['xmlagentstatistic'])) {

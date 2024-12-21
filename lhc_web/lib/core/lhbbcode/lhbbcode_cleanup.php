@@ -611,7 +611,9 @@ class erLhcoreClassBBCodePlain
         $text = str_replace($in, $out, $text);
 
         // BBCode to find...
-        $in = array( 	 '/\[b\](.*?)\[\/b\]/ms',
+        $in = array(
+            '/\[plain\](.*?)\[\/plain\]/ms',
+            '/\[b\](.*?)\[\/b\]/ms',
             '/\[i\](.*?)\[\/i\]/ms',
             '/\[u\](.*?)\[\/u\]/ms',
             '/\[mark\](.*?)\[\/mark\]/ms',
@@ -626,7 +628,9 @@ class erLhcoreClassBBCodePlain
         );
 
         // And replace them by...
-        $out = array(	 '\1',
+        $out = array(
+            '\1',
+            '\1',
             '\1',
             '\1',
             '\1',
@@ -963,7 +967,9 @@ class erLhcoreClassBBCodePlain
 
     public static function makeQuote($matches)
     {
-        if ($matches[1]) {
+        if (isset($matches[2])) {
+            return '<blockquote class="blockquote"> ' . $matches[2] . ' </blockquote>';
+        } else if ($matches[1]) {
             return '<blockquote class="blockquote"> ' . $matches[1] . ' </blockquote>';
         } else {
             return $matches[0];
@@ -998,6 +1004,8 @@ class erLhcoreClassBBCodePlain
         if (isset($paramsMessage['see_sensitive_information']) && $paramsMessage['see_sensitive_information'] === false && $paramsMessage['sender'] == 0) {
             $ret = \LiveHelperChat\Models\LHCAbstract\ChatMessagesGhosting::maskMessage($ret);
         }
+
+        $ret = preg_replace_callback('#\[dateformat=([A-Za-z0-9:,\/.\-\s]{1,60})\](.*?)\[/dateformat\]#is', 'erLhcoreClassBBCode::_date_format', $ret);
 
         // Make base URL
         $ret = preg_replace_callback('#\[baseurl\](.*?)\[/baseurl\]#is', 'erLhcoreClassBBCode::_make_base_link', $ret);
@@ -1034,6 +1042,7 @@ class erLhcoreClassBBCodePlain
 
         // Quote
         $ret = preg_replace_callback('#\[quote\](.*?)\[/quote\]#is', 'erLhcoreClassBBCodePlain::makeQuote', $ret);
+        $ret = preg_replace_callback('#\[quote="?([0-9]+)"?\](.*?)\[/quote\]#is', 'erLhcoreClassBBCodePlain::makeQuote', $ret);
 
         // Youtube block
         $ret = preg_replace_callback('#\[youtube\](.*?)\[/youtube\]#is', 'erLhcoreClassBBCodePlain::_make_youtube_block', $ret);
@@ -1047,6 +1056,12 @@ class erLhcoreClassBBCodePlain
         $ret = preg_replace_callback('#\[survey="?(.*?)"?\]#is', 'erLhcoreClassBBCodePlain::_make_url_survey', $ret);
 
         $ret = trim($ret);
+
+        if (isset($paramsMessage['clean_event']) && $paramsMessage['clean_event'] === true) {
+            erLhcoreClassChatEventDispatcher::getInstance()->dispatch('chat.make_plain_message', array(
+                'msg' => & $ret
+            ));
+        }
 
         return $ret;
     }

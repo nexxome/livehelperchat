@@ -7,7 +7,7 @@
     <div class="col-6">
         <div class="form-group" ng-non-bindable>
             <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Identifier');?></label>
-            <input type="text" class="form-control form-control-sm" name="identifier" onkeyup="$('#api-incoming-url').val($('#api-incoming-url').attr('data-base')+$(this).val())" value="<?php echo htmlspecialchars($item->identifier);?>" />
+            <input type="text" class="form-control form-control-sm" name="identifier" id="id_identifier" onkeyup="$('#api-incoming-url').val($('#api-incoming-url').attr('data-base')+$('#LocaleID').val()+$('#api-incoming-url').attr('data-url')+$(this).val())" value="<?php echo htmlspecialchars($item->identifier);?>" />
         </div>
     </div>
     <div class="col-6">
@@ -18,9 +18,18 @@
     </div>
 </div>
 
-<div class="form-group">
+
+
+<div class="mb-2">
     <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','URL to put in third party Rest API service. Append ?output=json for JSON format output.');?></label>
-    <input type="text" ng-non-bindable class="form-control form-control-sm" id="api-incoming-url" data-base="<?php echo erLhcoreClassSystem::getHost()?><?php echo erLhcoreClassDesign::baseurldirect('webhooks/incoming')?>/" value="<?php echo erLhcoreClassSystem::getHost()?><?php echo erLhcoreClassDesign::baseurldirect('webhooks/incoming')?>/<?php echo htmlspecialchars($item->identifier);?>">
+    <div class="input-group">
+        <select onchange="$('#api-incoming-url').val($('#api-incoming-url').attr('data-base')+$('#LocaleID').val()+$('#api-incoming-url').attr('data-url')+$('#id_identifier').val())" title="<?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/htmlcode','Choose a language');?>" id="LocaleID" class="form-select form-select-sm w-25">
+            <?php foreach (erConfigClassLhConfig::getInstance()->getSetting( 'site', 'available_site_access' ) as $locale ) : ?>
+                <option value="/<?php echo $locale?>"><?php echo $locale?></option>
+            <?php endforeach; ?>
+        </select>
+        <input type="text" ng-non-bindable class="form-control form-control-sm w-75" id="api-incoming-url" data-base="<?php echo erLhcoreClassSystem::getHost()?>" data-url="<?php echo erLhcoreClassDesign::baseurldirect('webhooks/incoming')?>/" value="<?php echo erLhcoreClassSystem::getHost()?><?php echo erLhcoreClassDesign::baseurldirect('webhooks/incoming')?>/<?php echo htmlspecialchars($item->identifier);?>">
+    </div>
 </div>
 
 <div class="row">
@@ -73,6 +82,10 @@
     <label><input type="checkbox" ng-model="show_wh_integration"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Show integration information.');?></label>
 </div>
 
+<ul>
+    <li>Is the fileinfo extension detected - <?php if (extension_loaded ('fileinfo' )) : ?><span class="badge bg-success"> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Yes')?></span> <?php else : ?> <span class="badge bg-danger"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','No, uploaded files types might not be detected correctly!')?></span><?php endif; ?>
+</ul>
+
 <div ng-show="show_wh_integration">
 
 <ul class="nav nav-tabs mb-3" role="tablist">
@@ -91,6 +104,7 @@
     <li role="presentation" class="nav-item"><a class="nav-link" href="#img-attachments_4" aria-controls="img-attachments_4" role="tab" data-bs-toggle="tab" aria-selected="true"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Images/Video 4')?></a></li>
     <li role="presentation" class="nav-item"><a class="nav-link" href="#img-attachments_5" aria-controls="img-attachments_5" role="tab" data-bs-toggle="tab" aria-selected="true"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Images/Video 5')?></a></li>
     <li role="presentation" class="nav-item"><a class="nav-link" href="#img-attachments_6" aria-controls="img-attachments_6" role="tab" data-bs-toggle="tab" aria-selected="true"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Images/Video 6')?></a></li>
+    <li role="presentation" class="nav-item"><a class="nav-link" href="#msg-delivery-status" aria-controls="msg-delivery-status" role="tab" data-bs-toggle="tab" aria-selected="true"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Messages delivery and reactions')?></a></li>
     <li role="presentation" class="nav-item"><a class="nav-link" href="#chat_options" aria-controls="chat_options" role="tab" data-bs-toggle="tab" aria-selected="true"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat options')?></a></li>
     <li role="presentation" class="nav-item"><a class="nav-link" href="#wh_attributes" aria-controls="wh_attributes" role="tab" data-bs-toggle="tab" aria-selected="true"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Attributes')?></a></li>
 </ul>
@@ -98,6 +112,7 @@
 <div class="tab-content">
     <div role="tabpanel" class="tab-pane form-group active" id="main_message_attributes">
 
+        <h4><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Message related attributes')?></h4>
         <div class="row">
             <div class="col-6">
                 <div class="form-group">
@@ -110,8 +125,31 @@
                        <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.message_direct" value="on" > <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','This attribute contains direct message and NOT a messages array');?></label>
                 </div>
             </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Messages ID');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.message_id" value="" />
+                    <div class="form-group">
+                        <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.message_id_uniq" value="on" > <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Check for messages uniqueness by message id');?></label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Reply to message ID');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.message_id_reply" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Time');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.time" value="" />
+                </div>
+            </div>
         </div>
 
+        <hr>
+        <h4><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat related attributes')?></h4>
         <div class="row">
             <div class="col-6">
 
@@ -155,13 +193,6 @@
                 </div>
             </div>
             <div class="col-6">
-                <div class="form-group">
-                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Time');?></label>
-                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.time" value="" />
-                </div>
-            </div>
-
-            <div class="col-6">
                 <div class="row">
                     <div class="col-6">
                         <div class="form-group">
@@ -175,8 +206,15 @@
                             <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.chat_id_2" value="" />
                         </div>
                     </div>
+
                     <div class="col-12">
-                        We will combine both fields into single identifier <span class="badge bg-secondary">chat_id__chat_id_2</span>
+                        <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Switch Chat ID with Chat ID 2 if this condition matches');?>
+                        <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.chat_id_switch" value="" />
+                    </div>
+
+
+                    <div class="col-12">
+                        <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','We will combine both fields into single identifier');?>&nbsp;<span class="badge bg-secondary">chat_id__chat_id_2</span>
                     </div>
                 </div>
             </div>
@@ -866,6 +904,274 @@
         </div>
 
     </div>
+
+    <div role="tabpanel" class="tab-pane form-group" id="msg-delivery-status">
+
+        <h5>Pending</h5>
+        <p>This is default status and no conditions are needed</p>
+
+        <h5>Sent</h5>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Message ID location');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_sent_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','For message being considered text message should have attribute value equal to');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="message.attribute.location=accepted,processing,sent" ng-model="webhookincomingsctl.conditions.msg_delivery_sent_condition" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_sent_chat_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID 2 field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_sent_chat_id_2" value="" />
+                </div>
+            </div>
+        </div>
+
+        <h5>Delivered</h5>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Message ID location');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_delivered_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','For message being considered text message should have attribute value equal to');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="message.attribute.location=delivered" ng-model="webhookincomingsctl.conditions.msg_delivery_delivered_condition" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_delivered_chat_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID 2 field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_delivered_chat_id_2" value="" />
+                </div>
+            </div>
+        </div>
+
+        <h5>Read</h5>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Message ID location');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_read_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','For message being considered text message should have attribute value equal to');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="message.attribute.location=read" ng-model="webhookincomingsctl.conditions.msg_delivery_read_condition" value="" />
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group">
+                    <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.msg_delivery_read_global" value="on" /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','All unread chat messages should be marked as read');?></label>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_read_chat_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID 2 field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_read_chat_id_2" value="" />
+                </div>
+            </div>
+        </div>
+
+        <h5>Rejected</h5>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Message ID location');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_rejected_id" value="" />
+                </div>
+            </div>
+           <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','For message being considered text message should have attribute value equal to');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="message.attribute.location=rejected" ng-model="webhookincomingsctl.conditions.msg_delivery_rejected_condition" value="" />
+                </div>
+           </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_rejected_chat_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID 2 field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_rejected_chat_id_2" value="" />
+                </div>
+            </div>
+        </div>
+
+        <hr>
+        <h5>Text Message edit action</h5>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Message ID location');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_edited_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','For message being considered text message edit');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="message.edited_message=__exists__" ng-model="webhookincomingsctl.conditions.msg_delivery_edited_condition" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_edited_chat_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID 2 field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_edited_chat_id_2" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label>Text message new content location</label>
+                    <input type="text" class="form-control form-control-sm ng-pristine ng-valid ng-not-empty ng-touched" ng-model="webhookincomingsctl.conditions.msg_delivery_edited_location" value="">
+                </div>
+            </div>
+        </div>
+
+
+
+        <h5>React action</h5>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Message id location to which visitor reacted');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Reaction message ID');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_action_id" value="" />
+                </div>
+            </div>
+           <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','For message being considered reaction message');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="type=reaction" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_condition" value="" />
+                </div>
+           </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Reaction emoji location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_location" value="" />
+                </div>
+           </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_chat_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID 2 field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_chat_id_2" value="" />
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group">
+                    <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_use_msg_id" value="on" /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Try to find chat by message id if we chat was not found by id');?></label>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group">
+                    <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_use_emoji" value="on" /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Reaction is a standalone unicode character');?></label>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group">
+                    <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_remove_prev" value="on" /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Remove previous visitor reaction on action');?></label>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group">
+                    <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.msg_delivery_reaction_remove_if_empty" value="on" /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Remove previous visitor reaction if emoji location is empty');?></label>
+                </div>
+            </div>
+        </div>
+
+        <h5>Un-react action</h5>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Message id location to which visitor reacted');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_un_reaction_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Reaction message ID');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="" ng-model="webhookincomingsctl.conditions.msg_delivery_un_reaction_action_id" value="" />
+                </div>
+            </div>
+           <div class="col-12">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','For message being considered reaction message');?></label>
+                    <input type="text" class="form-control form-control-sm" placeholder="type=reaction" ng-model="webhookincomingsctl.conditions.msg_delivery_un_reaction_condition" value="" />
+                </div>
+           </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_un_reaction_chat_id" value="" />
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group">
+                    <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Chat ID 2 field location');?></label>
+                    <input type="text" class="form-control form-control-sm" ng-model="webhookincomingsctl.conditions.msg_delivery_un_reaction_chat_id_2" value="" />
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group">
+                    <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.msg_delivery_un_reaction_use_msg_id" value="on" /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Try to find chat by message id if we chat was not found by id');?></label>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-group">
+                    <label><input type="checkbox" ng-model="webhookincomingsctl.conditions.msg_delivery_un_reaction_use_emoji" value="on" /> <?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('chat/webhooks','Reaction is a standalone unicode character');?></label>
+                </div>
+            </div>
+        </div>
+
+
+
+    </div>
+
 
     <div role="tabpanel" class="tab-pane form-group" id="chat_options">
         <div class="form-group">

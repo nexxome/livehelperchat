@@ -16,11 +16,11 @@ try {
             $lastMessage = erLhcoreClassChat::getGetLastChatMessageEdit($chat->id, $currentUser->getUserID());
         }
 
-		if (isset($lastMessage['msg'])) {
+		if (isset($lastMessage['msg']) && $lastMessage['chat_id'] == $chat->id) {
 		    if (
                 ($lastMessage['user_id'] == $currentUser->getUserID()) ||
                 ($lastMessage['user_id'] == 0 && erLhcoreClassUser::instance()->hasAccessTo('lhchat','editpreviouvis')) ||
-                ($lastMessage['user_id'] > 0 && erLhcoreClassUser::instance()->hasAccessTo('lhchat','editpreviousop'))
+                (($lastMessage['user_id'] == -2 || $lastMessage['user_id'] > 0) && erLhcoreClassUser::instance()->hasAccessTo('lhchat','editpreviousop'))
             ) {
 
                 if ($lastMessage['user_id'] == $currentUser->getUserID()) {

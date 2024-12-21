@@ -6,6 +6,13 @@ try
 
     $requestBody = json_decode(file_get_contents('php://input'),true);
 
+    if (!erLhcoreClassRestAPIHandler::hasAccessTo('lhrestapi', 'generateautologinall')) {
+        if (isset($requestBody['l'])) {
+            unset($requestBody['l']);
+        }
+        $requestBody['u'] = erLhcoreClassRestAPIHandler::getUserId();
+    }
+
     $data = erLhcoreClassModelChatConfig::fetch('autologin_data')->data;
 
     if ($data['enabled'] != 1) {
